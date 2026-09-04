@@ -1,0 +1,382 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {
+  ArrowLeft,
+  PiggyBank,
+  Plus,
+  ShoppingBag,
+  Utensils,
+  Fuel,
+  Zap,
+  Film,
+  AlertTriangle,
+  Grid,
+  ChevronRight,
+  Calendar,
+  ChevronDown,
+} from '@lucide/astro';
+
+// Data Mock Daftar Budget per Kategori
+const budgets = [
+  {
+    id: 1,
+    category: 'Makanan & Minuman',
+    icon: Utensils,
+    allocated: 'Rp 2.000.000',
+    spent: 'Rp 1.450.000',
+    remaining: 'Rp 550.000',
+    percentage: 72.5,
+    status: 'safe',
+    barColor: 'bg-blue-600',
+    badgeColor: 'bg-blue-50 text-blue-600 border-blue-200',
+    iconColor: 'text-blue-600 bg-blue-50 border-blue-100',
+  },
+  {
+    id: 2,
+    category: 'Belanja Bulanan',
+    icon: ShoppingBag,
+    allocated: 'Rp 1.500.000',
+    spent: 'Rp 1.350.000',
+    remaining: 'Rp 150.000',
+    percentage: 90,
+    status: 'warning',
+    barColor: 'bg-amber-500',
+    badgeColor: 'bg-amber-50 text-amber-600 border-amber-200',
+    iconColor: 'text-amber-600 bg-amber-50 border-amber-100',
+  },
+  {
+    id: 3,
+    category: 'Transport & Bensin',
+    icon: Fuel,
+    allocated: 'Rp 600.000',
+    spent: 'Rp 320.000',
+    remaining: 'Rp 280.000',
+    percentage: 53.3,
+    status: 'safe',
+    barColor: 'bg-emerald-500',
+    badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+  },
+  {
+    id: 4,
+    category: 'Utilitas & Tagihan',
+    icon: Zap,
+    allocated: 'Rp 500.000',
+    spent: 'Rp 545.000',
+    remaining: '- Rp 45.000',
+    percentage: 109,
+    status: 'exceeded',
+    barColor: 'bg-rose-600',
+    badgeColor: 'bg-rose-50 text-rose-600 border-rose-200',
+    iconColor: 'text-rose-600 bg-rose-50 border-rose-100',
+  },
+  {
+    id: 5,
+    category: 'Hiburan & Hobi',
+    icon: Film,
+    allocated: 'Rp 400.000',
+    spent: 'Rp 180.000',
+    remaining: 'Rp 220.000',
+    percentage: 45,
+    status: 'safe',
+    barColor: 'bg-purple-600',
+    badgeColor: 'bg-purple-50 text-purple-600 border-purple-200',
+    iconColor: 'text-purple-600 bg-purple-50 border-purple-100',
+  },
+];
+
+// Persentase Terpakai (76.9%)
+const usedPercentage = 76.9;
+---
+
+<Layout title="Target Anggaran - Studion App">
+  <div class="space-y-4 pt-2 pb-10">
+    <!-- 1. HEADER HALAMAN NON-NAVBAR (Back Kiri + Judul Tengah) -->
+    <div class="mt-6 flex items-center justify-between pb-1">
+      <a
+        href="/"
+        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+        aria-label="Kembali ke Beranda"
+      >
+        <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
+      </a>
+
+      <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
+        Anggaran Bulanan
+      </h1>
+
+      <div class="w-9"></div>
+    </div>
+
+    <!-- 2. HERO CARD UTAMA: VISUAL SPEEDOMETER METER -->
+    <div
+      class="relative overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-blue-900/90 via-blue-950/95 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
+    >
+      <!-- Grid Pattern Background -->
+      <div
+        class="pointer-events-none absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-br-3xl opacity-25"
+      >
+        <svg
+          class="h-full w-full"
+          width="100%"
+          height="100%"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern
+              id="grid-pattern-budget"
+              width="16"
+              height="16"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 16 0 L 0 0 0 16"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.4)"
+                stroke-width="1.2"></path>
+            </pattern>
+            <radialGradient id="grid-fade-budget" cx="100%" cy="100%" r="100%">
+              <stop offset="0%" stop-color="white" stop-opacity="1"></stop>
+              <stop offset="80%" stop-color="white" stop-opacity="0"></stop>
+            </radialGradient>
+            <mask id="grid-mask-budget">
+              <rect width="100%" height="100%" fill="url(#grid-fade-budget)"
+              ></rect>
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="url(#grid-pattern-budget)"
+            mask="url(#grid-mask-budget)"></rect>
+        </svg>
+      </div>
+
+      <!-- Ambient Glow -->
+      <div
+        class="pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-blue-500/25 blur-2xl"
+      >
+      </div>
+      <div
+        class="pointer-events-none absolute -right-12 -bottom-12 h-36 w-36 rounded-full bg-amber-400/15 blur-2xl"
+      >
+      </div>
+
+      <!-- BARIS ATAS: SELECTOR BULAN DROPDOWN -->
+      <div class="relative z-10 flex items-center justify-between">
+        <button
+          type="button"
+          class="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
+        >
+          <Calendar class="h-3.5 w-3.5 stroke-2 text-cyan-300" />
+          <span class="text-xs font-bold text-white">Agustus 2026</span>
+          <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-blue-200" />
+        </button>
+      </div>
+
+      <!-- SPEEDOMETER ARC SVG -->
+      <div
+        class="relative z-10 my-3 flex flex-col items-center justify-center pt-3 pb-1"
+      >
+        <div class="relative flex h-36 w-56 items-center justify-center">
+          <svg class="h-full w-full overflow-visible" viewBox="0 0 100 60">
+            <!-- Background Arc Track -->
+            <path
+              d="M 10 50 A 40 40 0 0 1 90 50"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.15)"
+              stroke-width="6.5"
+              stroke-linecap="round"
+              stroke-dasharray="2 3"></path>
+
+            <!-- Active Gradient Arc -->
+            <path
+              d="M 10 50 A 40 40 0 0 1 90 50"
+              fill="none"
+              stroke="url(#speedo-gradient)"
+              stroke-width="7.5"
+              stroke-linecap="round"
+              stroke-dasharray="126"
+              stroke-dashoffset={126 - (126 * usedPercentage) / 100}
+              class="transition-all duration-1000 ease-out"></path>
+
+            <defs>
+              <linearGradient
+                id="speedo-gradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
+                <stop offset="0%" stop-color="#10b981"></stop>
+                <stop offset="65%" stop-color="#f59e0b"></stop>
+                <stop offset="100%" stop-color="#f43f5e"></stop>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <!-- Nilai Persentase di Tengah Arc -->
+          <div class="absolute bottom-0 flex flex-col items-center pb-1">
+            <span
+              class="text-3xl font-black tracking-tight text-white drop-shadow-md"
+            >
+              {usedPercentage}%
+            </span>
+            <span
+              class="mt-0.5 text-[9px] font-bold tracking-widest text-blue-200/70 uppercase"
+            >
+              Terpakai
+            </span>
+          </div>
+        </div>
+
+        <!-- Total Nominal Display -->
+        <div class="mt-3 text-center">
+          <h2 class="text-xl font-black tracking-tight text-white">
+            Rp 3.845.000 <span class="text-xs font-normal text-blue-200/60"
+              >/ Rp 5.000.000</span
+            >
+          </h2>
+        </div>
+      </div>
+
+      <!-- MICRO INFO BARIS BAWAH (ICON ONLY) -->
+      <div
+        class="relative z-10 mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-3"
+      >
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-500/20 text-emerald-300"
+          >
+            <PiggyBank class="h-3.5 w-3.5 stroke-[2.2]" />
+          </div>
+          <div class="flex min-w-0 flex-col">
+            <span class="text-xs leading-tight font-extrabold text-emerald-300"
+              >1.155rb</span
+            >
+            <span class="truncate text-[9px] font-medium text-blue-200/60"
+              >Sisa Saldo</span
+            >
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-400/20 bg-blue-500/20 text-blue-300"
+          >
+            <Grid class="h-3.5 w-3.5 stroke-[2.2]" />
+          </div>
+          <div class="flex min-w-0 flex-col">
+            <span class="text-xs leading-tight font-extrabold text-white"
+              >5</span
+            >
+            <span class="truncate text-[9px] font-medium text-blue-200/60"
+              >Kategori</span
+            >
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-500/20 text-amber-300"
+          >
+            <AlertTriangle class="h-3.5 w-3.5 stroke-[2.2]" />
+          </div>
+          <div class="flex min-w-0 flex-col">
+            <span class="text-xs leading-tight font-extrabold text-amber-300"
+              >1 Limit</span
+            >
+            <span class="truncate text-[9px] font-medium text-blue-200/60"
+              >Warning</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SECTION DAFTAR ANGGARAN PER KATEGORI -->
+    <div class="space-y-3 pt-1">
+      <div class="flex items-center justify-between px-0.5">
+        <span class="text-sm font-bold tracking-tight text-slate-800"
+          >Rincian Kategori</span
+        >
+      </div>
+
+      <!-- List Cards Anggaran per Kategori -->
+      <div class="space-y-2.5">
+        {
+          budgets.map((item) => (
+            <div class="group cursor-pointer rounded-3xl border border-slate-200/70 bg-white p-4 shadow-2xs transition-all hover:border-blue-300 hover:shadow-sm active:scale-[0.99]">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div class="flex items-center gap-3">
+                  <div
+                    class={`flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border ${item.iconColor}`}
+                  >
+                    <item.icon class="h-4.5 w-4.5 stroke-2" />
+                  </div>
+                  <div class="flex flex-col">
+                    <h3 class="text-xs leading-tight font-extrabold text-slate-800">
+                      {item.category}
+                    </h3>
+                    <span class="text-[10px] font-medium text-slate-400">
+                      Anggaran:{' '}
+                      <span class="font-bold text-slate-600">
+                        {item.allocated}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1">
+                  <span
+                    class={`rounded-full border px-2.5 py-0.5 text-[9px] font-bold ${item.badgeColor}`}
+                  >
+                    {item.percentage}%
+                  </span>
+                  <ChevronRight class="h-4 w-4 stroke-2 text-slate-300 group-hover:text-slate-500" />
+                </div>
+              </div>
+
+              <div class="space-y-2 pt-3">
+                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    class={`h-full rounded-full transition-all duration-500 ${item.barColor}`}
+                    style={`width: ${Math.min(item.percentage, 100)}%;`}
+                  />
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] font-semibold">
+                  <span class="text-slate-500">
+                    Terpakai:{' '}
+                    <span class="font-bold text-slate-800">{item.spent}</span>
+                  </span>
+                  <span
+                    class={
+                      item.status === 'exceeded'
+                        ? 'font-bold text-rose-600'
+                        : 'font-bold text-emerald-600'
+                    }
+                  >
+                    {item.status === 'exceeded' ? 'Over budget: ' : 'Sisa: '}
+                    <span>{item.remaining}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- 4. TOMBOL TAMBAH ANGGARAN BARU -->
+    <div class="pt-2">
+      <button
+        type="button"
+        class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/40 py-3.5 text-blue-600 shadow-2xs transition-all hover:border-blue-500 hover:bg-blue-100/60 active:scale-95"
+      >
+        <Plus class="h-4 w-4 stroke-[2.5]" />
+        <span class="text-xs font-bold">Buat Anggaran Kategori Baru</span>
+      </button>
+    </div>
+  </div>
+</Layout>

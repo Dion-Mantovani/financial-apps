@@ -1,0 +1,613 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronDown,
+  Activity,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ShoppingBag,
+  Utensils,
+  Fuel,
+  Zap,
+  Target,
+  Bot,
+} from '@lucide/astro';
+
+// Mock Data Top Spending
+const topCategories = [
+  {
+    name: 'Makanan & Minuman',
+    amount: 'Rp 1.450.000',
+    percentage: 40,
+    icon: Utensils,
+    color: 'bg-blue-600',
+  },
+  {
+    name: 'Belanja Bulanan',
+    amount: 'Rp 1.350.000',
+    percentage: 37,
+    icon: ShoppingBag,
+    color: 'bg-indigo-500',
+  },
+  {
+    name: 'Utilitas & Tagihan',
+    amount: 'Rp 545.000',
+    percentage: 15,
+    icon: Zap,
+    color: 'bg-amber-500',
+  },
+  {
+    name: 'Transport & Bensin',
+    amount: 'Rp 320.000',
+    percentage: 8,
+    icon: Fuel,
+    color: 'bg-emerald-500',
+  },
+];
+
+// Mock Data Matrix Metrics Dikelompokkan
+const matrixCategory = {
+  core: [
+    {
+      label: 'Burn Rate Harian',
+      value: 'Rp 121.000 /hr',
+      status: 'Normal',
+      color: 'text-slate-800',
+    },
+    {
+      label: 'Sisa Saldo Harian',
+      value: 'Rp 165.000 /hr',
+      status: 'Aman',
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Skor Kesehatan',
+      value: '85 / 100',
+      status: 'Sangat Sehat',
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Kepatuhan Anggaran',
+      value: '92%',
+      status: 'Disiplin',
+      color: 'text-blue-600',
+    },
+  ],
+  behavior: [
+    {
+      label: 'Hari Terboros',
+      value: 'Kamis (24 Agt)',
+      status: 'Rp 410.000',
+      color: 'text-rose-600',
+    },
+    {
+      label: 'Transaksi Tertinggi',
+      value: 'Gaji Freelance',
+      status: '+3.500.000',
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Transaksi Tersering',
+      value: 'Kopi Kenangan',
+      status: '12x Bulan Ini',
+      color: 'text-slate-800',
+    },
+    {
+      label: 'Rata-rata Transaksi',
+      value: 'Rp 142.000',
+      status: 'Stabil',
+      color: 'text-blue-600',
+    },
+  ],
+  projection: [
+    {
+      label: 'Proyeksi Akhir Bulan',
+      value: 'Rp 1.150.000',
+      status: 'Surplus',
+      color: 'text-blue-600',
+    },
+    {
+      label: 'Daya Tahan Saldo',
+      value: '122 Hari',
+      status: 'Sangat Safe',
+      color: 'text-emerald-600',
+    },
+    {
+      label: 'Potensi Hemat AI',
+      value: 'Rp 400.000',
+      status: 'Rekomendasi',
+      color: 'text-amber-600',
+    },
+    {
+      label: 'Target Investasi',
+      value: 'Rp 2.500.000',
+      status: 'On Track',
+      color: 'text-emerald-600',
+    },
+  ],
+};
+---
+
+<Layout title="Analitik Keuangan - Studion App">
+  <div
+    x-data="{
+      period: 'monthly', // 'weekly' | 'monthly' | 'yearly'
+      chartType: 'area', // 'area' | 'bar' | 'radar'
+      matrixTab: 'core'  // 'core' | 'behavior' | 'projection'
+    }"
+    class="space-y-4 pt-2 pb-10"
+  >
+    <div
+      class="sticky top-0 z-30 -mx-5 mt-6 space-y-3 bg-slate-50/90 px-5 pb-1 backdrop-blur-md"
+    >
+      <!-- 1. HEADER HALAMAN NON-NAVBAR (Back Kiri + Judul Tengah) -->
+      <div class="flex items-center justify-between">
+        <a
+          href="/"
+          class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+          aria-label="Kembali ke Beranda"
+        >
+          <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
+        </a>
+
+        <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
+          Analitik Keuangan
+        </h1>
+        <div class="w-9"></div>
+      </div>
+
+      <!-- 2. TOP CONTROL BAR STICKY -->
+      <div
+        class="sticky top-0 z-30 -mx-5 bg-slate-50/90 px-5 pb-2 backdrop-blur-md"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
+          >
+            <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
+            <span class="text-xs font-bold text-slate-800">Agustus 2026</span>
+            <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+          </button>
+
+          <div
+            class="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-2xs"
+          >
+            {
+              ['weekly', 'monthly', 'yearly'].map((type) => (
+                <button
+                  type="button"
+                  x-on:click={`period = '${type}'`}
+                  x-bind:class={`period === '${type}' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-500 font-medium hover:text-slate-800'`}
+                  class="cursor-pointer rounded-xl px-2.5 py-1 text-[10px] capitalize transition-all"
+                >
+                  {type === 'weekly'
+                    ? 'Minggu'
+                    : type === 'monthly'
+                      ? 'Bulan'
+                      : 'Tahun'}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. HERO CHART FRAME BOLD DARK GLASS -->
+    <div
+      class="relative space-y-3 overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-slate-900 via-blue-950 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
+    >
+      <div
+        class="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl"
+      >
+      </div>
+      <div
+        class="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-cyan-400/15 blur-3xl"
+      >
+      </div>
+
+      <div
+        class="relative z-10 flex items-center justify-between border-b border-white/10 pb-3"
+      >
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 bg-white/10 backdrop-blur-md"
+          >
+            <Activity class="h-4 w-4 stroke-[2.2] text-cyan-300" />
+          </div>
+          <span class="text-xs font-bold tracking-tight text-white"
+            >Performa Tren Keuangan</span
+          >
+        </div>
+
+        <div
+          class="flex items-center gap-1 rounded-xl border border-white/10 bg-white/10 p-1 backdrop-blur-md"
+        >
+          <button
+            type="button"
+            @click="chartType = 'area'"
+            :class="chartType === 'area' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
+            class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+          >
+            Area
+          </button>
+          <button
+            type="button"
+            @click="chartType = 'bar'"
+            :class="chartType === 'bar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
+            class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+          >
+            Bar
+          </button>
+          <button
+            type="button"
+            @click="chartType = 'radar'"
+            :class="chartType === 'radar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
+            class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+          >
+            Radar
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: AREA CHART WITH NEON GLOW STROKE -->
+      <div
+        x-show="chartType === 'area'"
+        class="relative z-10 flex h-44 w-full flex-col justify-end pt-2"
+      >
+        <svg
+          class="h-full w-full overflow-visible"
+          viewBox="0 0 300 100"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient id="area-glow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"></stop>
+              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"
+              ></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,75 Q75,15 150,55 T300,10 L300,100 L0,100 Z"
+            fill="url(#area-glow)"></path>
+          <path
+            d="M0,75 Q75,15 150,55 T300,10"
+            fill="none"
+            stroke="#38bdf8"
+            stroke-width="3.5"
+            stroke-linecap="round"></path>
+        </svg>
+
+        <div
+          class="flex justify-between border-t border-white/10 pt-2 text-[9px] font-bold text-blue-200/60"
+        >
+          <span>Mg 1</span>
+          <span>Mg 2</span>
+          <span>Mg 3</span>
+          <span>Mg 4</span>
+        </div>
+      </div>
+
+      <!-- VIEW 2: DUAL BAR CHART -->
+      <div
+        x-show="chartType === 'bar'"
+        x-cloak
+        class="relative z-10 grid h-44 grid-cols-4 items-end gap-4 border-b border-white/10 pt-4 pb-2"
+      >
+        {
+          [
+            { in: 80, out: 45 },
+            { in: 45, out: 65 },
+            { in: 95, out: 80 },
+            { in: 35, out: 50 },
+          ].map((item, idx) => (
+            <div class="flex h-full flex-col items-center justify-end gap-1.5">
+              <div class="flex h-full w-full items-end justify-center gap-1.5">
+                <div
+                  class="w-3 rounded-t-md bg-cyan-400 shadow-xs shadow-cyan-400/50"
+                  style={`height: ${item.in}%;`}
+                />
+                <div
+                  class="w-3 rounded-t-md bg-rose-500 shadow-xs shadow-rose-500/50"
+                  style={`height: ${item.out}%;`}
+                />
+              </div>
+              <span class="text-[9px] font-bold text-blue-200/60">
+                Mg {idx + 1}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- VIEW 3: RADAR RING BREAKDOWN -->
+      <div
+        x-show="chartType === 'radar'"
+        x-cloak
+        class="relative z-10 flex h-44 items-center justify-center pt-2"
+      >
+        <div
+          class="relative flex h-32 w-32 items-center justify-center rounded-full border-8 border-cyan-400 border-t-amber-400 border-r-emerald-400 shadow-lg shadow-cyan-500/20"
+        >
+          <div class="flex flex-col items-center">
+            <span class="text-xs font-black text-white">Breakdown</span>
+            <span class="text-[9px] font-medium text-cyan-200"
+              >Terdistribusi</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. SUMMARY PEMASUKAN vs PENGELUARAN -->
+    <div class="grid grid-cols-2 gap-2.5">
+      <div
+        class="space-y-1 rounded-3xl border border-slate-200/70 bg-white p-3.5 shadow-2xs"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-emerald-600">
+            <ArrowDownLeft class="h-4 w-4 stroke-[2.5]" />
+            <span class="text-[10px] font-bold tracking-wide uppercase"
+              >Pemasukan</span
+            >
+          </div>
+          <span
+            class="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600"
+            >+12%</span
+          >
+        </div>
+        <span class="block pt-1 text-base font-black text-slate-900"
+          >Rp 8.500.000</span
+        >
+      </div>
+
+      <div
+        class="space-y-1 rounded-3xl border border-slate-200/70 bg-white p-3.5 shadow-2xs"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-rose-600">
+            <ArrowUpRight class="h-4 w-4 stroke-[2.5]" />
+            <span class="text-[10px] font-bold tracking-wide uppercase"
+              >Pengeluaran</span
+            >
+          </div>
+          <span
+            class="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600"
+            >-5%</span
+          >
+        </div>
+        <span class="block pt-1 text-base font-black text-slate-900"
+          >Rp 3.650.000</span
+        >
+      </div>
+    </div>
+
+    <!-- 5. AI SMART INSIGHT CARD -->
+    <div
+      class="relative space-y-2 overflow-hidden rounded-3xl border border-blue-200/80 bg-linear-to-br from-blue-500/10 via-slate-50 to-white p-4 shadow-2xs"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/25"
+          >
+            <Bot class="h-4 w-4 stroke-2" />
+          </div>
+          <span class="text-xs font-black text-slate-800"
+            >Studion AI Advisor</span
+          >
+        </div>
+        <span
+          class="rounded-full bg-blue-100/80 px-2.5 py-0.5 text-[9px] font-bold text-blue-600"
+          >Insight</span
+        >
+      </div>
+      <p class="text-[11px] leading-relaxed font-semibold text-slate-600">
+        Pengeluaran kategori <strong class="text-slate-900"
+          >Makanan & Minuman</strong
+        > menyerap 40% anggaranmu. Mengurangi jajan luar 2x seminggu dapat menambah
+        tabungan <strong>Rp 400.000/bulan</strong>!
+      </p>
+    </div>
+
+    <!-- 6. SAVING RATE HERO BADGE & REKOMENDASI -->
+    <div
+      class="space-y-3 rounded-3xl border border-slate-200/70 bg-white p-4 shadow-2xs"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600"
+          >
+            <Target class="h-4 w-4 stroke-[2.5]" />
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xs leading-tight font-black text-slate-800"
+              >Saving Rate Tracker</span
+            >
+            <span class="text-[9px] font-medium text-slate-400"
+              >Target Ideal: 20%</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1.5"
+        >
+          <span class="text-sm font-black text-emerald-600">57.0%</span>
+          <span class="text-[9px] font-bold text-emerald-700 uppercase"
+            >(Tinggi)</span
+          >
+        </div>
+      </div>
+
+      <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          class="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-400 shadow-xs"
+          style="width: 57%;"
+        >
+        </div>
+      </div>
+
+      <div
+        class="space-y-1 rounded-2xl border border-slate-200/60 bg-slate-50 p-3 text-[10px] font-medium text-slate-600"
+      >
+        <span class="block font-bold text-slate-800"
+          >💡 Rekomendasi Alokasi Surplus:</span
+        >
+        <p>
+          Disarankan mengalokasikan <strong>Rp 2.500.000</strong> dari sisa kas bulan
+          ini ke instrumen Reksa Dana / Pasar Uang di Bibit.
+        </p>
+      </div>
+    </div>
+
+    <!-- 7. TABEL MATRIX METRICS -->
+    <div class="space-y-3 pt-1">
+      <div class="flex items-center justify-between px-0.5">
+        <span class="text-xs font-bold tracking-tight text-slate-800"
+          >Matriks Finansial Mendalam</span
+        >
+      </div>
+
+      <div
+        class="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-2xs"
+      >
+        <button
+          type="button"
+          @click="matrixTab = 'core'"
+          :class="matrixTab === 'core' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
+          class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+        >
+          Utama
+        </button>
+        <button
+          type="button"
+          @click="matrixTab = 'behavior'"
+          :class="matrixTab === 'behavior' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
+          class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+        >
+          Perilaku
+        </button>
+        <button
+          type="button"
+          @click="matrixTab = 'projection'"
+          :class="matrixTab === 'projection' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
+          class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+        >
+          Proyeksi
+        </button>
+      </div>
+
+      <div>
+        <div x-show="matrixTab === 'core'" class="grid grid-cols-2 gap-2">
+          {
+            matrixCategory.core.map((item) => (
+              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
+                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
+                  {item.label}
+                </span>
+                <span class={`block text-xs font-black ${item.color}`}>
+                  {item.value}
+                </span>
+                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
+                  {item.status}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+
+        <div
+          x-show="matrixTab === 'behavior'"
+          x-cloak
+          class="grid grid-cols-2 gap-2"
+        >
+          {
+            matrixCategory.behavior.map((item) => (
+              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
+                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
+                  {item.label}
+                </span>
+                <span class={`block text-xs font-black ${item.color}`}>
+                  {item.value}
+                </span>
+                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
+                  {item.status}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+
+        <div
+          x-show="matrixTab === 'projection'"
+          x-cloak
+          class="grid grid-cols-2 gap-2"
+        >
+          {
+            matrixCategory.projection.map((item) => (
+              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
+                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
+                  {item.label}
+                </span>
+                <span class={`block text-xs font-black ${item.color}`}>
+                  {item.value}
+                </span>
+                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
+                  {item.status}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. TOP SPENDING CATEGORY -->
+    <div class="space-y-2.5 pt-1">
+      <div class="flex items-center justify-between px-0.5">
+        <span class="text-xs font-bold tracking-tight text-slate-800"
+          >Top Pengeluaran Kategori</span
+        >
+        <span class="text-[10px] font-semibold text-blue-600">Agustus 2026</span
+        >
+      </div>
+
+      <div
+        class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-2xs"
+      >
+        {
+          topCategories.map((cat) => (
+            <div class="flex items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80">
+              <div class="flex min-w-0 items-center gap-3">
+                <div
+                  class={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-white ${cat.color}`}
+                >
+                  <cat.icon class="h-4.5 w-4.5 stroke-2" />
+                </div>
+                <div class="flex min-w-0 flex-col">
+                  <span class="truncate text-xs font-bold text-slate-800">
+                    {cat.name}
+                  </span>
+                  <span class="text-[10px] font-medium text-slate-400">
+                    Porsi: {cat.percentage}% dari pengeluaran
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex shrink-0 flex-col items-end pl-2">
+                <span class="text-xs font-black text-slate-900">
+                  {cat.amount}
+                </span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</Layout>

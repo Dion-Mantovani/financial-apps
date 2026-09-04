@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+import BottomNav from '../components/BottomNav.astro';
+
+interface Props {
+  title?: string;
+  hideBottomNav?: boolean;
+}
+
+const { title = 'Studion App', hideBottomNav = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <!-- Body sebagai latar belakang desktop -->
+  <body
+    class="flex h-screen w-screen items-center justify-center overflow-hidden bg-slate-900/5 p-0 sm:p-6"
+  >
+    <!-- Frame HP Desktop: Fixed Height & Contain Screen Scroll -->
+    <div
+      class="relative flex h-full w-full flex-col overflow-hidden border-0 bg-slate-50 sm:h-190 sm:max-w-97.5 sm:rounded-[40px] sm:border sm:border-slate-300 sm:shadow-2xl sm:shadow-blue-950/20"
+    >
+      <!-- Main Content Container (Ini yang Melakukan Scroll Internal) -->
+      <main
+        class={`no-scrollbar flex-1 overflow-y-auto space-y-4 px-5 ${
+          hideBottomNav ? 'pb-6' : 'pb-24'
+        }`}
+      >
+        <slot />
+      </main>
+
+      <!-- Bottom Navbar (Fixed di Bawah Inside Frame HP) -->
+      {!hideBottomNav && <BottomNav />}
+    </div>
+  </body>
+</html>

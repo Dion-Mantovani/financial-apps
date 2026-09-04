@@ -1,0 +1,42 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+
+  // safelist: [
+  //   'bg-rose-400',
+  //   'bg-blue-400',
+  //   'bg-amber-400',
+  //   'bg-purple-400',
+  //   'bg-slate-400',
+  //   'bg-emerald-400',
+  //   'bg-cyan-400',
+  //   'bg-yellow-400',
+  //   'bg-green-400',
+  //   'bg-teal-400',
+  //   'bg-teal-600',
+  //   'bg-indigo-400',
+  //   'bg-fuchsia-400',
+  //   'bg-sky-400',
+  //   'bg-violet-400',
+  //   'text-rose-400',
+  //   'text-blue-400',
+  //   'text-amber-400',
+  //   'text-purple-400',
+  //   'text-slate-400',
+  //   'text-emerald-400',
+  //   'text-cyan-400',
+  //   'text-yellow-400',
+  //   'text-green-400',
+  //   'text-teal-400',
+  //   'text-teal-600',
+  //   'text-indigo-400',
+  //   'text-fuchsia-400',
+  //   'text-sky-400',
+  //   'text-violet-400',
+  // ],
+
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}

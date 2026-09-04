@@ -1,0 +1,326 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {
+  Search,
+  ArrowLeft,
+  SlidersHorizontal,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ShoppingBag,
+  Briefcase,
+  ChevronDown,
+  ArrowRightLeft,
+  X,
+  Calendar,
+} from '@lucide/astro';
+
+const quickFilterTypes = [
+  { id: 'all', label: 'Semua' },
+  { id: 'expense', label: 'Keluar', icon: ArrowUpRight },
+  { id: 'income', label: 'Masuk', icon: ArrowDownLeft },
+  { id: 'transfer', label: 'Transfer', icon: ArrowRightLeft },
+];
+---
+
+<Layout title="Riwayat Transaksi - Studion App">
+  <div x-data="historyApp()" class="space-y-4 pt-2 pb-10">
+    <!-- STICKY HEADER -->
+    <div
+      class="sticky top-0 z-30 -mx-5 mt-6 space-y-3 bg-slate-50/90 px-5 pb-1 backdrop-blur-md"
+    >
+      <div class="flex items-center justify-between">
+        <a
+          href="/"
+          class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+        >
+          <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
+        </a>
+
+        <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
+          Riwayat Transaksi
+        </h1>
+
+        <div class="w-9"></div>
+      </div>
+
+      <!-- SEARCH & CONTROLS -->
+      <div class="flex items-center justify-between gap-2">
+        <div x-show="!showSearchInput" class="flex items-center">
+          <button
+            type="button"
+            class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
+          >
+            <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
+            <span class="text-xs font-bold text-slate-800">September 2026</span>
+            <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+          </button>
+        </div>
+
+        <div x-show="showSearchInput" x-cloak class="relative flex-1">
+          <Search
+            class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 stroke-2 text-slate-400"
+          />
+          <input
+            type="text"
+            x-model="searchQuery"
+            placeholder="Cari transaksi..."
+            class="w-full rounded-2xl border border-slate-200/80 bg-white py-2 pr-8 pl-9 text-xs font-medium text-slate-800 shadow-2xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+          />
+          <button
+            type="button"
+            @click="showSearchInput = false; searchQuery = ''"
+            class="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            <X class="h-4 w-4 stroke-2" />
+          </button>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            @click="showSearchInput = !showSearchInput"
+            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+          >
+            <Search class="h-4 w-4 stroke-2" />
+          </button>
+
+          <button
+            type="button"
+            @click="openFilterModal = true"
+            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+          >
+            <SlidersHorizontal class="h-4 w-4 stroke-2" />
+          </button>
+        </div>
+      </div>
+
+      <!-- QUICK FILTER PILLS -->
+      <div class="no-scrollbar flex items-center gap-2 overflow-x-auto pt-1">
+        {
+          quickFilterTypes.map((tab) => (
+            <button
+              type="button"
+              x-on:click={`activeTab = '${tab.id}'`}
+              class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95"
+              x-bind:class={`activeTab === '${tab.id}' ? 'bg-blue-600 text-white border-blue-600 shadow-xs shadow-blue-500/20' : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50'`}
+            >
+              {tab.icon && <tab.icon class="h-3.5 w-3.5 stroke-[2.5]" />}
+              <span>{tab.label}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- LIST TRANSAKSI DINAMIS -->
+    <template x-if="loading">
+      <div class="py-12 text-center text-xs font-semibold text-slate-400">
+        Mengambil riwayat transaksi...
+      </div>
+    </template>
+
+    <template x-if="!loading && groupedTransactions.length === 0">
+      <div class="py-12 text-center text-xs font-semibold text-slate-400">
+        Belum ada riwayat transaksi.
+      </div>
+    </template>
+
+    <div
+      x-show="!loading && groupedTransactions.length > 0"
+      class="space-y-4 pt-1"
+    >
+      <template x-for="group in groupedTransactions" :key="group.dateGroup">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between px-1">
+            <span
+              x-text="group.dateGroup"
+              class="text-xs font-bold tracking-tight text-slate-800"></span>
+          </div>
+
+          <div
+            class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-2xs"
+          >
+            <template x-for="item in group.items" :key="item.id">
+              <!-- KLIK ITEM LANGSUNG NAVIGASI KE HALAMAN EDIT TRANSAKSI -->
+              <div
+                @click="goToEditPage(item.id)"
+                class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
+              >
+                <div class="flex min-w-0 items-center gap-3">
+                  <div
+                    :class=`{
+                      'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
+                      'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
+                      'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
+                    }`
+                    class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border"
+                  >
+                    <template x-if="item.type === 'expense'"
+                      ><ShoppingBag class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.type === 'income'"
+                      ><Briefcase class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.type === 'transfer'"
+                      ><ArrowRightLeft class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                  </div>
+
+                  <div class="flex min-w-0 flex-col">
+                    <!-- Catatan / Deskripsi Transaksi -->
+                    <span
+                      x-text="item.notes || 'Transaksi'"
+                      class="truncate text-xs font-bold text-slate-800"></span>
+
+                    <!-- Keterangan Mikro (Kategori & Dompet) -->
+                    <span class="text-[10px] font-medium text-slate-400">
+                      <!-- Nama Kategori (Tetap Muncul untuk Semua Tipe Transaksi) -->
+                      <span x-text="item.categories?.name || 'Umum'"></span> •
+
+                      <!-- Jika Tipe Transfer: Tampilkan Dompet Asal -> Dompet Tujuan -->
+                      <template x-if="item.type === 'transfer'">
+                        <span class="font-semibold text-slate-500">
+                          <span x-text="item.wallets?.name || 'Dompet'"></span>
+                          <span class="font-bold text-blue-500"> → </span>
+                          <span x-text="item.to_wallets?.name || 'Dompet'"
+                          ></span>
+                        </span>
+                      </template>
+
+                      <!-- Jika Tipe Biasa (Expense / Income): Tampilkan Nama Dompet Tunggal -->
+                      <template x-if="item.type !== 'transfer'">
+                        <span
+                          x-text="item.wallets?.name || 'Dompet'"
+                          class="font-semibold text-slate-500"></span>
+                      </template>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-1 pl-2">
+                  <span
+                    x-text="formatCurrency(item.amount, item.type)"
+                    :class=`{
+                      'text-emerald-600': item.type === 'income',
+                      'text-blue-600': item.type === 'transfer',
+                      'text-slate-800': item.type === 'expense'
+                    }`
+                    class="text-xs font-bold"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</Layout>
+
+<!-- SCRIPT ALPINE CLIENT-SIDE -->
+<script>
+  import { formatCurrency, formatDateGroup } from '../utils/formatters';
+
+  interface WalletItem {
+    id: string;
+    name: string;
+    [key: string]: any;
+  }
+
+  interface CategoryItem {
+    id: string;
+    name: string;
+    type: string;
+    [key: string]: any;
+  }
+
+  interface TransactionItem {
+    id: string;
+    notes?: string;
+    amount: number;
+    type: 'income' | 'expense' | 'transfer';
+    wallet_id?: string;
+    category_id?: string;
+    transaction_date?: string;
+    created_at?: string;
+    wallets?: WalletItem;
+    categories?: CategoryItem;
+    [key: string]: any;
+  }
+
+  interface TransactionGroup {
+    dateGroup: string;
+    items: TransactionItem[];
+  }
+
+  document.addEventListener('alpine:init', () => {
+    (window as any).Alpine.data('historyApp', () => ({
+      activeTab: 'all',
+      openFilterModal: false,
+      showSearchInput: false,
+      searchQuery: '',
+      transactions: [] as TransactionItem[],
+      loading: true,
+
+      init() {
+        this.fetchData();
+      },
+
+      async fetchData() {
+        this.loading = true;
+        try {
+          const res = await fetch('/api/transactions');
+          this.transactions = (await res.json()) as TransactionItem[];
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      goToEditPage(id: string) {
+        // Sesuaikan endpoint rute halaman transaksi kamu jika berbeda (misal: /transaction)
+        window.location.href = `/transaction?id=${id}`;
+      },
+
+      formatCurrency(val: number, type?: string) {
+        return formatCurrency(val, type);
+      },
+
+      formatDateGroup(dateStr?: string) {
+        return formatDateGroup(dateStr);
+      },
+
+      get filteredTransactions() {
+        return this.transactions.filter((item: TransactionItem) => {
+          const matchTab =
+            this.activeTab === 'all' || item.type === this.activeTab;
+          const matchQuery =
+            !this.searchQuery ||
+            (item.notes &&
+              item.notes
+                .toLowerCase()
+                .includes(this.searchQuery.toLowerCase())) ||
+            (item.categories &&
+              item.categories.name
+                .toLowerCase()
+                .includes(this.searchQuery.toLowerCase()));
+          return matchTab && matchQuery;
+        });
+      },
+
+      get groupedTransactions() {
+        const groups: Record<string, TransactionGroup> = {};
+        this.filteredTransactions.forEach((item: TransactionItem) => {
+          const groupKey = this.formatDateGroup(
+            item.transaction_date || item.created_at
+          );
+          if (!groups[groupKey]) {
+            groups[groupKey] = { dateGroup: groupKey, items: [] };
+          }
+          groups[groupKey].items.push(item);
+        });
+        return Object.values(groups);
+      },
+    }));
+  });
+</script>
