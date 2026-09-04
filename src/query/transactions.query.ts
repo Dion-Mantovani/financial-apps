@@ -21,7 +21,8 @@ export const fetchTransactions = async () => {
     `
     )
     .eq('user_id', DUMMY_USER_ID)
-    .order('transaction_date', { ascending: false });
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false });
 };
 
 export const insertTransaction = async (payload: {

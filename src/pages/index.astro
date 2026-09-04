@@ -1,18 +1,15 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import {
-  Search,
   Flame,
   Bell,
   Eye,
+  EyeOff,
   ArrowDownLeft,
   ArrowUpRight,
   Wallet,
   ChevronDown,
   Sparkles,
-  Coffee,
-  Fuel,
-  ParkingMeter,
   Sliders,
   PiggyBank,
   Grid,
@@ -23,723 +20,1404 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart2,
-  ShoppingBag,
-  Utensils,
   ChevronRight,
-  Briefcase,
   Plus,
   Zap,
   X,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  Info,
 } from '@lucide/astro';
 
-// Contoh state persentase (bisa disetting dinamis nantinya)
-const isPositive = true; // ganti false kalau lagi turun
-const percentageText = '+12.5%';
-const compareText = 'dari bulan lalu';
-
-// Data mock transaksi cepat tersering
-const quickActions = [
-  { label: 'Kopi', amount: '18rb', icon: Coffee },
-  { label: 'Bensin', amount: '35rb', icon: Fuel },
-  { label: 'Parkir', amount: '5rb', icon: ParkingMeter },
-];
-
-// 3 Fitur Utama + 1 Button Lainnya di Halaman Depan (1 Baris)
-const quickFeatures = [
-  { label: 'Dompet', icon: Wallet, color: 'text-blue-600 bg-blue-50' },
-  {
-    label: 'Anggaran',
-    icon: PiggyBank,
-    color: 'text-emerald-600 bg-emerald-50',
-  },
-  { label: 'Kategori', icon: Grid, color: 'text-violet-600 bg-violet-50' },
-];
-
-// Semua Fitur Lengkap yang Muncul di Dalam Modal Box
-const allFeatures = [
-  { label: 'Dompet', icon: Wallet, color: 'text-blue-600 bg-blue-50' },
-  {
-    label: 'Anggaran',
-    icon: PiggyBank,
-    color: 'text-emerald-600 bg-emerald-50',
-  },
-  { label: 'Kategori', icon: Grid, color: 'text-violet-600 bg-violet-50' },
-  { label: 'Impian', icon: Target, color: 'text-rose-600 bg-rose-50' },
-  { label: 'Utang', icon: Receipt, color: 'text-amber-600 bg-amber-50' },
-  { label: 'Langganan', icon: Repeat, color: 'text-cyan-600 bg-cyan-50' },
-  { label: 'Laporan', icon: BarChart2, color: 'text-indigo-600 bg-indigo-50' },
-];
-
-// Data mock pengeluaran mingguan dengan tanggal & hari
 const weeklyExpenses = [
   { day: 'Sen', date: '21', amount: '120rb', height: '40%', isHighest: false },
   { day: 'Sel', date: '22', amount: '250rb', height: '70%', isHighest: false },
   { day: 'Rab', date: '23', amount: '85rb', height: '30%', isHighest: false },
-  { day: 'Kam', date: '24', amount: '410rb', height: '100%', isHighest: true }, // Peak spending
+  { day: 'Kam', date: '24', amount: '410rb', height: '100%', isHighest: true },
   { day: 'Jum', date: '25', amount: '190rb', height: '55%', isHighest: false },
   { day: 'Sab', date: '26', amount: '300rb', height: '80%', isHighest: false },
   { day: 'Ming', date: '27', amount: '60rb', height: '20%', isHighest: false },
 ];
-
-// Data Mock 5 Aktivitas Terakhir (Micro Info: Kategori • Wallet | Color Scheme: Merah, Hijau, Biru)
-const recentTransactions = [
-  {
-    id: 1,
-    title: 'Supermarket Hero',
-    category: 'Belanja',
-    wallet: 'BCA',
-    amount: '- Rp 185.000',
-    type: 'expense',
-    icon: ShoppingBag,
-    color: 'text-rose-600 bg-rose-50 border-rose-100',
-  },
-  {
-    id: 2,
-    title: 'Gaji Freelance Studion',
-    category: 'Pemasukan',
-    wallet: 'Mandiri',
-    amount: '+ Rp 3.500.000',
-    type: 'income',
-    icon: Briefcase,
-    color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-  },
-  {
-    id: 3,
-    title: 'Kopi Kenangan',
-    category: 'Makanan & Minuman',
-    wallet: 'GoPay',
-    amount: '- Rp 28.000',
-    type: 'expense',
-    icon: Utensils,
-    color: 'text-rose-600 bg-rose-50 border-rose-100',
-  },
-  {
-    id: 4,
-    title: 'Tagihan Listrik PLN',
-    category: 'Utilitas',
-    wallet: 'BCA',
-    amount: '- Rp 245.000',
-    type: 'expense',
-    icon: Zap,
-    color: 'text-blue-600 bg-blue-50 border-blue-100',
-  },
-  {
-    id: 5,
-    title: 'Transfer Reksa Dana',
-    category: 'Investasi',
-    wallet: 'Bibit',
-    amount: '+ Rp 500.000',
-    type: 'income',
-    icon: ArrowDownLeft,
-    color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-  },
-];
 ---
 
 <Layout title="Dashboard - Financial Tracker">
-  <!-- Top User Bar / Header Dashboard -->
-  <div class="mt-7 flex items-center justify-between">
-    <!-- Profile & Greeting (Left Side) -->
-    <div class="flex items-center gap-3">
-      <!-- User Avatar -->
-      <div
-        class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200/80 shadow-xs"
-      >
-        <img
-          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-          alt="Avatar User"
-          class="h-full w-full object-cover"
-        />
-      </div>
-
-      <!-- Greeting & Name -->
-      <div class="flex flex-col">
-        <span class="text-[11px] font-medium text-slate-500">Good morning,</span
+  <div x-data="dashboardApp()" class="space-y-4 pb-12">
+    <!-- Top User Bar -->
+    <div class="mt-7 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200/80 shadow-xs"
         >
-        <h1
-          class="text-sm font-bold tracking-tight text-slate-900 sm:text-base"
-        >
-          Muhamad Dion
-        </h1>
-      </div>
-    </div>
-
-    <!-- Actions (Right Side) -->
-    <div class="flex items-center gap-2">
-      <!-- Flame Button with Indicator Dot -->
-      <button
-        type="button"
-        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
-        aria-label="Streak"
-      >
-        <Flame class="h-4.5 w-4.5 stroke-2" />
-      </button>
-
-      <!-- Notification Button with Indicator Dot -->
-      <button
-        type="button"
-        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
-        aria-label="Notifikasi"
-      >
-        <Bell class="h-4.5 w-4.5 stroke-2" />
-        <!-- Notification Red Dot -->
-        <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-600"
-        ></span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Glassmorphism Resume Card dengan Interaktivitas Alpine.js -->
-  <div
-    x-data="{ showDetails: false }"
-    class="relative overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-blue-900/90 via-blue-950/95 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
-  >
-    <!-- Pola Grid Kotak-Kotak Kaca (SVG Pattern di Sudut Kanan Bawah) -->
-    <div
-      class="pointer-events-none absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-br-3xl opacity-25"
-    >
-      <svg
-        class="h-full w-full"
-        width="100%"
-        height="100%"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern
-            id="grid-pattern"
-            width="16"
-            height="16"
-            patternUnits="userSpaceOnUse"
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+            alt="Avatar User"
+            class="h-full w-full object-cover"
+          />
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[11px] font-medium text-slate-500"
+            >Good morning,</span
           >
-            <path
-              d="M 16 0 L 0 0 0 16"
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.4)"
-              stroke-width="1.2"></path>
-          </pattern>
-          <radialGradient id="grid-fade" cx="100%" cy="100%" r="100%">
-            <stop offset="0%" stop-color="white" stop-opacity="1"></stop>
-            <stop offset="80%" stop-color="white" stop-opacity="0"></stop>
-          </radialGradient>
-          <mask id="grid-mask">
-            <rect width="100%" height="100%" fill="url(#grid-fade)"></rect>
-          </mask>
-        </defs>
-        <rect
+          <h1
+            class="text-sm font-bold tracking-tight text-slate-900 sm:text-base"
+          >
+            Muhamad Dion
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
+        >
+          <Flame class="h-4.5 w-4.5 stroke-2" />
+        </button>
+        <button
+          type="button"
+          class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
+        >
+          <Bell class="h-4.5 w-4.5 stroke-2" />
+          <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-blue-600"
+          ></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Glassmorphism Resume Card Utama (DENGAN PATTERN SVG LENGKAP) -->
+    <div
+      class="relative overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-blue-900/90 via-blue-950/95 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
+    >
+      <!-- Pola Grid Kotak-Kotak Kaca (SVG Pattern di Sudut Kanan Bawah) -->
+      <div
+        class="pointer-events-none absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-br-3xl opacity-25"
+      >
+        <svg
+          class="h-full w-full"
           width="100%"
           height="100%"
-          fill="url(#grid-pattern)"
-          mask="url(#grid-mask)"></rect>
-      </svg>
-    </div>
-
-    <!-- Efek Inner Glow Cahaya -->
-    <div
-      class="pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-blue-500/25 blur-2xl"
-    >
-    </div>
-    <div
-      class="pointer-events-none absolute -right-12 -bottom-12 h-36 w-36 rounded-full bg-cyan-400/15 blur-2xl"
-    >
-    </div>
-
-    <!-- Highlights Inner Border Reflection -->
-    <div
-      class="pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br from-white/10 via-transparent to-transparent"
-    >
-    </div>
-
-    <!-- BARIS ATAS: Total Saldo & Icon Mata -->
-    <div class="relative z-10 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div
-          class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-inner backdrop-blur-md"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <Wallet class="h-4 w-4 stroke-2 text-blue-200" />
-        </div>
-        <span class="text-xs font-medium tracking-wide text-blue-200/80"
-          >Total Saldo</span
-        >
-      </div>
-
-      <button
-        type="button"
-        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
-        aria-label="Sembunyikan Saldo"
-      >
-        <Eye class="h-4 w-4 stroke-2" />
-      </button>
-    </div>
-
-    <!-- Nominal Total Saldo -->
-    <div class="relative z-10 mt-3 mb-2">
-      <h2
-        class="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm sm:text-3xl"
-      >
-        Rp 14.850.000
-      </h2>
-
-      <!-- Micro Info Persentase (Glass Micro Pill) -->
-      <div class="flex items-center gap-2 pt-0.5">
-        <div
-          class={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold backdrop-blur-md ${
-            isPositive
-              ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-              : 'border-rose-400/30 bg-rose-500/15 text-rose-300'
-          }`}
-        >
-          {
-            isPositive ? (
-              <TrendingUp class="h-3 w-3 stroke-[2.5]" />
-            ) : (
-              <TrendingDown class="h-3 w-3 stroke-[2.5]" />
-            )
-          }
-          <span>{percentageText}</span>
-        </div>
-        <span class="text-[10px] font-medium text-blue-200/60"
-          >{compareText}</span
-        >
-      </div>
-    </div>
-
-    <!-- TOMBOL EXPAND BIKIN PENASARAN (Glass Button) -->
-    <div class="relative z-10 mt-4">
-      <button
-        type="button"
-        @click="showDetails = !showDetails"
-        class="flex w-fit cursor-pointer items-center gap-2 rounded-2xl border border-white/15 bg-linear-to-r from-white/10 via-white/5 to-white/10 px-3.5 py-2 text-xs font-semibold text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/15 hover:text-white active:scale-[0.98]"
-      >
-        <Sparkles class="h-3.5 w-3.5 animate-pulse stroke-2 text-blue-300" />
-        <span x-text="showDetails ? 'Tutup Detail' : 'Lihat Detail'">
-          Lihat Detail
-        </span>
-        <ChevronDown
-          class="h-4 w-4 stroke-[2.5] text-blue-200 transition-transform duration-300"
-          :class="showDetails ? 'rotate-180' : ''"
-        />
-      </button>
-    </div>
-
-    <!-- CONTAINER Rincian Pemasukan & Pengeluaran (Expandable) -->
-    <div
-      x-show="showDetails"
-      x-collapse
-      class="relative z-10 space-y-3 pt-3"
-      x-cloak
-    >
-      <div
-        class="h-px w-full bg-linear-to-r from-transparent via-white/15 to-transparent"
-      >
-      </div>
-
-      <!-- Label Periode Transparan -->
-      <div
-        class="flex items-center justify-between px-1 text-[10px] font-medium text-blue-200/70"
-      >
-        <span>Periode Agustus 2026</span>
-        <span
-          class="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] text-blue-200"
-          >Aktif</span
-        >
-      </div>
-
-      <div class="grid grid-cols-2 gap-2.5 pt-0.5">
-        <!-- Item Pemasukan -->
-        <div
-          class="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/4 p-2.5 backdrop-blur-sm"
-        >
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-emerald-400/30 bg-emerald-500/20 text-emerald-300 shadow-xs"
-          >
-            <ArrowDownLeft class="h-3 w-3 stroke-[2.5]" />
-          </div>
-          <div class="flex flex-col">
-            <span class="text-[10px] font-medium text-blue-200/70"
-              >Pemasukan</span
+          <defs>
+            <pattern
+              id="grid-pattern"
+              width="16"
+              height="16"
+              patternUnits="userSpaceOnUse"
             >
-            <span class="text-[11px] font-bold text-white">Rp 8.500.000</span>
+              <path
+                d="M 16 0 L 0 0 0 16"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.4)"
+                stroke-width="1.2"></path>
+            </pattern>
+            <radialGradient id="grid-fade" cx="100%" cy="100%" r="100%">
+              <stop offset="0%" stop-color="white" stop-opacity="1"></stop>
+              <stop offset="80%" stop-color="white" stop-opacity="0"></stop>
+            </radialGradient>
+            <mask id="grid-mask">
+              <rect width="100%" height="100%" fill="url(#grid-fade)"></rect>
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="url(#grid-pattern)"
+            mask="url(#grid-mask)"></rect>
+        </svg>
+      </div>
+
+      <!-- Efek Inner Glow Cahaya -->
+      <div
+        class="pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-blue-500/25 blur-2xl"
+      >
+      </div>
+      <div
+        class="pointer-events-none absolute -right-12 -bottom-12 h-36 w-36 rounded-full bg-cyan-400/15 blur-2xl"
+      >
+      </div>
+
+      <!-- Highlights Inner Border Reflection -->
+      <div
+        class="pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br from-white/10 via-transparent to-transparent"
+      >
+      </div>
+
+      <!-- BARIS ATAS: Total Saldo & Icon Toggle Sembunyi Saldo -->
+      <div class="relative z-10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-inner backdrop-blur-md"
+          >
+            <Wallet class="h-4 w-4 stroke-2 text-blue-200" />
           </div>
+          <span class="text-xs font-medium tracking-wide text-blue-200/80"
+            >Total Saldo</span
+          >
         </div>
 
-        <!-- Item Pengeluaran -->
-        <div
-          class="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/4 p-2.5 backdrop-blur-sm"
+        <button
+          type="button"
+          @click="hideBalance = !hideBalance"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
+          title="Toggle Saldo"
         >
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-rose-400/30 bg-rose-500/20 text-rose-300 shadow-xs"
+          <template x-if="!hideBalance"
+            ><Eye class="h-4 w-4 stroke-2" /></template
           >
-            <ArrowUpRight class="h-3 w-3 stroke-[2.5]" />
+          <template x-if="hideBalance"
+            ><EyeOff class="h-4 w-4 stroke-2" /></template
+          >
+        </button>
+      </div>
+
+      <!-- Nominal Total Saldo Real-Time -->
+      <div class="relative z-10 mt-3 mb-2">
+        <h2
+          x-text="loading ? 'Rp ...' : (hideBalance ? 'Rp ••••••••' : formattedTotalBalance)"
+          class="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm"
+        >
+          Rp 0
+        </h2>
+        <div class="flex items-center gap-2 pt-0.5">
+          <div
+            class="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300 backdrop-blur-md"
+          >
+            <TrendingUp class="h-3 w-3 stroke-[2.5]" />
+            <span>+12.5%</span>
           </div>
-          <div class="flex flex-col">
-            <span class="text-[10px] font-medium text-blue-200/70"
-              >Pengeluaran</span
-            >
-            <span class="text-[11px] font-bold text-white">Rp 3.650.000</span>
-          </div>
+          <span class="text-[10px] font-medium text-blue-200/60"
+            >dari bulan lalu</span
+          >
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Section Fitur Keuangan Clean & Monokromatik -->
-  <div x-data="{ openModal: false }" class="pt-2">
-    <!-- Grid 1 Baris Langsung Tanpa Judul & Card Outter -->
-    <div class="grid grid-cols-4 gap-2">
-      {
-        quickFeatures.map((item) => (
-          <button
-            type="button"
-            class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1 transition-all active:scale-95"
+      <!-- TOMBOL EXPAND DETAIL -->
+      <div class="relative z-10 mt-4">
+        <button
+          type="button"
+          @click="showDetails = !showDetails"
+          class="flex w-fit cursor-pointer items-center gap-2 rounded-2xl border border-white/15 bg-linear-to-r from-white/10 via-white/5 to-white/10 px-3.5 py-2 text-xs font-semibold text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/15 hover:text-white active:scale-[0.98]"
+        >
+          <Sparkles class="h-3.5 w-3.5 animate-pulse stroke-2 text-blue-300" />
+          <span x-text="showDetails ? 'Tutup Detail' : 'Lihat Detail'"
+            >Lihat Detail</span
           >
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20">
-              <item.icon class="h-5 w-5 stroke-2" />
-            </div>
-            <span class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600">
-              {item.label}
-            </span>
-          </button>
-        ))
-      }
+          <ChevronDown
+            class="h-4 w-4 stroke-[2.5] text-blue-200 transition-transform duration-300"
+            :class="showDetails ? 'rotate-180' : ''"
+          />
+        </button>
+      </div>
 
-      <!-- Tombol 4: Lainnya -->
-      <button
-        type="button"
-        @click="openModal = true"
-        class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1 transition-all active:scale-95"
-      >
-        <div
-          class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20"
-        >
-          <MoreHorizontal class="h-5 w-5 stroke-2" />
-        </div>
-        <span
-          class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600"
-        >
-          Lainnya
-        </span>
-      </button>
-    </div>
-
-    <!-- MODAL BOX FITUR LENGKAP -->
-    <template x-teleport="body">
+      <!-- CONTAINER Rincian Pemasukan & Pengeluaran Bulan Ini -->
       <div
-        x-show="openModal"
-        class="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-        style="display: none;"
+        x-show="showDetails"
+        x-collapse
+        class="relative z-10 space-y-3 pt-3"
         x-cloak
       >
-        <!-- Backdrop Overlay Dark Blur -->
         <div
-          x-cloak
+          class="h-px w-full bg-linear-to-r from-transparent via-white/15 to-transparent"
+        >
+        </div>
+        <div
+          class="flex items-center justify-between px-1 text-[10px] font-medium text-blue-200/70"
+        >
+          <span x-text="`Periode ${currentMonthName}`">Periode Bulan Ini</span>
+          <span
+            class="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] text-blue-200"
+            >Aktif</span
+          >
+        </div>
+        <div class="grid grid-cols-2 gap-2.5 pt-0.5">
+          <div
+            class="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/4 p-2.5 backdrop-blur-sm"
+          >
+            <div
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-emerald-400/30 bg-emerald-500/20 text-emerald-300 shadow-xs"
+            >
+              <ArrowDownLeft class="h-3 w-3 stroke-[2.5]" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-medium text-blue-200/70"
+                >Pemasukan</span
+              >
+              <span
+                x-text="hideBalance ? 'Rp ••••••' : formattedMonthlyIncome"
+                class="text-[11px] font-bold text-white">Rp 0</span
+              >
+            </div>
+          </div>
+          <div
+            class="flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/4 p-2.5 backdrop-blur-sm"
+          >
+            <div
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-rose-400/30 bg-rose-500/20 text-rose-300 shadow-xs"
+            >
+              <ArrowUpRight class="h-3 w-3 stroke-[2.5]" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-medium text-blue-200/70"
+                >Pengeluaran</span
+              >
+              <span
+                x-text="hideBalance ? 'Rp ••••••' : formattedMonthlyExpense"
+                class="text-[11px] font-bold text-white">Rp 0</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Fitur Utama (3 MENU DARI TOP LOCALSTORAGE) -->
+    <div>
+      <div class="grid grid-cols-4 gap-2">
+        <template x-for="item in topQuickFeatures" :key="item.id">
+          <a
+            :href="item.href"
+            class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1 transition-all active:scale-95"
+          >
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20"
+            >
+              <template x-if="item.icon === 'wallet'"
+                ><Wallet class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'piggy-bank'"
+                ><PiggyBank class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'grid'"
+                ><Grid class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'target'"
+                ><Target class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'receipt'"
+                ><Receipt class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'repeat'"
+                ><Repeat class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="item.icon === 'bar-chart-2'"
+                ><BarChart2 class="h-5 w-5 stroke-2" /></template
+              >
+            </div>
+            <span
+              class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600"
+              x-text="item.label"></span>
+          </a>
+        </template>
+
+        <!-- Tombol 4: Lainnya (Buka Modal) -->
+        <button
+          type="button"
+          @click="openModal = true"
+          class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1 transition-all active:scale-95"
+        >
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20"
+          >
+            <MoreHorizontal class="h-5 w-5 stroke-2" />
+          </div>
+          <span
+            class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600"
+            >Lainnya</span
+          >
+        </button>
+      </div>
+
+      <!-- MODAL FITUR LENGKAP & REORDER MODE -->
+      <template x-teleport="body">
+        <div
           x-show="openModal"
-          x-transition:enter="ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
-          @click="openModal = false"
-          class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+          class="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+          x-cloak
+        >
+          <div
+            @click="closeFeatureModal()"
+            class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+          >
+          </div>
+
+          <div
+            class="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:rounded-3xl"
+          >
+            <div
+              class="mx-auto -mt-1 mb-4 h-1 w-10 rounded-full bg-slate-200 sm:hidden"
+            >
+            </div>
+
+            <div
+              class="flex items-center justify-between border-b border-slate-100 pb-3"
+            >
+              <div>
+                <h4
+                  class="text-sm font-bold text-slate-900"
+                  x-text="isReorderingFeatures ? 'Atur Urutan Fitur' : 'Semua Fitur'"
+                >
+                </h4>
+                <p
+                  class="text-[10px] font-medium text-slate-400"
+                  x-text="isReorderingFeatures ? '3 Fitur teratas akan tampil di halaman depan' : 'Pilih menu fitur yang ingin kamu akses'"
+                >
+                </p>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  @click="toggleReorderFeatures()"
+                  :class="isReorderingFeatures ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors active:scale-95"
+                  title="Atur Urutan"
+                >
+                  <Sliders class="h-3.5 w-3.5 stroke-2" />
+                </button>
+                <button
+                  type="button"
+                  @click="closeFeatureModal()"
+                  class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 active:scale-95"
+                >
+                  <X class="h-4 w-4 stroke-2" />
+                </button>
+              </div>
+            </div>
+
+            <!-- TAMPILAN NORMAL GRID -->
+            <div
+              x-show="!isReorderingFeatures"
+              class="no-scrollbar grid grid-cols-4 gap-3 overflow-y-auto pt-4"
+            >
+              <template x-for="item in featuresList" :key="item.id">
+                <a
+                  :href="item.href"
+                  class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1.5 transition-all active:scale-95"
+                >
+                  <div
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20"
+                  >
+                    <template x-if="item.icon === 'wallet'"
+                      ><Wallet class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'piggy-bank'"
+                      ><PiggyBank class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'grid'"
+                      ><Grid class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'target'"
+                      ><Target class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'receipt'"
+                      ><Receipt class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'repeat'"
+                      ><Repeat class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.icon === 'bar-chart-2'"
+                      ><BarChart2 class="h-5 w-5 stroke-2" /></template
+                    >
+                  </div>
+                  <span
+                    class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600"
+                    x-text="item.label"></span>
+                </a>
+              </template>
+            </div>
+
+            <!-- TAMPILAN MODE REORDER -->
+            <div
+              x-show="isReorderingFeatures"
+              class="no-scrollbar space-y-2 overflow-y-auto pt-3"
+              x-cloak
+            >
+              <div
+                class="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white"
+              >
+                <template x-for="(item, index) in featuresList" :key="item.id">
+                  <div
+                    class="flex items-center justify-between p-3"
+                    :class="index < 3 ? 'bg-blue-50/40' : ''"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-700"
+                      >
+                        <template x-if="item.icon === 'wallet'"
+                          ><Wallet class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'piggy-bank'"
+                          ><PiggyBank class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'grid'"
+                          ><Grid class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'target'"
+                          ><Target class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'receipt'"
+                          ><Receipt class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'repeat'"
+                          ><Repeat class="h-4 w-4 stroke-2" /></template
+                        >
+                        <template x-if="item.icon === 'bar-chart-2'"
+                          ><BarChart2 class="h-4 w-4 stroke-2" /></template
+                        >
+                      </div>
+                      <div class="flex flex-col">
+                        <span
+                          class="text-xs font-bold text-slate-800"
+                          x-text="item.label"></span>
+                        <template x-if="index < 3">
+                          <span class="text-[9px] font-extrabold text-blue-600"
+                            >★ Menu Depan</span
+                          >
+                        </template>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                      <button
+                        type="button"
+                        @click="moveFeature(index, 'up')"
+                        :disabled="index === 0"
+                        class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-blue-50 disabled:opacity-20"
+                      >
+                        <ArrowUp class="h-3.5 w-3.5 stroke-[2.5]" />
+                      </button>
+                      <button
+                        type="button"
+                        @click="moveFeature(index, 'down')"
+                        :disabled="index === featuresList.length - 1"
+                        class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-blue-50 disabled:opacity-20"
+                      >
+                        <ArrowDown class="h-3.5 w-3.5 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="pt-2">
+                <button
+                  type="button"
+                  @click="finishReorderFeatures()"
+                  class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-slate-900 py-3 text-xs font-bold text-white shadow-md active:scale-95"
+                >
+                  <Check class="h-3.5 w-3.5 stroke-[3]" />
+                  <span>Selesai & Simpan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Section Catat Cepat (Instant Quick Add) -->
+    <div
+      class="pt-1"
+      x-data="{ showTooltip: false, tooltipPos: { top: 0, left: 0 } }"
+    >
+      <div
+        class="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-linear-to-br from-white via-blue-50/30 to-slate-50 p-4 shadow-sm"
+      >
+        <!-- Pattern Dots Accent -->
+        <div
+          class="pointer-events-none absolute -top-2 -right-2 h-28 w-28 opacity-25 mix-blend-multiply"
+          style="background-image: radial-gradient(circle, #2563eb 1.2px, transparent 1.2px); background-size: 8px 8px; mask-image: radial-gradient(circle at top right, black 35%, transparent 80%); -webkit-mask-image: radial-gradient(circle at top right, black 35%, transparent 80%);"
         >
         </div>
 
-        <!-- Modal Card Body -->
-        <div
-          x-cloak
-          x-show="openModal"
-          x-transition:enter="ease-out duration-300"
-          x-transition:enter-start="opacity-0 translate-y-8 scale-95"
-          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-          x-transition:leave="ease-in duration-200"
-          x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-          x-transition:leave-end="opacity-0 translate-y-8 scale-95"
-          class="relative z-10 w-full max-w-md rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:rounded-3xl"
-        >
-          <!-- Modal Drag Handle -->
+        <!-- Layout Inner Split-View -->
+        <div class="relative z-10 flex items-center gap-3.5">
+          <!-- Logo Petir -->
           <div
-            class="mx-auto -mt-1 mb-4 h-1 w-10 rounded-full bg-slate-200 sm:hidden"
+            class="relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-blue-700 text-white shadow-md shadow-blue-600/25"
           >
-          </div>
-
-          <!-- Modal Header (Dengan Tombol Slider/Setting di Kanan) -->
-          <div
-            class="flex items-center justify-between border-b border-slate-100 pb-4"
-          >
-            <div>
-              <h4 class="text-sm font-bold text-slate-900">Semua Fitur</h4>
-              <p class="text-[10px] font-medium text-slate-400">
-                Pilih menu fitur yang ingin kamu akses
-              </p>
-            </div>
-
-            <!-- Actions: Slider/Setting & Close -->
-            <div class="flex items-center gap-1.5">
-              <button
-                type="button"
-                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 active:scale-95"
-                aria-label="Atur Urutan Fitur"
-              >
-                <Sliders class="h-3.5 w-3.5 stroke-2" />
-              </button>
-              <button
-                type="button"
-                @click="openModal = false"
-                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 active:scale-95"
-              >
-                <X class="h-4 w-4 stroke-2" />
-              </button>
+            <Zap class="h-6 w-6 fill-white/20 stroke-[2.2]" />
+            <div
+              class="absolute inset-0 rounded-2xl bg-linear-to-br from-white/20 via-transparent to-transparent"
+            >
             </div>
           </div>
 
-          <!-- All Features Grid inside Modal (Bulat & Single Theme Color) -->
-          <div class="grid grid-cols-4 gap-3 pt-4">
-            {
-              allFeatures.map((item) => (
+          <!-- Header & List Pill -->
+          <div class="relative flex min-w-0 flex-1 flex-col space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm font-bold tracking-tight text-slate-800"
+                  >Catat Cepat</span
+                >
+                <span
+                  class="rounded-full bg-blue-100/80 px-2 py-0.5 text-[9px] font-bold text-blue-600"
+                >
+                  One-Click Instant
+                </span>
+              </div>
+
+              <!-- Tombol Tooltip Info -->
+              <div>
                 <button
                   type="button"
-                  class="group flex cursor-pointer flex-col items-center justify-center gap-1.5 py-1.5 transition-all active:scale-95"
+                  x-ref="infoBtn"
+                  @click=`
+                const rect = $refs.infoBtn.getBoundingClientRect();
+                tooltipPos = { top: rect.bottom + 8, left: rect.right - 208 };
+                showTooltip = !showTooltip;
+              `
+                  class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-blue-100/80 text-blue-600 shadow-2xs transition-all hover:bg-blue-600 hover:text-white active:scale-95"
+                  aria-label="Info Catat Cepat"
                 >
-                  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20">
-                    <item.icon class="h-5 w-5 stroke-2" />
-                  </div>
-                  <span class="text-[10px] font-semibold text-slate-700 transition-colors group-hover:text-blue-600">
-                    {item.label}
-                  </span>
+                  <Info class="h-3.5 w-3.5 stroke-[2.5]" />
                 </button>
-              ))
-            }
+
+                <!-- Popover Tooltip Box (Diteleport ke Body biar Gak Ketutupan) -->
+                <template x-teleport="body">
+                  <div
+                    x-show="showTooltip"
+                    @click.away="showTooltip = false"
+                    x-cloak
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    :style="`top: ${tooltipPos.top}px; left: ${tooltipPos.left}px;`"
+                    class="fixed z-50 w-52 rounded-2xl border border-slate-800 bg-slate-900 p-2.5 text-[10px] leading-relaxed font-medium text-slate-200 shadow-2xl"
+                  >
+                    <p>
+                      ⚡ <strong class="text-white"
+                        >Satu Klik Langsung Catat!</strong
+                      ><br />
+                      Dibuat untuk efisiensi waktu tanpa buka form. Transaksi otomatis
+                      dicatat secara instan.
+                    </p>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Deretan Pill -->
+            <div class="relative w-full">
+              <div
+                class="no-scrollbar flex items-center gap-1.5 overflow-x-auto pr-6 pb-0.5"
+              >
+                <!-- Render List Pill -->
+                <template
+                  x-for="(item, index) in frequentTransactions"
+                  :key="index"
+                >
+                  <button
+                    type="button"
+                    @click="quickAddInstant(item)"
+                    :disabled="isSubmittingQuick"
+                    class="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white/90 px-2.5 py-1.5 shadow-2xs backdrop-blur-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 active:scale-95 disabled:opacity-50"
+                  >
+                    <Zap class="h-3.5 w-3.5 shrink-0 stroke-2 text-blue-600" />
+                    <span
+                      class="text-[11px] font-semibold text-slate-700"
+                      x-text="item.title"></span>
+                    <span
+                      class="text-[10px] font-bold text-blue-600"
+                      x-text="`Rp ${formatNumber(item.amount)}`"></span>
+                  </button>
+                </template>
+
+                <!-- Tombol + Custom -->
+                <button
+                  type="button"
+                  @click="openCustomQuickModal = true"
+                  class="flex shrink-0 cursor-pointer items-center gap-1 rounded-xl border border-dashed border-blue-300/80 bg-blue-50/40 px-2.5 py-1.5 text-blue-600 transition-all hover:border-blue-500 hover:bg-blue-100/60 active:scale-95"
+                >
+                  <Plus class="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span class="text-[10px] font-bold">Custom</span>
+                </button>
+              </div>
+
+              <div
+                class="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-linear-to-l from-slate-50/90 via-slate-50/40 to-transparent"
+              >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION ATAS (TOP TOAST) -->
+    <template x-teleport="body">
+      <div
+        x-show="showToast"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 -translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 -translate-y-4"
+        class="fixed top-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-2xl"
+      >
+        <div
+          class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400"
+        >
+          <Zap class="h-3 w-3 stroke-[2.5]" />
+        </div>
+        <span x-text="toastMessage"></span>
+      </div>
+    </template>
+
+    <!-- MODAL BOX: BUAT CUSTOM CATAT CEPAT -->
+    <template x-teleport="body">
+      <div
+        x-show="openCustomQuickModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="openCustomQuickModal = false"
+          class="flex max-h-[90vh] w-full max-w-md flex-col rounded-t-3xl bg-white p-5 shadow-2xl transition-transform sm:rounded-3xl"
+        >
+          <!-- Header Modal -->
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <Zap class="h-4 w-4 stroke-2" />
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-900">
+                Custom Catat Cepat
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="openCustomQuickModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <!-- Form Body -->
+          <div class="no-scrollbar space-y-3 overflow-y-auto pt-3">
+            <!-- 1. Catatan / Nama Transaksi (WAJIB) -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-700"
+                >Nama Transaksi / Catatan <span class="text-rose-500">*</span
+                ></label
+              >
+              <input
+                type="text"
+                x-model="customQuickForm.notes"
+                placeholder="Misal: Kopi Kenangan / Bensin Pertamax"
+                class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                required
+              />
+            </div>
+
+            <!-- 2. Nominal Transaksi -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-700"
+                >Nominal (Rp) <span class="text-rose-500">*</span></label
+              >
+              <input
+                type="text"
+                inputmode="numeric"
+                :value="formattedCustomAmount"
+                @input="handleCustomAmountInput($event)"
+                placeholder="0"
+                class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3.5 py-2.5 text-xs font-bold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                required
+              />
+            </div>
+
+            <!-- 3. Tipe Transaksi (Pengeluaran / Pemasukan) -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-700"
+                >Tipe Transaksi</label
+              >
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  @click="customQuickForm.type = 'expense'"
+                  :class="customQuickForm.type === 'expense' ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all active:scale-95"
+                >
+                  <ArrowUpRight class="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>Pengeluaran</span>
+                </button>
+                <button
+                  type="button"
+                  @click="customQuickForm.type = 'income'"
+                  :class="customQuickForm.type === 'income' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all active:scale-95"
+                >
+                  <ArrowDownLeft class="h-3.5 w-3.5 stroke-[2.5]" />
+                  <span>Pemasukan</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 4. Pilih Dompet -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-700"
+                >Dompet <span class="text-rose-500">*</span></label
+              >
+              <select
+                x-model="customQuickForm.wallet_id"
+                class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+              >
+                <template x-for="w in wallets" :key="w.id">
+                  <option :value="w.id" x-text="w.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- 5. Pilih Kategori (Sesuai Tipe) -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-700"
+                >Kategori</label
+              >
+              <select
+                x-model="customQuickForm.category_id"
+                class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+              >
+                <template x-for="c in filteredCustomCategories" :key="c.id">
+                  <option :value="c.id" x-text="c.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+              <button
+                type="button"
+                @click="saveAndExecCustomQuick()"
+                :disabled="isSubmittingQuick"
+                class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-blue-600 py-3 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
+              >
+                <Check class="h-4 w-4 stroke-[2.5]" />
+                <span>Simpan & Eksekusi Sekarang</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </template>
-  </div>
 
-  <!-- Section Catat Cepat (Card Wrapper Premium Glass-Glow) -->
-  <div class="pt-2">
-    <div
-      class="relative overflow-hidden rounded-3xl border border-blue-100/80 bg-linear-to-br from-white via-blue-50/30 to-slate-50 p-4 shadow-sm"
-    >
-      <!-- Pattern Dots Accent di Sudut Kanan Atas -->
-      <div
-        class="pointer-events-none absolute -top-2 -right-2 h-24 w-24 opacity-20 mix-blend-multiply"
-        style="background-image: radial-gradient(circle, #2563eb 1px, transparent 1px); background-size: 8px 8px; mask-image: radial-gradient(circle at top right, black 30%, transparent 80%); -webkit-mask-image: radial-gradient(circle at top right, black 30%, transparent 80%);"
-      >
+    <!-- Section Grafik Pengeluaran Mingguan -->
+    <div class="space-y-2.5 pt-1">
+      <div class="flex items-center justify-between px-0.5">
+        <span class="text-sm font-bold text-slate-700"
+          >Pengeluaran Mingguan</span
+        >
       </div>
 
-      <!-- Layout Inner Split-View -->
-      <div class="relative z-10 flex items-center gap-3.5">
-        <!-- SISI KIRI: Logo Petir -->
+      <div
+        class="relative space-y-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm"
+      >
         <div
-          class="relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-blue-700 text-white shadow-md shadow-blue-600/25"
+          class="flex items-center justify-between border-b border-slate-100 pb-3"
         >
-          <Zap class="h-6 w-6 fill-white/20 stroke-[2.2]" />
-          <div
-            class="absolute inset-0 rounded-2xl bg-linear-to-br from-white/20 via-transparent to-transparent"
+          <span
+            class="text-sm font-bold text-slate-700"
+            x-text="currentMonthName">Bulan Ini</span
           >
+          <div
+            class="flex items-center gap-1.5 rounded-full border border-rose-200/60 bg-rose-50/70 px-2.5 py-1 backdrop-blur-xs"
+          >
+            <TrendingDown class="h-2.5 w-2.5 stroke-[2.5] text-rose-500" />
+            <span
+              class="text-[11px] font-bold text-rose-500"
+              x-text="hideBalance ? 'Rp ••••••' : 'Rp 1.415.000'">Rp 0</span
+            >
           </div>
         </div>
 
-        <!-- SISI KANAN: Judul + List Pill -->
-        <div class="relative flex min-w-0 flex-1 flex-col space-y-2">
-          <!-- Header & Status Tag -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <span class="text-sm font-bold tracking-tight text-slate-800"
-                >Catat Cepat</span
-              >
-              <span
-                class="rounded-full bg-blue-100/80 px-2 py-0.5 text-[9px] font-bold text-blue-600"
-              >
-                One-click
-              </span>
-            </div>
-          </div>
-
-          <!-- CONTAINER WRAPPER UNTUK OVERLAY FADING MASK -->
-          <div class="relative w-full">
-            <!-- Deretan Pill (Scroll Horizontal) -->
-            <div
-              class="no-scrollbar flex items-center gap-1.5 overflow-x-auto pr-6 pb-0.5"
-            >
-              {
-                quickActions.map((item) => (
-                  <button
-                    type="button"
-                    class="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white/90 px-2.5 py-1.5 shadow-2xs backdrop-blur-xs transition-all hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-xs active:scale-95"
+        <div class="grid h-32 grid-cols-7 items-end gap-2 pt-2">
+          {
+            weeklyExpenses.map((item) => (
+              <div class="group flex h-full cursor-pointer flex-col items-center justify-end">
+                <span class="mb-1 text-[9px] font-bold text-slate-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  {item.amount}
+                </span>
+                <div class="flex h-full w-full max-w-4.5 flex-col justify-end overflow-hidden rounded-md bg-slate-100">
+                  <div
+                    class={`w-full rounded-md transition-all duration-300 ${
+                      item.isHighest
+                        ? 'bg-blue-600 shadow-xs shadow-blue-500/30'
+                        : 'bg-blue-200 group-hover:bg-blue-400'
+                    }`}
+                    style={`height: ${item.height};`}
+                  />
+                </div>
+                <div class="mt-2 flex flex-col items-center leading-tight">
+                  <span
+                    class={`text-[10px] font-medium ${item.isHighest ? 'font-bold text-blue-600' : 'text-slate-400 group-hover:text-slate-700'}`}
                   >
-                    <item.icon class="h-3.5 w-3.5 shrink-0 stroke-2 text-slate-500 group-hover:text-blue-600" />
-                    <span class="text-[11px] font-semibold text-slate-700 group-hover:text-slate-900">
-                      {item.label}
-                    </span>
-                    <span class="text-[10px] font-bold text-blue-600">
-                      {item.amount}
-                    </span>
-                  </button>
-                ))
-              }
-
-              <!-- Pill Tambah (+ Tambah) -->
-              <button
-                type="button"
-                class="flex shrink-0 cursor-pointer items-center gap-1 rounded-xl border border-dashed border-blue-300/80 bg-blue-50/40 px-2.5 py-1.5 text-blue-600 transition-all hover:border-blue-500 hover:bg-blue-100/60 active:scale-95"
-                aria-label="Tambah Catat Cepat"
-              >
-                <Plus class="h-3.5 w-3.5 stroke-[2.5]" />
-                <span class="text-[10px] font-bold">Tambah</span>
-              </button>
-            </div>
-
-            <!-- EFEK FADING MASK DI UJUNG KANAN (Penyamar Potongan Pill) -->
-            <div
-              class="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-linear-to-l from-slate-50/90 via-slate-50/40 to-transparent"
-            >
-            </div>
-          </div>
+                    {item.day}
+                  </span>
+                  <span
+                    class={`text-[10px] font-bold ${item.isHighest ? 'text-blue-600' : 'text-slate-700'}`}
+                  >
+                    {item.date}
+                  </span>
+                </div>
+              </div>
+            ))
+          }
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Section Grafik Pengeluaran Mingguan -->
-  <div class="space-y-2.5 pt-2">
-    <!-- Judul Section Di Luar Card -->
-    <div class="flex items-center justify-between px-0.5">
-      <span class="text-sm font-bold text-slate-700">Pengeluaran Mingguan</span>
-    </div>
-
-    <!-- Card Container Chart Main -->
-    <div
-      class="relative space-y-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm"
-    >
-      <!-- BARIS ATAS DALAM CARD: Periode Bulan (Kiri) & Total Nominal Red Pill (Kanan) -->
-      <div
-        class="flex items-center justify-between border-b border-slate-100 pb-3"
-      >
-        <!-- Periode Bulan Langsung Tanpa Label Header -->
-        <span class="text-sm font-bold text-slate-700">Agustus</span>
-
-        <!-- Total Mingguan dalam Red Transparent Pill -->
         <div
-          class="flex items-center gap-1.5 rounded-full border border-rose-200/60 bg-rose-50/70 px-2.5 py-1 backdrop-blur-xs"
+          class="flex items-center justify-start border-t border-slate-100/80 pt-2"
         >
-          <TrendingDown class="h-2.5 w-2.5 stroke-[2.5] text-rose-500" />
-          <span class="text-[11px] font-bold text-rose-500">Rp 1.415.000</span>
+          <a
+            href="/reports"
+            class="flex cursor-pointer items-center gap-1 rounded-full border border-blue-200/80 bg-blue-50/60 px-3 py-1.5 text-[11px] font-bold text-blue-600 shadow-2xs transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white active:scale-95"
+          >
+            <span>Lihat Analitik</span>
+            <ChevronRight class="h-3.5 w-3.5 stroke-[2.5]" />
+          </a>
         </div>
       </div>
+    </div>
 
-      <!-- BAR CHART GRID (Senin - Minggu + Tanggal) -->
-      <div class="grid h-32 grid-cols-7 items-end gap-2 pt-2">
-        {
-          weeklyExpenses.map((item) => (
-            <div class="group flex h-full cursor-pointer flex-col items-center justify-end">
-              <span class="mb-1 text-[9px] font-bold text-slate-600 opacity-0 transition-opacity group-hover:opacity-100">
-                {item.amount}
-              </span>
-
-              <div class="flex h-full w-full max-w-4.5 flex-col justify-end overflow-hidden rounded-md bg-slate-100">
-                <div
-                  class={`w-full rounded-md transition-all duration-300 ${
-                    item.isHighest
-                      ? 'bg-blue-600 shadow-xs shadow-blue-500/30'
-                      : 'bg-blue-200 group-hover:bg-blue-400'
-                  }`}
-                  style={`height: ${item.height};`}
-                />
-              </div>
-
-              <div class="mt-2 flex flex-col items-center leading-tight">
-                <span
-                  class={`text-[10px] font-medium ${
-                    item.isHighest
-                      ? 'font-bold text-blue-600'
-                      : 'text-slate-400 group-hover:text-slate-700'
-                  }`}
-                >
-                  {item.day}
-                </span>
-                <span
-                  class={`text-[10px] font-bold ${
-                    item.isHighest ? 'text-blue-600' : 'text-slate-700'
-                  }`}
-                >
-                  {item.date}
-                </span>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-
-      <!-- BARIS BAWAH DALAM CARD: Tombol Pill "Lihat Analitik" (Kiri) -->
-      <div
-        class="flex items-center justify-start border-t border-slate-100/80 pt-2"
-      >
-        <button
-          type="button"
-          class="flex cursor-pointer items-center gap-1 rounded-full border border-blue-200/80 bg-blue-50/60 px-3 py-1.5 text-[11px] font-bold text-blue-600 shadow-2xs transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white active:scale-95"
+    <!-- Section Aktivitas Terakhir -->
+    <div class="space-y-2.5 pt-1">
+      <div class="flex items-center justify-between px-0.5">
+        <span class="text-sm font-bold tracking-tight text-slate-800"
+          >Aktivitas Terakhir</span
         >
-          <span>Lihat Analitik</span>
-          <ChevronRight class="h-3.5 w-3.5 stroke-[2.5]" />
-        </button>
+        <a
+          href="/history"
+          class="flex items-center gap-0.5 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
+        >
+          <span>Lihat Semua</span>
+          <ChevronRight class="h-3 w-3 stroke-[2.5]" />
+        </a>
       </div>
-    </div>
-  </div>
 
-  <!-- Section Aktivitas Terakhir (5 Transaksi) -->
-  <div class="space-y-2.5 pt-2">
-    <!-- Header Section -->
-    <div class="flex items-center justify-between px-0.5">
-      <span class="text-sm font-bold tracking-tight text-slate-800"
-        >Aktivitas Terakhir</span
+      <div
+        class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-sm"
       >
-      <a
-        href="#"
-        class="flex items-center gap-0.5 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
-      >
-        <span>Lihat Semua</span>
-        <ChevronRight class="h-3 w-3 stroke-[2.5]" />
-      </a>
-    </div>
+        <template x-if="recentTransactionsList.length === 0">
+          <div class="p-4 text-center text-xs font-semibold text-slate-400">
+            Belum ada aktivitas transaksi.
+          </div>
+        </template>
 
-    <!-- List 5 Transaksi (Card Container) -->
-    <div
-      class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-sm"
-    >
-      {
-        recentTransactions.map((item) => (
-          <div class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80">
+        <template x-for="item in recentTransactionsList" :key="item.id">
+          <div
+            @click="window.location.href = `/transaction?id=${item.id}`"
+            class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
+          >
             <div class="flex min-w-0 items-center gap-3">
               <div
-                class={`flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border ${item.color}`}
+                :class=`{
+                  'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
+                  'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
+                  'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
+                }`
+                class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border"
               >
-                <item.icon class="h-4.5 w-4.5 stroke-2" />
+                <Zap class="h-4.5 w-4.5 stroke-2" />
               </div>
               <div class="flex min-w-0 flex-col">
-                <span class="truncate text-xs font-bold text-slate-800">
-                  {item.title}
-                </span>
+                <span
+                  class="truncate text-xs font-bold text-slate-800"
+                  x-text="item.notes || 'Transaksi'"></span>
                 <span class="text-[10px] font-medium text-slate-400">
-                  {item.category} •{' '}
-                  <span class="font-semibold text-slate-500">
-                    {item.wallet}
-                  </span>
+                  <span x-text="item.categories?.name || 'Umum'"></span> •
+                  <span
+                    class="font-semibold text-slate-500"
+                    x-text="item.wallets?.name || 'Dompet'"></span>
                 </span>
               </div>
             </div>
 
             <div class="flex shrink-0 items-center gap-1 pl-2">
               <span
-                class={`text-xs font-bold ${
-                  item.type === 'income' ? 'text-emerald-600' : 'text-slate-800'
-                }`}
-              >
-                {item.amount}
-              </span>
+                x-text="hideBalance ? 'Rp ••••••' : formatCurrency(item.amount, item.type)"
+                :class=`{
+                  'text-emerald-600': item.type === 'income',
+                  'text-blue-600': item.type === 'transfer',
+                  'text-slate-800': item.type === 'expense'
+                }`
+                class="text-xs font-bold"></span>
             </div>
           </div>
-        ))
-      }
+        </template>
+      </div>
     </div>
   </div>
 </Layout>
+
+<!-- SCRIPT ALPINE CLIENT-SIDE -->
+<script>
+  import { formatCurrency } from '../utils/formatters';
+  import { calculateTotalBalance } from '../utils/calculations';
+
+  declare const Alpine: any;
+
+  interface WalletItem {
+    id: string;
+    name: string;
+    balance: number;
+    color?: string;
+    icon?: string;
+    [key: string]: any;
+  }
+
+  interface TransactionItem {
+    id: string;
+    notes?: string;
+    amount: number;
+    type: 'income' | 'expense' | 'transfer';
+    wallet_id: string;
+    to_wallet_id?: string;
+    category_id?: string;
+    transaction_date?: string;
+    created_at?: string;
+    wallets?: WalletItem;
+    categories?: any;
+    [key: string]: any;
+  }
+
+  interface CategoryItem {
+    id: string;
+    name: string;
+    type: string;
+    icon?: string;
+    [key: string]: any;
+  }
+
+  interface FeatureItem {
+    id: string;
+    label: string;
+    icon: string;
+    href: string;
+  }
+
+  interface CustomQuickItem {
+    title: string;
+    amount: number;
+    type: string;
+    wallet_id: string;
+    category_id?: string;
+    isCustom?: boolean;
+  }
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardApp', () => ({
+      showDetails: false,
+      openModal: false,
+      hideBalance: localStorage.getItem('studion_hide_balance') === 'true',
+      loading: true,
+
+      isReorderingFeatures: false,
+      initialFeaturesJson: '',
+      featuresList: [] as FeatureItem[],
+
+      wallets: [] as WalletItem[],
+      transactions: [] as TransactionItem[],
+      categories: [] as CategoryItem[],
+      customQuicks: [] as CustomQuickItem[],
+
+      isSubmittingQuick: false,
+      showToast: false,
+      toastMessage: '',
+
+      openCustomQuickModal: false,
+      customQuickForm: {
+        notes: '',
+        amount: '',
+        wallet_id: '',
+        category_id: '',
+        type: 'expense',
+      },
+
+      init() {
+        this.loadFeaturesOrder();
+        this.loadCustomQuicks();
+
+        (this as any).$watch('hideBalance', (val: boolean) => {
+          localStorage.setItem('studion_hide_balance', String(val));
+        });
+
+        (this as any).$watch('customQuickForm.type', () => {
+          const available = this.filteredCustomCategories;
+          if (available.length > 0) {
+            this.customQuickForm.category_id = available[0].id;
+          } else {
+            this.customQuickForm.category_id = '';
+          }
+        });
+
+        this.fetchData();
+      },
+
+      loadCustomQuicks() {
+        const saved = localStorage.getItem('studion_custom_quicks');
+        if (saved) {
+          try {
+            this.customQuicks = JSON.parse(saved);
+          } catch (e) {
+            console.error(e);
+            this.customQuicks = [];
+          }
+        } else {
+          this.customQuicks = [];
+        }
+      },
+
+      loadFeaturesOrder() {
+        const defaults = [
+          { id: 'wallet', label: 'Dompet', icon: 'wallet', href: '/wallets' },
+          {
+            id: 'budget',
+            label: 'Anggaran',
+            icon: 'piggy-bank',
+            href: '/budget',
+          },
+          {
+            id: 'categories',
+            label: 'Kategori',
+            icon: 'grid',
+            href: '/categories',
+          },
+          { id: 'goals', label: 'Impian', icon: 'target', href: '/goals' },
+          { id: 'debts', label: 'Utang', icon: 'receipt', href: '/debts' },
+          {
+            id: 'subscriptions',
+            label: 'Langganan',
+            icon: 'repeat',
+            href: '/subscriptions',
+          },
+          {
+            id: 'reports',
+            label: 'Laporan',
+            icon: 'bar-chart-2',
+            href: '/reports',
+          },
+        ];
+
+        const savedOrderJson = localStorage.getItem('studion_features_order');
+        if (savedOrderJson) {
+          try {
+            const savedIds: string[] = JSON.parse(savedOrderJson);
+            const ordered = [...defaults].sort((a, b) => {
+              const idxA = savedIds.indexOf(a.id);
+              const idxB = savedIds.indexOf(b.id);
+              if (idxA === -1) return 1;
+              if (idxB === -1) return -1;
+              return idxA - idxB;
+            });
+            this.featuresList = ordered;
+            return;
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        this.featuresList = defaults;
+      },
+
+      async fetchData() {
+        this.loading = true;
+        try {
+          const [resW, resT, resC] = await Promise.all([
+            fetch('/api/wallets'),
+            fetch('/api/transactions'),
+            fetch('/api/categories'),
+          ]);
+          this.wallets = (await resW.json()) as WalletItem[];
+          this.transactions = (await resT.json()) as TransactionItem[];
+          this.categories = (await resC.json()) as CategoryItem[];
+
+          if (this.wallets.length > 0) {
+            this.customQuickForm.wallet_id = this.wallets[0].id;
+          }
+          const defaultCats = this.filteredCustomCategories;
+          if (defaultCats.length > 0) {
+            this.customQuickForm.category_id = defaultCats[0].id;
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      get filteredCustomCategories() {
+        return this.categories.filter(
+          (c) => c.type === this.customQuickForm.type
+        );
+      },
+
+      get formattedCustomAmount() {
+        if (!this.customQuickForm.amount) return '';
+        const num = parseInt(this.customQuickForm.amount, 10);
+        if (isNaN(num)) return '';
+        return new Intl.NumberFormat('id-ID').format(num);
+      },
+
+      handleCustomAmountInput(event: any) {
+        const rawValue = event.target.value.replace(/[^0-9]/g, '');
+        this.customQuickForm.amount = rawValue;
+        event.target.value = this.formattedCustomAmount;
+      },
+
+      async saveAndExecCustomQuick() {
+        if (!this.customQuickForm.notes.trim()) {
+          return alert('Catatan / Nama Transaksi wajib diisi!');
+        }
+        if (
+          !this.customQuickForm.amount ||
+          Number(this.customQuickForm.amount) <= 0
+        ) {
+          return alert('Nominal transaksi harus diisi!');
+        }
+        if (!this.customQuickForm.wallet_id) {
+          return alert('Pilih dompet terlebih dahulu!');
+        }
+
+        const newCustom: CustomQuickItem = {
+          title: this.customQuickForm.notes.trim(),
+          amount: Number(this.customQuickForm.amount),
+          type: this.customQuickForm.type,
+          wallet_id: this.customQuickForm.wallet_id,
+          category_id: this.customQuickForm.category_id || undefined,
+          isCustom: true,
+        };
+
+        this.customQuicks.unshift(newCustom);
+        if (this.customQuicks.length > 5) {
+          this.customQuicks = this.customQuicks.slice(0, 5);
+        }
+        localStorage.setItem(
+          'studion_custom_quicks',
+          JSON.stringify(this.customQuicks)
+        );
+
+        this.openCustomQuickModal = false;
+        await this.quickAddInstant(newCustom);
+
+        this.customQuickForm.notes = '';
+        this.customQuickForm.amount = '';
+      },
+
+      async quickAddInstant(item: any) {
+        if (this.isSubmittingQuick) return;
+
+        const targetWalletId =
+          item.wallet_id || (this.wallets.length > 0 ? this.wallets[0].id : '');
+        if (!targetWalletId) {
+          alert('Silakan buat dompet terlebih dahulu!');
+          return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        const payload = {
+          type: item.type || 'expense',
+          amount: String(item.amount),
+          wallet_id: targetWalletId,
+          category_id: item.category_id || undefined,
+          transaction_date: today,
+          notes: item.title,
+        };
+
+        this.isSubmittingQuick = true;
+
+        try {
+          const res = await fetch('/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (res.ok) {
+            await this.fetchData();
+
+            this.toastMessage = `Berhasil mencatat "${item.title}"!`;
+            this.showToast = true;
+            setTimeout(() => {
+              this.showToast = false;
+            }, 2500);
+          } else {
+            alert('Gagal menambah transaksi instan!');
+          }
+        } catch (e) {
+          console.error(e);
+          alert('Terjadi kesalahan sistem.');
+        } finally {
+          this.isSubmittingQuick = false;
+        }
+      },
+
+      get topQuickFeatures() {
+        return this.featuresList.slice(0, 3);
+      },
+
+      toggleReorderFeatures() {
+        if (!this.isReorderingFeatures) {
+          this.initialFeaturesJson = JSON.stringify(
+            this.featuresList.map((f) => f.id)
+          );
+          this.isReorderingFeatures = true;
+        } else {
+          this.finishReorderFeatures();
+        }
+      },
+
+      moveFeature(index: number, direction: 'up' | 'down') {
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= this.featuresList.length) return;
+
+        const updated = [...this.featuresList];
+        const temp = updated[index];
+        updated[index] = updated[newIndex];
+        updated[newIndex] = temp;
+        this.featuresList = updated;
+      },
+
+      finishReorderFeatures() {
+        const currentOrderJson = JSON.stringify(
+          this.featuresList.map((f) => f.id)
+        );
+
+        if (currentOrderJson !== this.initialFeaturesJson) {
+          localStorage.setItem('studion_features_order', currentOrderJson);
+        }
+
+        this.isReorderingFeatures = false;
+      },
+
+      closeFeatureModal() {
+        if (this.isReorderingFeatures) {
+          this.finishReorderFeatures();
+        }
+        this.openModal = false;
+      },
+
+      get formattedTotalBalance() {
+        const total = calculateTotalBalance(this.wallets, this.transactions);
+        return formatCurrency(total);
+      },
+
+      get currentMonthName() {
+        return new Date().toLocaleDateString('id-ID', {
+          month: 'long',
+          year: 'numeric',
+        });
+      },
+
+      get formattedMonthlyIncome() {
+        const now = new Date();
+        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        const total = this.transactions
+          .filter((t) => {
+            const txDate = t.transaction_date
+              ? t.transaction_date.split('T')[0]
+              : '';
+            return t.type === 'income' && txDate.startsWith(currentYearMonth);
+          })
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+
+        return formatCurrency(total);
+      },
+
+      get formattedMonthlyExpense() {
+        const now = new Date();
+        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        const total = this.transactions
+          .filter((t) => {
+            const txDate = t.transaction_date
+              ? t.transaction_date.split('T')[0]
+              : '';
+            return t.type === 'expense' && txDate.startsWith(currentYearMonth);
+          })
+          .reduce((acc, t) => acc + Number(t.amount), 0);
+
+        return formatCurrency(total);
+      },
+
+      get recentTransactionsList() {
+        return [...this.transactions].slice(0, 5);
+      },
+
+      get frequentTransactions() {
+        const customs = this.customQuicks.map((item) => ({
+          ...item,
+          isCustom: true,
+        }));
+
+        if (customs.length >= 5) {
+          return customs.slice(0, 5);
+        }
+
+        if (!this.transactions || this.transactions.length === 0) {
+          return customs;
+        }
+
+        const counts: Record<
+          string,
+          {
+            title: string;
+            amount: number;
+            type: string;
+            wallet_id: string;
+            category_id?: string;
+            count: number;
+          }
+        > = {};
+
+        this.transactions.forEach((tx) => {
+          if (!tx.notes || tx.type === 'transfer') return;
+          const key = `${tx.notes.trim().toLowerCase()}_${tx.amount}`;
+          if (!counts[key]) {
+            counts[key] = {
+              title: tx.notes.trim(),
+              amount: tx.amount,
+              type: tx.type || 'expense',
+              wallet_id: tx.wallet_id,
+              category_id: tx.category_id,
+              count: 1,
+            };
+          } else {
+            counts[key].count += 1;
+          }
+        });
+
+        const systemItems = Object.values(counts)
+          .sort((a, b) => b.count - a.count)
+          .filter(
+            (sys) =>
+              !customs.some(
+                (c) =>
+                  c.title.toLowerCase() === sys.title.toLowerCase() &&
+                  Number(c.amount) === Number(sys.amount)
+              )
+          );
+
+        const remainingSlots = 5 - customs.length;
+        return [...customs, ...systemItems.slice(0, remainingSlots)];
+      },
+
+      formatCurrency(val: number, type?: string) {
+        return formatCurrency(val, type);
+      },
+
+      formatNumber(val: number) {
+        if (!val) return '0';
+        return new Intl.NumberFormat('id-ID').format(val);
+      },
+    }));
+  });
+</script>

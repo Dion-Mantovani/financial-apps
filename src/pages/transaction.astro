@@ -15,6 +15,27 @@ import {
   History,
   Zap,
   Trash2,
+  ChevronRight,
+  Landmark,
+  Building2,
+  CreditCard,
+  Coins,
+  Utensils,
+  Car,
+  ShoppingBag,
+  Receipt,
+  Gamepad2,
+  HeartPulse,
+  GraduationCap,
+  MoreHorizontal,
+  Briefcase,
+  Gift,
+  TrendingUp,
+  RotateCcw,
+  Smartphone,
+  PiggyBank,
+  LineChart,
+  Tag,
 } from '@lucide/astro';
 
 const transactionTypes = [
@@ -110,7 +131,7 @@ const frequentTransactions = [
         </a>
       </div>
 
-      <!-- INPUT NOMINAL UTAMA -->
+      <!-- INPUT NOMINAL UTAMA (FORMAT RIBUAN & CLEAN DARI MINUS) -->
       <div class="relative z-10 mt-5 mb-2 space-y-1 text-center">
         <span
           class="text-[10px] font-bold tracking-widest text-blue-200/60 uppercase"
@@ -121,8 +142,10 @@ const frequentTransactions = [
           <span class="text-lg font-bold text-blue-300">Rp</span>
           <input
             x-ref="amountInput"
-            type="number"
-            x-model="formData.amount"
+            type="text"
+            inputmode="numeric"
+            :value="formattedAmount"
+            @input="handleAmountInput($event)"
             placeholder="0"
             class="w-full max-w-55 bg-transparent text-center text-3xl font-extrabold tracking-tight text-white placeholder-blue-300/40 outline-none sm:text-4xl"
             required
@@ -131,8 +154,8 @@ const frequentTransactions = [
       </div>
     </div>
 
-    <!-- 2. QUICK ACCESS (Hanya muncul jika Mode Tambah Baru) -->
-    <template x-if="!isEditMode">
+    <!-- 2. QUICK ACCESS (Dinamis Top 5 dari Sistem) -->
+    <template x-if="!isEditMode && frequentTransactions.length > 0">
       <div class="space-y-1.5 pt-0.5">
         <div class="flex items-center gap-1.5 px-1">
           <History class="h-3.5 w-3.5 stroke-[2.5] text-blue-600" />
@@ -148,21 +171,73 @@ const frequentTransactions = [
           <div
             class="no-scrollbar flex items-center gap-1.5 overflow-x-auto pr-6 pb-0.5"
           >
-            {
-              frequentTransactions.map((item) => (
-                <button
-                  type="button"
-                  x-on:click={`applyQuickData(${JSON.stringify(item)})`}
-                  class="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-blue-100/90 bg-blue-50/40 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs backdrop-blur-xs transition-all hover:border-blue-500 hover:bg-blue-600 hover:text-white active:scale-95"
+            <template
+              x-for="(item, index) in frequentTransactions"
+              :key="index"
+            >
+              <button
+                type="button"
+                @click="applyQuickData(item)"
+                class="group flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-blue-100/90 bg-blue-50/40 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs backdrop-blur-xs transition-all hover:border-blue-500 hover:bg-blue-600 hover:text-white active:scale-95"
+              >
+                <!-- Render Ikon Kategori Dinamis -->
+                <div
+                  class="flex items-center text-blue-600 group-hover:text-white"
                 >
-                  <Zap class="h-3 w-3 shrink-0 stroke-[2.5] text-blue-600 group-hover:text-white" />
-                  <span>{item.title}</span>
-                  <span class="text-[10px] font-bold text-blue-600 group-hover:text-blue-100">
-                    {item.amount}
-                  </span>
-                </button>
-              ))
-            }
+                  <template x-if="item.category_icon === 'utensils'"
+                    ><Utensils class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'car'"
+                    ><Car class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'shopping-bag'"
+                    ><ShoppingBag class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'receipt'"
+                    ><Receipt class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'gamepad-2'"
+                    ><Gamepad2 class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'heart-pulse'"
+                    ><HeartPulse class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'graduation-cap'"
+                    ><GraduationCap class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'more-horizontal'"
+                    ><MoreHorizontal class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'briefcase'"
+                    ><Briefcase class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'gift'"
+                    ><Gift class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'trending-up'"
+                    ><TrendingUp class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+                  <template x-if="item.category_icon === 'rotate-ccw'"
+                    ><RotateCcw class="h-3 w-3 stroke-[2.5]" /></template
+                  >
+
+                  <!-- Fallback ke Zap jika tidak ada ikon kategori -->
+                  <template
+                    x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw'].includes(item.category_icon)"
+                  >
+                    <Zap class="h-3 w-3 stroke-[2.5]" />
+                  </template>
+                </div>
+
+                <!-- Nama Catatan -->
+                <span x-text="item.title"></span>
+
+                <!-- Nominal Terformat dengan Titik -->
+                <span
+                  class="text-[10px] font-bold text-blue-600 group-hover:text-blue-100"
+                  x-text="`Rp ${formatCurrencyNumber(item.amount)}`"></span>
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -206,9 +281,9 @@ const frequentTransactions = [
         />
       </div>
 
-      <!-- Baris 1: Dompet Asal & Dompet Tujuan (Jika Transfer) / Dompet & Kategori (Jika Biasa) -->
+      <!-- TRIGGER INPUTS (BOTTOM SHEET TRIGGER) -->
       <div class="grid grid-cols-2 gap-2.5">
-        <!-- Dompet Asal -->
+        <!-- TRIGGER DOMPET ASAL -->
         <div class="space-y-1">
           <label
             class="flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
@@ -219,18 +294,17 @@ const frequentTransactions = [
               >Dompet</span
             >
           </label>
-          <select
-            x-model="formData.wallet_id"
-            class="w-full cursor-pointer rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
-            required
+          <button
+            type="button"
+            @click="openWalletSheet('source')"
+            class="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all hover:border-blue-400 hover:bg-white active:scale-95"
           >
-            <template x-for="w in wallets" :key="w.id">
-              <option :value="w.id" x-text="w.name"></option>
-            </template>
-          </select>
+            <span class="truncate font-bold" x-text="selectedWalletName"></span>
+            <ChevronRight class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          </button>
         </div>
 
-        <!-- Dompet Tujuan (Hanya muncul saat mode Transfer) -->
+        <!-- TRIGGER DOMPET TUJUAN (Hanya mode Transfer) -->
         <template x-if="formData.type === 'transfer'">
           <div class="space-y-1">
             <label
@@ -239,40 +313,49 @@ const frequentTransactions = [
               <Wallet class="h-3.5 w-3.5 stroke-2 text-blue-600" />
               <span>Dompet Tujuan</span>
             </label>
-            <select
-              x-model="formData.to_wallet_id"
-              class="w-full cursor-pointer rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
-              required
+            <button
+              type="button"
+              @click="openWalletSheet('target')"
+              class="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all hover:border-blue-400 hover:bg-white active:scale-95"
             >
-              <template x-for="w in availableToWallets" :key="w.id">
-                <option :value="w.id" x-text="w.name"></option>
-              </template>
-            </select>
+              <span class="truncate font-bold" x-text="selectedToWalletName"
+              ></span>
+              <ChevronRight class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            </button>
           </div>
         </template>
 
-        <!-- Kategori (Jika BUKAN Transfer, posisinya ada di sebelah kanan Dompet) -->
+        <!-- TRIGGER KATEGORI (Jika BUKAN Transfer) -->
         <template x-if="formData.type !== 'transfer'">
           <div class="space-y-1">
-            <label
-              class="flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
-            >
-              <Grid class="h-3.5 w-3.5 stroke-2 text-blue-600" />
-              <span>Kategori</span>
-            </label>
-            <select
-              x-model="formData.category_id"
-              class="w-full cursor-pointer rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
-            >
-              <template x-for="c in filteredCategories" :key="c.id">
-                <option :value="c.id" x-text="c.name"></option>
+            <div class="flex items-center justify-between">
+              <label
+                class="flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
+              >
+                <Grid class="h-3.5 w-3.5 stroke-2 text-blue-600" />
+                <span>Kategori</span>
+              </label>
+              <template x-if="autoCategoryDetected">
+                <span
+                  class="rounded-md bg-blue-50 px-1.5 py-0.5 text-[9px] font-extrabold text-blue-600"
+                  >Auto</span
+                >
               </template>
-            </select>
+            </div>
+            <button
+              type="button"
+              @click="showCategoryModal = true"
+              class="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all hover:border-blue-400 hover:bg-white active:scale-95"
+            >
+              <span class="truncate font-bold" x-text="selectedCategoryName"
+              ></span>
+              <ChevronRight class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            </button>
           </div>
         </template>
       </div>
 
-      <!-- Baris 2: Kategori (Khusus saat mode Transfer, ditaruh di bawah full width) -->
+      <!-- TRIGGER KATEGORI TRANSFER -->
       <template x-if="formData.type === 'transfer'">
         <div class="space-y-1">
           <label
@@ -281,18 +364,19 @@ const frequentTransactions = [
             <Grid class="h-3.5 w-3.5 stroke-2 text-blue-600" />
             <span>Kategori Transfer</span>
           </label>
-          <select
-            x-model="formData.category_id"
-            class="w-full cursor-pointer rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 text-xs font-semibold text-slate-800 transition-all outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+          <button
+            type="button"
+            @click="showCategoryModal = true"
+            class="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition-all hover:border-blue-400 hover:bg-white active:scale-95"
           >
-            <template x-for="c in filteredCategories" :key="c.id">
-              <option :value="c.id" x-text="c.name"></option>
-            </template>
-          </select>
+            <span class="truncate font-bold" x-text="selectedCategoryName"
+            ></span>
+            <ChevronRight class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          </button>
         </div>
       </template>
 
-      <!-- Catatan -->
+      <!-- Catatan (Dengan Smart Auto-Category) -->
       <div class="space-y-1">
         <label
           class="flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
@@ -302,6 +386,7 @@ const frequentTransactions = [
         </label>
         <textarea
           x-model="formData.notes"
+          @input="handleNotesInput()"
           rows="2"
           placeholder="Tulis detail transaksi di sini..."
           class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3.5 py-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 transition-all outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
@@ -311,7 +396,6 @@ const frequentTransactions = [
 
     <!-- 5. TOMBOL AKSI -->
     <div class="space-y-2 pt-2">
-      <!-- Layout Tombol Mode Tambah Baru -->
       <template x-if="!isEditMode">
         <div class="grid grid-cols-2 gap-2">
           <button
@@ -336,7 +420,6 @@ const frequentTransactions = [
         </div>
       </template>
 
-      <!-- Layout Tombol Mode Edit -->
       <template x-if="isEditMode">
         <div class="flex items-center gap-2">
           <button
@@ -361,9 +444,212 @@ const frequentTransactions = [
         </div>
       </template>
     </div>
+
+    <!-- BOTTOM SHEET MODAL: PILIH DOMPET -->
+    <template x-teleport="body">
+      <div
+        x-show="showWalletModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="showWalletModal = false"
+          class="flex max-h-[80vh] w-full max-w-md flex-col rounded-t-3xl bg-white p-5 shadow-2xl transition-transform sm:rounded-3xl"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <Wallet class="h-4 w-4 stroke-2" />
+              </div>
+              <h3
+                class="text-sm font-extrabold text-slate-900"
+                x-text="walletSheetTarget === 'source' ? 'Pilih Dompet Asal' : 'Pilih Dompet Tujuan'"
+              >
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="showWalletModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div
+            class="no-scrollbar divide-y divide-slate-100 overflow-y-auto pt-2"
+          >
+            <template
+              x-for="w in (walletSheetTarget === 'source' ? wallets : availableToWallets)"
+              :key="w.id"
+            >
+              <div
+                @click="selectWallet(w.id)"
+                class="flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors hover:bg-slate-50/80"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    :style="`background-color: ${w.color}20; color: ${w.color}`"
+                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-100"
+                  >
+                    <template x-if="w.icon === 'landmark'"
+                      ><Landmark class="h-4 w-4 stroke-2" /></template
+                    >
+                    <template x-if="w.icon === 'building-2'"
+                      ><Building2 class="h-4 w-4 stroke-2" /></template
+                    >
+                    <template x-if="w.icon === 'credit-card'"
+                      ><CreditCard class="h-4 w-4 stroke-2" /></template
+                    >
+                    <template x-if="w.icon === 'coins'"
+                      ><Coins class="h-4 w-4 stroke-2" /></template
+                    >
+                  </div>
+                  <span class="text-xs font-bold text-slate-800" x-text="w.name"
+                  ></span>
+                </div>
+
+                <template
+                  x-if="(walletSheetTarget === 'source' && formData.wallet_id === w.id) || (walletSheetTarget === 'target' && formData.to_wallet_id === w.id)"
+                >
+                  <Check class="h-4 w-4 stroke-[3] text-blue-600" />
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- BOTTOM SHEET MODAL: PILIH KATEGORI -->
+    <template x-teleport="body">
+      <div
+        x-show="showCategoryModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="showCategoryModal = false"
+          class="flex max-h-[80vh] w-full max-w-md flex-col rounded-t-3xl bg-white p-5 shadow-2xl transition-transform sm:rounded-3xl"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <Grid class="h-4 w-4 stroke-2" />
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-900">
+                Pilih Kategori
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="showCategoryModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div
+            class="no-scrollbar divide-y divide-slate-100 overflow-y-auto pt-2"
+          >
+            <template x-for="c in filteredCategories" :key="c.id">
+              <div
+                @click="formData.category_id = c.id; autoCategoryDetected = false; showCategoryModal = false"
+                class="flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors hover:bg-slate-50/80"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700"
+                  >
+                    <template x-if="c.icon === 'utensils'"
+                      ><Utensils
+                        class="h-4 w-4 stroke-2 text-amber-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'car'"
+                      ><Car class="h-4 w-4 stroke-2 text-blue-600" /></template
+                    >
+                    <template x-if="c.icon === 'shopping-bag'"
+                      ><ShoppingBag
+                        class="h-4 w-4 stroke-2 text-rose-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'receipt'"
+                      ><Receipt
+                        class="h-4 w-4 stroke-2 text-slate-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'gamepad-2'"
+                      ><Gamepad2
+                        class="h-4 w-4 stroke-2 text-cyan-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'heart-pulse'"
+                      ><HeartPulse
+                        class="h-4 w-4 stroke-2 text-rose-500"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'graduation-cap'"
+                      ><GraduationCap
+                        class="h-4 w-4 stroke-2 text-indigo-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'more-horizontal'"
+                      ><MoreHorizontal
+                        class="h-4 w-4 stroke-2 text-slate-500"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'briefcase'"
+                      ><Briefcase
+                        class="h-4 w-4 stroke-2 text-emerald-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'gift'"
+                      ><Gift class="h-4 w-4 stroke-2 text-pink-600" /></template
+                    >
+                    <template x-if="c.icon === 'trending-up'"
+                      ><TrendingUp
+                        class="h-4 w-4 stroke-2 text-emerald-600"
+                      /></template
+                    >
+                    <template x-if="c.icon === 'rotate-ccw'"
+                      ><RotateCcw
+                        class="h-4 w-4 stroke-2 text-teal-600"
+                      /></template
+                    >
+
+                    <template
+                      x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw'].includes(c.icon)"
+                    >
+                      <Tag class="h-4 w-4 stroke-2 text-slate-400" />
+                    </template>
+                  </div>
+                  <span class="text-xs font-bold text-slate-800" x-text="c.name"
+                  ></span>
+                </div>
+
+                <template x-if="formData.category_id === c.id">
+                  <Check class="h-4 w-4 stroke-[3] text-blue-600" />
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </Layout>
 
+<!-- SCRIPT ALPINE CLIENT-SIDE -->
 <script>
   import { getTodayInputDate } from '../utils/formatters';
 
@@ -372,6 +658,8 @@ const frequentTransactions = [
   interface WalletItem {
     id: string;
     name: string;
+    color?: string;
+    icon?: string;
     [key: string]: any;
   }
 
@@ -379,6 +667,14 @@ const frequentTransactions = [
     id: string;
     name: string;
     type: string;
+    icon?: string;
+    [key: string]: any;
+  }
+
+  interface TransactionItem {
+    notes?: string;
+    category_id?: string;
+    type?: string;
     [key: string]: any;
   }
 
@@ -386,9 +682,15 @@ const frequentTransactions = [
     Alpine.data('addTransactionApp', () => ({
       wallets: [] as WalletItem[],
       categories: [] as CategoryItem[],
+      pastTransactions: [] as TransactionItem[],
       isSubmitting: false,
       isEditMode: false,
       transactionId: '',
+      autoCategoryDetected: false,
+
+      showWalletModal: false,
+      showCategoryModal: false,
+      walletSheetTarget: 'source' as 'source' | 'target',
 
       formData: {
         type: 'expense',
@@ -401,9 +703,16 @@ const frequentTransactions = [
       },
 
       async init() {
-        // Ambil query param 'id' dari URL
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('id');
+        const typeParam = urlParams.get('type');
+
+        if (
+          typeParam &&
+          ['income', 'expense', 'transfer'].includes(typeParam)
+        ) {
+          this.formData.type = typeParam;
+        }
 
         await this.loadMasterData();
 
@@ -421,6 +730,8 @@ const frequentTransactions = [
         }
 
         (this as any).$watch('formData.type', (value: string) => {
+          this.autoCategoryDetected = false;
+          this.updateDefaultCategory();
           if (value === 'transfer') {
             this.updateDefaultToWallet();
           }
@@ -433,18 +744,189 @@ const frequentTransactions = [
         });
       },
 
+      // Getter untuk nampilin format titik (misal: 10.000)
+      get formattedAmount() {
+        if (!this.formData.amount) return '';
+        const num = parseInt(this.formData.amount, 10);
+        if (isNaN(num)) return '';
+        return new Intl.NumberFormat('id-ID').format(num);
+      },
+
+      // Getter 5 Transaksi Tersering
+      get frequentTransactions() {
+        if (!this.pastTransactions || this.pastTransactions.length === 0)
+          return [];
+
+        const counts: Record<
+          string,
+          {
+            title: string;
+            amount: string;
+            type: string;
+            category_id: string;
+            category_icon: string;
+            count: number;
+            lastDate: string;
+          }
+        > = {};
+
+        this.pastTransactions.forEach((tx) => {
+          if (!tx.notes || tx.type === 'transfer') return;
+
+          const key = `${tx.notes.trim().toLowerCase()}_${tx.amount}`;
+
+          // Cari ikon kategori terkait dari master categories
+          const matchedCat = this.categories.find(
+            (c) => c.id === tx.category_id
+          );
+          const catIcon = matchedCat ? matchedCat.icon : '';
+
+          if (!counts[key]) {
+            counts[key] = {
+              title: tx.notes.trim(),
+              amount: String(tx.amount),
+              type: tx.type || 'expense',
+              category_id: tx.category_id || '',
+              category_icon: catIcon || '',
+              count: 1,
+              lastDate: tx.transaction_date || tx.created_at || '',
+            };
+          } else {
+            counts[key].count += 1;
+            if (
+              (tx.transaction_date || tx.created_at || '') >
+              counts[key].lastDate
+            ) {
+              counts[key].lastDate = tx.transaction_date || tx.created_at || '';
+            }
+          }
+        });
+
+        return Object.values(counts)
+          .sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return (
+              new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime()
+            );
+          })
+          .slice(0, 5);
+      },
+
+      // Helper format angka ribuan untuk Quick Access pill
+      formatCurrencyNumber(val: any) {
+        if (!val) return '0';
+        const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
+        if (isNaN(num)) return '0';
+        return new Intl.NumberFormat('id-ID').format(num);
+      },
+
+      // Handler saat user ngetik: buang semua karakter non-angka (termasuk minus '-')
+      handleAmountInput(event: any) {
+        const rawValue = event.target.value.replace(/[^0-9]/g, '');
+        this.formData.amount = rawValue;
+        // Memastikan cursor tetap aman
+        event.target.value = this.formattedAmount;
+      },
+
+      openWalletSheet(target: 'source' | 'target') {
+        this.walletSheetTarget = target;
+        this.showWalletModal = false;
+        setTimeout(() => {
+          this.showWalletModal = true;
+        }, 10);
+      },
+
+      selectWallet(id: string) {
+        if (this.walletSheetTarget === 'source') {
+          this.formData.wallet_id = id;
+        } else {
+          this.formData.to_wallet_id = id;
+        }
+        this.showWalletModal = false;
+      },
+
+      get selectedWalletName() {
+        const w = this.wallets.find(
+          (item) => item.id === this.formData.wallet_id
+        );
+        return w ? w.name : 'Pilih Dompet';
+      },
+
+      get selectedToWalletName() {
+        const w = this.wallets.find(
+          (item) => item.id === this.formData.to_wallet_id
+        );
+        return w ? w.name : 'Pilih Tujuan';
+      },
+
+      get selectedCategoryName() {
+        const c = this.categories.find(
+          (item) => item.id === this.formData.category_id
+        );
+        return c ? c.name : 'Pilih Kategori';
+      },
+
+      // LOGIKA SMART AUTO-CATEGORY BERDASARKAN CATATAN SERUPA
+      handleNotesInput() {
+        if (this.isEditMode || this.formData.type === 'transfer') return;
+
+        const inputNote = this.formData.notes.trim().toLowerCase();
+
+        // Jika input kurang dari 2 karakter, reset indikator auto
+        if (inputNote.length < 2) {
+          this.autoCategoryDetected = false;
+          return;
+        }
+
+        // 1. Cari transaksi terdahulu yang catatannya mirip
+        const matchedTx = this.pastTransactions.find((tx) => {
+          if (!tx.notes) return false;
+
+          const txNote = tx.notes.trim().toLowerCase();
+
+          // Cek kemiripan dua arah
+          return txNote.includes(inputNote) || inputNote.includes(txNote);
+        });
+
+        if (matchedTx) {
+          // Ambil ID kategori baik dari properti langsung atau dari nested object API
+          const targetCategoryId =
+            matchedTx.category_id ||
+            (matchedTx.categories ? matchedTx.categories.id : null);
+
+          if (targetCategoryId) {
+            // 2. Cek apakah kategori tersebut ada di daftar kategori untuk tipe transaksi saat ini
+            const matchedCategory = this.filteredCategories.find(
+              (c) => String(c.id) === String(targetCategoryId)
+            );
+
+            if (matchedCategory) {
+              this.formData.category_id = matchedCategory.id;
+              this.autoCategoryDetected = true;
+              return;
+            }
+          }
+        }
+
+        // Jika tidak ditemukan kecocokan, reset flag auto
+        this.autoCategoryDetected = false;
+      },
+
       async loadMasterData() {
         try {
-          const [resW, resC] = await Promise.all([
+          const [resW, resC, resT] = await Promise.all([
             fetch('/api/wallets'),
             fetch('/api/categories'),
+            fetch('/api/transactions'),
           ]);
           this.wallets = (await resW.json()) as WalletItem[];
           this.categories = (await resC.json()) as CategoryItem[];
+          this.pastTransactions = (await resT.json()) as TransactionItem[];
 
           if (this.wallets.length > 0 && !this.formData.wallet_id) {
             this.formData.wallet_id = this.wallets[0].id;
           }
+
           this.updateDefaultCategory();
           this.updateDefaultToWallet();
         } catch (e) {
@@ -452,12 +934,9 @@ const frequentTransactions = [
         }
       },
 
-      // Ambil detail transaksi jika mode edit
       async loadTransactionForEdit(id: string) {
         try {
-          const res = await fetch('/api/transactions');
-          const allTx = await res.json();
-          const target = allTx.find((t: any) => t.id === id);
+          const target = this.pastTransactions.find((t: any) => t.id === id);
 
           if (target) {
             this.formData = {
@@ -505,16 +984,38 @@ const frequentTransactions = [
 
       updateDefaultCategory() {
         const available = this.filteredCategories;
-        if (available.length > 0 && !this.formData.category_id) {
-          this.formData.category_id = available[0].id;
+        if (available.length > 0) {
+          if (this.formData.type === 'transfer') {
+            const transferCat = available.find((c: CategoryItem) =>
+              c.name.toLowerCase().includes('transfer')
+            );
+            this.formData.category_id = transferCat
+              ? transferCat.id
+              : available[0].id;
+          } else if (
+            !this.formData.category_id ||
+            !available.some((c) => c.id === this.formData.category_id)
+          ) {
+            this.formData.category_id = available[0].id;
+          }
+        } else {
+          this.formData.category_id = '';
         }
       },
 
       applyQuickData(item: any) {
         this.formData.type = item.type || 'expense';
-        this.formData.amount = item.amount;
-        this.formData.notes = item.note || item.title;
-        this.updateDefaultCategory();
+        this.formData.amount = String(item.amount).replace(/[^0-9]/g, '');
+        this.formData.notes = item.title;
+
+        // Jika item quick access punya category_id langsung
+        if (item.category_id) {
+          this.formData.category_id = item.category_id;
+          this.autoCategoryDetected = true;
+        } else {
+          // Jalankan pencarian otomatis berdasarkan catatan
+          this.handleNotesInput();
+        }
       },
 
       async saveTransaction(addAnother = false) {
@@ -557,6 +1058,7 @@ const frequentTransactions = [
             if (addAnother && !this.isEditMode) {
               this.formData.amount = '';
               this.formData.notes = '';
+              this.autoCategoryDetected = false;
               setTimeout(() => {
                 const input = document.querySelector(
                   'input[x-ref="amountInput"]'

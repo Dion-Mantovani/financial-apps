@@ -6,12 +6,35 @@ import {
   SlidersHorizontal,
   ArrowDownLeft,
   ArrowUpRight,
-  ShoppingBag,
-  Briefcase,
   ChevronDown,
   ArrowRightLeft,
   X,
   Calendar,
+  Download,
+  Filter,
+  RotateCcw,
+  FileSpreadsheet,
+  FileJson,
+  Copy,
+  Check,
+  // IKON KATEGORI SESUAI DB SUPABASE
+  Utensils,
+  Car,
+  ShoppingBag,
+  Receipt,
+  Gamepad2,
+  HeartPulse,
+  GraduationCap,
+  MoreHorizontal,
+  Briefcase,
+  Gift,
+  TrendingUp,
+  Wallet,
+  Smartphone,
+  PiggyBank,
+  LineChart,
+  CreditCard,
+  Tag,
 } from '@lucide/astro';
 
 const quickFilterTypes = [
@@ -45,56 +68,92 @@ const quickFilterTypes = [
 
       <!-- SEARCH & CONTROLS -->
       <div class="flex items-center justify-between gap-2">
+        <!-- 1. FILTER BULAN (NATIVE MONTH PICKER) -->
         <div x-show="!showSearchInput" class="flex items-center">
-          <button
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
-          >
-            <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
-            <span class="text-xs font-bold text-slate-800">September 2026</span>
-            <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
-          </button>
+          <div class="relative">
+            <button
+              type="button"
+              @click="openMonthPicker()"
+              class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
+            >
+              <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
+              <span
+                x-text="formattedSelectedMonth"
+                class="text-xs font-bold text-slate-800"></span>
+              <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+            </button>
+
+            <input
+              x-ref="monthInput"
+              type="month"
+              x-model="selectedMonth"
+              class="pointer-events-none absolute bottom-0 left-0 h-0 w-0 opacity-0"
+            />
+          </div>
         </div>
 
+        <!-- INPUT SEARCH GLOBAL IN-PAGE -->
         <div x-show="showSearchInput" x-cloak class="relative flex-1">
           <Search
             class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 stroke-2 text-slate-400"
           />
           <input
+            x-ref="searchInput"
             type="text"
             x-model="searchQuery"
-            placeholder="Cari transaksi..."
+            placeholder="Cari transaksi, kategori, dompet..."
             class="w-full rounded-2xl border border-slate-200/80 bg-white py-2 pr-8 pl-9 text-xs font-medium text-slate-800 shadow-2xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
           />
           <button
             type="button"
-            @click="showSearchInput = false; searchQuery = ''"
-            class="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            @click="toggleSearch()"
+            class="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
           >
             <X class="h-4 w-4 stroke-2" />
           </button>
         </div>
 
+        <!-- 3 TOMBOL AKSI: SEARCH | FILTER | EXPORT -->
         <div class="flex shrink-0 items-center gap-1.5">
+          <!-- Tombol Search -->
           <button
             type="button"
-            @click="showSearchInput = !showSearchInput"
+            @click="toggleSearch()"
             class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+            title="Cari Transaksi"
           >
             <Search class="h-4 w-4 stroke-2" />
           </button>
 
+          <!-- Tombol Advance Filter -->
           <button
             type="button"
             @click="openFilterModal = true"
-            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+            :class="hasActiveAdvanceFilter ? 'bg-blue-50 border-blue-300 text-blue-600' : 'bg-white border-slate-200/80 text-slate-600'"
+            class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+            title="Filter Transaksi"
           >
             <SlidersHorizontal class="h-4 w-4 stroke-2" />
+            <template x-if="hasActiveAdvanceFilter">
+              <span
+                class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600"
+              ></span>
+            </template>
+          </button>
+
+          <!-- Tombol Export -->
+          <button
+            type="button"
+            @click="openExportModal = true"
+            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+            title="Export Data"
+          >
+            <Download class="h-4 w-4 stroke-2" />
           </button>
         </div>
       </div>
 
-      <!-- QUICK FILTER PILLS -->
+      <!-- QUICK FILTER PILLS (TYPE TRANSAKSI) -->
       <div class="no-scrollbar flex items-center gap-2 overflow-x-auto pt-1">
         {
           quickFilterTypes.map((tab) => (
@@ -120,8 +179,20 @@ const quickFilterTypes = [
     </template>
 
     <template x-if="!loading && groupedTransactions.length === 0">
-      <div class="py-12 text-center text-xs font-semibold text-slate-400">
-        Belum ada riwayat transaksi.
+      <div
+        class="space-y-2 py-12 text-center text-xs font-semibold text-slate-400"
+      >
+        <p>Tidak ada riwayat transaksi yang cocok.</p>
+        <template x-if="hasActiveAdvanceFilter || searchQuery">
+          <button
+            type="button"
+            @click="resetAdvanceFilters()"
+            class="inline-flex cursor-pointer items-center gap-1 font-bold text-blue-600 hover:underline"
+          >
+            <RotateCcw class="h-3 w-3 stroke-[2.5]" />
+            <span>Reset Advance Filter</span>
+          </button>
+        </template>
       </div>
     </template>
 
@@ -141,43 +212,94 @@ const quickFilterTypes = [
             class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-2xs"
           >
             <template x-for="item in group.items" :key="item.id">
-              <!-- KLIK ITEM LANGSUNG NAVIGASI KE HALAMAN EDIT TRANSAKSI -->
               <div
                 @click="goToEditPage(item.id)"
                 class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
               >
                 <div class="flex min-w-0 items-center gap-3">
+                  <!-- CONTAINER IKON KATEGORI DINAMIS -->
                   <div
                     :class=`{
-                      'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
-                      'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
-                      'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
-                    }`
+    'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
+    'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
+    'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
+  }`
                     class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border"
                   >
-                    <template x-if="item.type === 'expense'"
+                    <template x-if="item.categories?.icon === 'utensils'"
+                      ><Utensils class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'car'"
+                      ><Car class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'shopping-bag'"
                       ><ShoppingBag class="h-4.5 w-4.5 stroke-2" /></template
                     >
-                    <template x-if="item.type === 'income'"
+                    <template x-if="item.categories?.icon === 'receipt'"
+                      ><Receipt class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'gamepad-2'"
+                      ><Gamepad2 class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'heart-pulse'"
+                      ><HeartPulse class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'graduation-cap'"
+                      ><GraduationCap class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'more-horizontal'"
+                      ><MoreHorizontal class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+
+                    <template x-if="item.categories?.icon === 'briefcase'"
                       ><Briefcase class="h-4.5 w-4.5 stroke-2" /></template
                     >
-                    <template x-if="item.type === 'transfer'"
+                    <template x-if="item.categories?.icon === 'gift'"
+                      ><Gift class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'trending-up'"
+                      ><TrendingUp class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'rotate-ccw'"
+                      ><RotateCcw class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'wallet'"
+                      ><Wallet class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+
+                    <template
+                      x-if="item.categories?.icon === 'arrow-right-left'"
                       ><ArrowRightLeft class="h-4.5 w-4.5 stroke-2" /></template
                     >
+                    <template x-if="item.categories?.icon === 'smartphone'"
+                      ><Smartphone class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'piggy-bank'"
+                      ><PiggyBank class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'line-chart'"
+                      ><LineChart class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+                    <template x-if="item.categories?.icon === 'credit-card'"
+                      ><CreditCard class="h-4.5 w-4.5 stroke-2" /></template
+                    >
+
+                    <!-- Fallback -->
+                    <template
+                      x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw','wallet','arrow-right-left','smartphone','piggy-bank','line-chart','credit-card'].includes(item.categories?.icon)"
+                    >
+                      <Tag class="h-4.5 w-4.5 stroke-2" />
+                    </template>
                   </div>
 
                   <div class="flex min-w-0 flex-col">
-                    <!-- Catatan / Deskripsi Transaksi -->
                     <span
                       x-text="item.notes || 'Transaksi'"
                       class="truncate text-xs font-bold text-slate-800"></span>
 
-                    <!-- Keterangan Mikro (Kategori & Dompet) -->
                     <span class="text-[10px] font-medium text-slate-400">
-                      <!-- Nama Kategori (Tetap Muncul untuk Semua Tipe Transaksi) -->
                       <span x-text="item.categories?.name || 'Umum'"></span> •
 
-                      <!-- Jika Tipe Transfer: Tampilkan Dompet Asal -> Dompet Tujuan -->
                       <template x-if="item.type === 'transfer'">
                         <span class="font-semibold text-slate-500">
                           <span x-text="item.wallets?.name || 'Dompet'"></span>
@@ -187,7 +309,6 @@ const quickFilterTypes = [
                         </span>
                       </template>
 
-                      <!-- Jika Tipe Biasa (Expense / Income): Tampilkan Nama Dompet Tunggal -->
                       <template x-if="item.type !== 'transfer'">
                         <span
                           x-text="item.wallets?.name || 'Dompet'"
@@ -213,6 +334,269 @@ const quickFilterTypes = [
         </div>
       </template>
     </div>
+
+    <!-- ADVANCE FILTER MODAL -->
+    <template x-teleport="body">
+      <div
+        x-show="openFilterModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+      >
+        <div
+          @click.away="openFilterModal = false"
+          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <Filter class="h-4 w-4 stroke-2" />
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-900">
+                Advance Filter
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="openFilterModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div class="space-y-1">
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase"
+              >
+                Custom Rentang Tanggal
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <span class="text-[9px] font-semibold text-slate-400"
+                    >Dari:</span
+                  >
+                  <input
+                    type="date"
+                    x-model="filterDateFrom"
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <span class="text-[9px] font-semibold text-slate-400"
+                    >Sampai:</span
+                  >
+                  <input
+                    type="date"
+                    x-model="filterDateTo"
+                    class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase"
+              >
+                Pilih Dompet
+              </label>
+              <div class="no-scrollbar flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  @click="filterWalletId = ''"
+                  :class="filterWalletId === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                  class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+                >
+                  Semua Dompet
+                </button>
+                <template x-for="w in wallets" :key="w.id">
+                  <button
+                    type="button"
+                    @click="filterWalletId = w.id"
+                    :class="filterWalletId === w.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                    class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+                  >
+                    <span x-text="w.name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label
+                class="block text-[10px] font-bold text-slate-500 uppercase"
+              >
+                Pilih Kategori
+              </label>
+              <div
+                class="no-scrollbar flex max-h-36 flex-wrap gap-1.5 overflow-y-auto pr-1"
+              >
+                <button
+                  type="button"
+                  @click="filterCategoryId = ''"
+                  :class="filterCategoryId === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-900 border-slate-200 hover:bg-slate-100'"
+                  class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+                >
+                  Semua Kategori
+                </button>
+                <template x-for="c in categories" :key="c.id">
+                  <button
+                    type="button"
+                    @click="filterCategoryId = c.id"
+                    :class="filterCategoryId === c.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                    class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+                  >
+                    <span x-text="c.name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 border-t border-slate-100 pt-2">
+              <button
+                type="button"
+                @click="resetAdvanceFilters()"
+                class="flex w-1/3 cursor-pointer items-center justify-center gap-1 rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95"
+              >
+                <RotateCcw class="h-3.5 w-3.5 stroke-2" />
+                <span>Reset</span>
+              </button>
+              <button
+                type="button"
+                @click="openFilterModal = false"
+                class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95"
+              >
+                Terapkan Filter
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- MODAL EXPORT TRANSAKSI (CSV & JSON SALIN/DOWNLOAD) -->
+    <template x-teleport="body">
+      <div
+        x-show="openExportModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+      >
+        <div
+          @click.away="openExportModal = false"
+          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <Download class="h-4 w-4 stroke-2" />
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-900">
+                Export Transaksi
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="openExportModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <p class="text-xs font-medium text-slate-500">
+              Mengeksport <span
+                class="font-bold text-slate-800"
+                x-text="filteredTransactions.length"></span> transaksi yang saat ini
+              tampil sesuai filter/pencarian.
+            </p>
+
+            <!-- 1. OPSI EXPORT CSV -->
+            <div
+              class="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <FileSpreadsheet class="h-5 w-5 stroke-2 text-emerald-600" />
+                  <div>
+                    <span class="block text-xs font-bold text-slate-800"
+                      >Format CSV</span
+                    >
+                    <span class="block text-[9px] font-semibold text-slate-400"
+                      >Cocok untuk Excel & Sheets</span
+                    >
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  @click="exportCSV()"
+                  class="flex cursor-pointer items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+                >
+                  <Download class="h-3.5 w-3.5 stroke-2" />
+                  <span>Download</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. OPSI EXPORT JSON (DOWNLOAD / COPY) -->
+            <div
+              class="space-y-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5"
+            >
+              <div class="flex items-center gap-2">
+                <FileJson class="h-5 w-5 stroke-2 text-blue-600" />
+                <div>
+                  <span class="block text-xs font-bold text-slate-800"
+                    >Format JSON</span
+                  >
+                  <span class="block text-[9px] font-semibold text-slate-400"
+                    >Struktur data mentah</span
+                  >
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  @click="copyJSON()"
+                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-all hover:bg-blue-100 active:scale-95"
+                >
+                  <template x-if="!copiedJson">
+                    <div class="flex items-center gap-1">
+                      <Copy class="h-3.5 w-3.5 stroke-2" />
+                      <span>Salin JSON</span>
+                    </div>
+                  </template>
+                  <template x-if="copiedJson">
+                    <div class="flex items-center gap-1 text-emerald-600">
+                      <Check class="h-3.5 w-3.5 stroke-3" />
+                      <span>Tersalin!</span>
+                    </div>
+                  </template>
+                </button>
+
+                <button
+                  type="button"
+                  @click="downloadJSON()"
+                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 active:scale-95"
+                >
+                  <Download class="h-3.5 w-3.5 stroke-2" />
+                  <span>Download</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </Layout>
 
@@ -230,6 +614,7 @@ const quickFilterTypes = [
     id: string;
     name: string;
     type: string;
+    icon?: string;
     [key: string]: any;
   }
 
@@ -239,10 +624,12 @@ const quickFilterTypes = [
     amount: number;
     type: 'income' | 'expense' | 'transfer';
     wallet_id?: string;
+    to_wallet_id?: string;
     category_id?: string;
     transaction_date?: string;
     created_at?: string;
     wallets?: WalletItem;
+    to_wallets?: WalletItem;
     categories?: CategoryItem;
     [key: string]: any;
   }
@@ -256,20 +643,63 @@ const quickFilterTypes = [
     (window as any).Alpine.data('historyApp', () => ({
       activeTab: 'all',
       openFilterModal: false,
+      openExportModal: false,
       showSearchInput: false,
       searchQuery: '',
+      copiedJson: false,
+
+      selectedMonth: new Date().toISOString().slice(0, 7),
+
+      filterDateFrom: '',
+      filterDateTo: '',
+      filterWalletId: '',
+      filterCategoryId: '',
+
       transactions: [] as TransactionItem[],
+      wallets: [] as WalletItem[],
+      categories: [] as CategoryItem[],
       loading: true,
 
       init() {
         this.fetchData();
       },
 
+      openMonthPicker() {
+        const input = (this as any).$refs.monthInput;
+        if (input) {
+          if ('showPicker' in HTMLInputElement.prototype) {
+            input.showPicker();
+          } else {
+            input.click();
+          }
+        }
+      },
+
+      toggleSearch() {
+        this.showSearchInput = !this.showSearchInput;
+        if (this.showSearchInput) {
+          setTimeout(() => {
+            const input = document.querySelector(
+              'input[x-ref="searchInput"]'
+            ) as HTMLInputElement;
+            input?.focus();
+          }, 100);
+        } else {
+          this.searchQuery = '';
+        }
+      },
+
       async fetchData() {
         this.loading = true;
         try {
-          const res = await fetch('/api/transactions');
-          this.transactions = (await res.json()) as TransactionItem[];
+          const [resT, resW, resC] = await Promise.all([
+            fetch('/api/transactions'),
+            fetch('/api/wallets'),
+            fetch('/api/categories'),
+          ]);
+          this.transactions = (await resT.json()) as TransactionItem[];
+          this.wallets = (await resW.json()) as WalletItem[];
+          this.categories = (await resC.json()) as CategoryItem[];
         } catch (e) {
           console.error(e);
         } finally {
@@ -278,7 +708,6 @@ const quickFilterTypes = [
       },
 
       goToEditPage(id: string) {
-        // Sesuaikan endpoint rute halaman transaksi kamu jika berbeda (misal: /transaction)
         window.location.href = `/transaction?id=${id}`;
       },
 
@@ -290,21 +719,77 @@ const quickFilterTypes = [
         return formatDateGroup(dateStr);
       },
 
+      get formattedSelectedMonth() {
+        if (!this.selectedMonth) return 'Semua Periode';
+        const [year, month] = this.selectedMonth.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return date.toLocaleDateString('id-ID', {
+          month: 'long',
+          year: 'numeric',
+        });
+      },
+
+      get hasActiveAdvanceFilter() {
+        return !!(
+          this.filterDateFrom ||
+          this.filterDateTo ||
+          this.filterWalletId ||
+          this.filterCategoryId
+        );
+      },
+
+      resetAdvanceFilters() {
+        this.filterDateFrom = '';
+        this.filterDateTo = '';
+        this.filterWalletId = '';
+        this.filterCategoryId = '';
+        this.openFilterModal = false;
+      },
+
       get filteredTransactions() {
         return this.transactions.filter((item: TransactionItem) => {
           const matchTab =
             this.activeTab === 'all' || item.type === this.activeTab;
+
+          const q = this.searchQuery.toLowerCase().trim();
           const matchQuery =
-            !this.searchQuery ||
-            (item.notes &&
-              item.notes
-                .toLowerCase()
-                .includes(this.searchQuery.toLowerCase())) ||
+            !q ||
+            (item.notes && item.notes.toLowerCase().includes(q)) ||
             (item.categories &&
-              item.categories.name
-                .toLowerCase()
-                .includes(this.searchQuery.toLowerCase()));
-          return matchTab && matchQuery;
+              item.categories.name.toLowerCase().includes(q)) ||
+            (item.wallets && item.wallets.name.toLowerCase().includes(q)) ||
+            (item.to_wallets && item.to_wallets.name.toLowerCase().includes(q));
+
+          const txDate = item.transaction_date
+            ? item.transaction_date.split('T')[0]
+            : '';
+          const matchMonth =
+            q || this.filterDateFrom || this.filterDateTo || !this.selectedMonth
+              ? true
+              : txDate.startsWith(this.selectedMonth);
+
+          const matchFrom =
+            !this.filterDateFrom || txDate >= this.filterDateFrom;
+          const matchTo = !this.filterDateTo || txDate <= this.filterDateTo;
+
+          const matchWallet =
+            !this.filterWalletId ||
+            item.wallet_id === this.filterWalletId ||
+            item.to_wallet_id === this.filterWalletId;
+
+          const matchCategory =
+            !this.filterCategoryId ||
+            item.category_id === this.filterCategoryId;
+
+          return (
+            matchTab &&
+            matchQuery &&
+            matchMonth &&
+            matchFrom &&
+            matchTo &&
+            matchWallet &&
+            matchCategory
+          );
         });
       },
 
@@ -320,6 +805,93 @@ const quickFilterTypes = [
           groups[groupKey].items.push(item);
         });
         return Object.values(groups);
+      },
+
+      getFormattedExportData() {
+        return this.filteredTransactions.map((item: TransactionItem) => ({
+          id: item.id,
+          tanggal: item.transaction_date
+            ? item.transaction_date.split('T')[0]
+            : '',
+          tipe: item.type,
+          nominal: item.amount,
+          catatan: item.notes || '',
+          kategori: item.categories?.name || 'Umum',
+          dompet_asal: item.wallets?.name || '',
+          dompet_tujuan: item.to_wallets?.name || '',
+        }));
+      },
+
+      exportCSV() {
+        const data = this.getFormattedExportData();
+        const headers = [
+          'Tanggal',
+          'Tipe',
+          'Nominal',
+          'Catatan',
+          'Kategori',
+          'Dompet_Asal',
+          'Dompet_Tujuan',
+        ];
+        const csvRows = [
+          headers.join(','),
+          ...data.map((row) =>
+            [
+              `"${row.tanggal}"`,
+              `"${row.tipe}"`,
+              row.nominal,
+              `"${(row.catatan || '').replace(/"/g, '""')}"`,
+              `"${row.kategori}"`,
+              `"${row.dompet_asal}"`,
+              `"${row.dompet_tujuan}"`,
+            ].join(',')
+          ),
+        ];
+
+        const blob = new Blob([csvRows.join('\n')], {
+          type: 'text/csv;charset=utf-8;',
+        });
+        this.downloadFile(
+          blob,
+          `transaksi_studion_${new Date().toISOString().slice(0, 10)}.csv`
+        );
+        this.openExportModal = false;
+      },
+
+      downloadJSON() {
+        const data = this.getFormattedExportData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: 'application/json',
+        });
+        this.downloadFile(
+          blob,
+          `transaksi_studion_${new Date().toISOString().slice(0, 10)}.json`
+        );
+        this.openExportModal = false;
+      },
+
+      async copyJSON() {
+        const data = this.getFormattedExportData();
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+          this.copiedJson = true;
+          setTimeout(() => {
+            this.copiedJson = false;
+          }, 2000);
+        } catch (e) {
+          alert('Gagal menyalin data JSON!');
+        }
+      },
+
+      downloadFile(blob: Blob, filename: string) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       },
     }));
   });

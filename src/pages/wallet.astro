@@ -19,6 +19,11 @@ import {
   X,
   Sparkles,
   Check,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  TrendingUp,
+  TrendingDown,
 } from '@lucide/astro';
 ---
 
@@ -56,11 +61,25 @@ import {
           >
         </div>
 
+        <!-- CONTROLS: REORDER & TOGGLE VIEW -->
         <div class="flex items-center gap-1.5">
+          <!-- Tombol Aktivasi Reorder -->
+          <button
+            type="button"
+            @click="toggleReorderMode()"
+            :class="isReordering ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-white/10 text-blue-100 border-white/15 hover:bg-white/20'"
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border shadow-xs backdrop-blur-md transition-all active:scale-95"
+            title="Atur Urutan Dompet"
+          >
+            <ArrowUpDown class="h-4 w-4 stroke-[2.5]" />
+          </button>
+
+          <!-- Tombol Toggle Mode Card / List -->
           <button
             type="button"
             @click="toggleViewMode()"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95"
+            :disabled="isReordering"
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 disabled:opacity-40"
             :title="`Beralih ke mode ${viewMode === 'card' ? 'List' : 'Card'}`"
           >
             <LayoutGrid x-show="viewMode === 'list'" class="h-4 w-4 stroke-2" />
@@ -98,7 +117,6 @@ import {
           </div>
         </div>
 
-        <!-- TOP WALLET (SALDO TERTINGGI DINAMIS) -->
         <div class="flex items-center gap-2">
           <div
             class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-500/20 text-amber-300"
@@ -136,19 +154,41 @@ import {
       </div>
     </div>
 
-    <!-- 3. ACTION HEADER -->
+    <!-- 3. ACTION HEADER / BARIS REORDER ACTIVE -->
     <div class="flex items-center justify-between px-0.5">
-      <span class="text-xs font-bold tracking-tight text-slate-800"
-        >Daftar Dompet</span
-      >
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs font-bold tracking-tight text-slate-800">
+          Daftar Dompet
+        </span>
+        <template x-if="isReordering">
+          <span
+            class="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-800"
+          >
+            Mode Reorder Aktif
+          </span>
+        </template>
+      </div>
 
-      <a
-        href="/add-transaction?type=transfer"
-        class="flex cursor-pointer items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-600 transition-all hover:bg-blue-100 active:scale-95"
-      >
-        <ArrowRightLeft class="h-3.5 w-3.5 stroke-[2.5]" />
-        <span>Transfer Antar Dompet</span>
-      </a>
+      <template x-if="!isReordering">
+        <a
+          href="/transaction?type=transfer"
+          class="flex cursor-pointer items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-600 transition-all hover:bg-blue-100 active:scale-95"
+        >
+          <ArrowRightLeft class="h-3.5 w-3.5 stroke-[2.5]" />
+          <span>Transfer Antar Dompet</span>
+        </a>
+      </template>
+
+      <template x-if="isReordering">
+        <button
+          type="button"
+          @click="finishReorder()"
+          class="flex cursor-pointer items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1 text-[11px] font-bold text-white shadow-xs transition-all hover:bg-slate-800 active:scale-95"
+        >
+          <Check class="h-3.5 w-3.5 stroke-[3]" />
+          <span>Selesai Reorder</span>
+        </button>
+      </template>
     </div>
 
     <!-- 4. LOADING STATE -->
@@ -159,7 +199,10 @@ import {
     </template>
 
     <!-- 5. MODE CARD -->
-    <div x-show="!loading && viewMode === 'card'" class="space-y-3.5">
+    <div
+      x-show="!loading && viewMode === 'card' && !isReordering"
+      class="space-y-3.5"
+    >
       <template x-for="wallet in wallets" :key="wallet.id">
         <div
           :style="`background-color: ${wallet.color || '#1e3a8a'}`"
@@ -187,18 +230,18 @@ import {
               <div
                 class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/20 bg-white/10 backdrop-blur-md"
               >
-                <template x-if="wallet.icon === 'landmark'">
-                  <Landmark class="h-4 w-4 stroke-2" />
-                </template>
-                <template x-if="wallet.icon === 'building-2'">
-                  <Building2 class="h-4 w-4 stroke-2" />
-                </template>
-                <template x-if="wallet.icon === 'credit-card'">
-                  <CreditCard class="h-4 w-4 stroke-2" />
-                </template>
-                <template x-if="wallet.icon === 'coins'">
-                  <Coins class="h-4 w-4 stroke-2" />
-                </template>
+                <template x-if="wallet.icon === 'landmark'"
+                  ><Landmark class="h-4 w-4 stroke-2" /></template
+                >
+                <template x-if="wallet.icon === 'building-2'"
+                  ><Building2 class="h-4 w-4 stroke-2" /></template
+                >
+                <template x-if="wallet.icon === 'credit-card'"
+                  ><CreditCard class="h-4 w-4 stroke-2" /></template
+                >
+                <template x-if="wallet.icon === 'coins'"
+                  ><Coins class="h-4 w-4 stroke-2" /></template
+                >
               </div>
             </div>
           </div>
@@ -240,35 +283,59 @@ import {
       </template>
     </div>
 
-    <!-- 6. MODE LIST -->
+    <!-- 6. MODE LIST (SERTA NAVIGASI PANAH REORDER) -->
     <div
-      x-show="!loading && viewMode === 'list'"
+      x-show="!loading && (viewMode === 'list' || isReordering)"
       x-cloak
       class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-sm"
     >
-      <template x-for="wallet in wallets" :key="wallet.id">
+      <template x-for="(wallet, index) in wallets" :key="wallet.id">
         <div
-          @click="showDetail(wallet)"
-          class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
+          @click="!isReordering && showDetail(wallet)"
+          class="flex items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl"
+          :class="isReordering ? 'bg-slate-50/50' : 'cursor-pointer hover:bg-slate-50/80'"
         >
           <div class="flex min-w-0 items-center gap-3">
+            <!-- Navigasi Tombol Reorder -->
+            <template x-if="isReordering">
+              <div class="flex flex-col gap-0.5 pr-1">
+                <button
+                  type="button"
+                  @click.stop="moveWallet(index, 'up')"
+                  :disabled="index === 0"
+                  class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-blue-50 hover:text-blue-600 disabled:opacity-20"
+                >
+                  <ArrowUp class="h-3 w-3 stroke-[3]" />
+                </button>
+                <button
+                  type="button"
+                  @click.stop="moveWallet(index, 'down')"
+                  :disabled="index === wallets.length - 1"
+                  class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-blue-50 hover:text-blue-600 disabled:opacity-20"
+                >
+                  <ArrowDown class="h-3 w-3 stroke-[3]" />
+                </button>
+              </div>
+            </template>
+
             <div
               :style="`background-color: ${wallet.color}20; color: ${wallet.color}`"
               class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border border-slate-100"
             >
-              <template x-if="wallet.icon === 'landmark'">
-                <Landmark class="h-4.5 w-4.5 stroke-2" />
-              </template>
-              <template x-if="wallet.icon === 'building-2'">
-                <Building2 class="h-4.5 w-4.5 stroke-2" />
-              </template>
-              <template x-if="wallet.icon === 'credit-card'">
-                <CreditCard class="h-4.5 w-4.5 stroke-2" />
-              </template>
-              <template x-if="wallet.icon === 'coins'">
-                <Coins class="h-4.5 w-4.5 stroke-2" />
-              </template>
+              <template x-if="wallet.icon === 'landmark'"
+                ><Landmark class="h-4.5 w-4.5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'building-2'"
+                ><Building2 class="h-4.5 w-4.5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'credit-card'"
+                ><CreditCard class="h-4.5 w-4.5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'coins'"
+                ><Coins class="h-4.5 w-4.5 stroke-2" /></template
+              >
             </div>
+
             <div class="flex min-w-0 flex-col">
               <span
                 x-text="wallet.name"
@@ -295,7 +362,7 @@ import {
     </div>
 
     <!-- 7. TOMBOL TAMBAH DOMPET -->
-    <div class="pt-1">
+    <div x-show="!isReordering" class="pt-1">
       <button
         type="button"
         @click="openAddModal()"
@@ -306,7 +373,7 @@ import {
       </button>
     </div>
 
-    <!-- 8. MODAL DETAIL DOMPET -->
+    <!-- 8. MODAL DETAIL DOMPET (ENGAGED STATS & PILLS FILTER) -->
     <template x-teleport="body">
       <div
         x-show="openDetailModal"
@@ -327,6 +394,7 @@ import {
                 class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase backdrop-blur-md"
               ></span>
               <button
+                type="button"
                 @click="openDetailModal = false"
                 class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
               >
@@ -338,18 +406,18 @@ import {
               <div
                 class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md"
               >
-                <template x-if="selectedWallet.icon === 'landmark'">
-                  <Landmark class="h-6 w-6 stroke-2 text-white" />
-                </template>
-                <template x-if="selectedWallet.icon === 'building-2'">
-                  <Building2 class="h-6 w-6 stroke-2 text-white" />
-                </template>
-                <template x-if="selectedWallet.icon === 'credit-card'">
-                  <CreditCard class="h-6 w-6 stroke-2 text-white" />
-                </template>
-                <template x-if="selectedWallet.icon === 'coins'">
-                  <Coins class="h-6 w-6 stroke-2 text-white" />
-                </template>
+                <template x-if="selectedWallet.icon === 'landmark'"
+                  ><Landmark class="h-6 w-6 stroke-2 text-white" /></template
+                >
+                <template x-if="selectedWallet.icon === 'building-2'"
+                  ><Building2 class="h-6 w-6 stroke-2 text-white" /></template
+                >
+                <template x-if="selectedWallet.icon === 'credit-card'"
+                  ><CreditCard class="h-6 w-6 stroke-2 text-white" /></template
+                >
+                <template x-if="selectedWallet.icon === 'coins'"
+                  ><Coins class="h-6 w-6 stroke-2 text-white" /></template
+                >
               </div>
 
               <div class="flex min-w-0 flex-col">
@@ -366,8 +434,9 @@ import {
           </div>
 
           <div class="space-y-4 p-5">
+            <!-- Saldo Utama -->
             <div
-              class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-center"
+              class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 text-center"
             >
               <span
                 class="text-[10px] font-bold tracking-wider text-slate-400 uppercase"
@@ -381,7 +450,78 @@ import {
               </p>
             </div>
 
-            <div class="flex items-center gap-2 pt-1">
+            <!-- STATISTIK RINGKAS DENGAN PILLS FILTER -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-500 uppercase"
+                  >Ringkasan Arus Kas</span
+                >
+
+                <!-- 3 Pills Filter Periode -->
+                <div
+                  class="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5"
+                >
+                  <button
+                    type="button"
+                    @click="detailStatsPeriod = '1w'"
+                    :class="detailStatsPeriod === '1w' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
+                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
+                    >1 Mgg</button
+                  >
+                  <button
+                    type="button"
+                    @click="detailStatsPeriod = '1m'"
+                    :class="detailStatsPeriod === '1m' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
+                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
+                    >1 Bln</button
+                  >
+                  <button
+                    type="button"
+                    @click="detailStatsPeriod = 'all'"
+                    :class="detailStatsPeriod === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
+                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
+                    >Lifetime</button
+                  >
+                </div>
+              </div>
+
+              <!-- Mini Cards Pemasukan vs Pengeluaran -->
+              <div class="grid grid-cols-2 gap-2">
+                <div
+                  class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-2.5"
+                >
+                  <div class="flex items-center gap-1 text-emerald-600">
+                    <TrendingUp class="h-3.5 w-3.5 stroke-[2.5]" />
+                    <span class="text-[9px] font-bold uppercase">Pemasukan</span
+                    >
+                  </div>
+                  <p
+                    x-text="formatCurrency(getWalletDetailStats(selectedWallet.id).income)"
+                    class="mt-1 text-xs font-black text-emerald-700"
+                  >
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-2xl border border-rose-100 bg-rose-50/40 p-2.5"
+                >
+                  <div class="flex items-center gap-1 text-rose-600">
+                    <TrendingDown class="h-3.5 w-3.5 stroke-[2.5]" />
+                    <span class="text-[9px] font-bold uppercase"
+                      >Pengeluaran</span
+                    >
+                  </div>
+                  <p
+                    x-text="formatCurrency(getWalletDetailStats(selectedWallet.id).expense)"
+                    class="mt-1 text-xs font-black text-rose-700"
+                  >
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Aksi Modal Detail -->
+            <div class="flex items-center gap-2 border-t border-slate-100 pt-1">
               <button
                 type="button"
                 @click="deleteWalletFromDetail()"
@@ -444,9 +584,8 @@ import {
             <div>
               <label
                 class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                >Nama Dompet</label
               >
-                Nama Dompet
-              </label>
               <input
                 type="text"
                 x-model="formData.name"
@@ -460,9 +599,8 @@ import {
               <div>
                 <label
                   class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                  >Tipe Dompet</label
                 >
-                  Tipe Dompet
-                </label>
                 <select
                   x-model="formData.type"
                   class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
@@ -477,9 +615,8 @@ import {
               <div>
                 <label
                   class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                  >Ikon</label
                 >
-                  Ikon
-                </label>
                 <select
                   x-model="formData.icon"
                   class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
@@ -495,9 +632,8 @@ import {
             <div>
               <label
                 class="mb-1.5 block text-[10px] font-bold text-slate-500 uppercase"
+                >Pilih Warna Tema</label
               >
-                Pilih Warna Tema
-              </label>
               <div class="grid grid-cols-5 gap-2">
                 <template
                   x-for="c in [
@@ -532,9 +668,8 @@ import {
             <div>
               <label
                 class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                >Saldo Awal / Nominal (Rp)</label
               >
-                Saldo Awal / Nominal (Rp)
-              </label>
               <input
                 type="number"
                 x-model="formData.balance"
@@ -548,15 +683,13 @@ import {
                 type="button"
                 @click="openFormModal = false"
                 class="w-1/3 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95"
+                >Batal</button
               >
-                Batal
-              </button>
               <button
                 type="submit"
                 class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95"
+                >Simpan Dompet</button
               >
-                Simpan Dompet
-              </button>
             </div>
           </form>
         </div>
@@ -590,17 +723,26 @@ import {
     to_wallet_id?: string;
     amount: number;
     type: 'income' | 'expense' | 'transfer';
+    transaction_date?: string;
+    created_at?: string;
     [key: string]: any;
   }
 
   document.addEventListener('alpine:init', () => {
     Alpine.data('walletApp', () => ({
       viewMode: localStorage.getItem('studion_wallet_view_mode') || 'card',
+      previousViewMode: 'card',
+      isReordering: false,
+      initialOrderJson: '',
+
       wallets: [] as WalletItem[],
       transactions: [] as TransactionItem[],
       loading: true,
+
       openDetailModal: false,
       openFormModal: false,
+      detailStatsPeriod: '1m',
+
       isEdit: false,
       selectedWallet: {} as WalletItem,
       formData: {
@@ -621,6 +763,78 @@ import {
         localStorage.setItem('studion_wallet_view_mode', this.viewMode);
       },
 
+      // FUNGSI SORTING DENGAN PERSISTENSI LOCALSTORAGE
+      applyLocalStorageOrder(fetchedWallets: WalletItem[]) {
+        const savedOrderJson = localStorage.getItem(
+          'studion_wallet_sort_order'
+        );
+        if (!savedOrderJson) return fetchedWallets;
+
+        try {
+          const savedOrderIds: string[] = JSON.parse(savedOrderJson);
+          return [...fetchedWallets].sort((a, b) => {
+            const indexA = savedOrderIds.indexOf(a.id);
+            const indexB = savedOrderIds.indexOf(b.id);
+
+            // Jika ada dompet baru yang belum tercatat di localStorage, taruh di paling depan
+            if (indexA === -1) return -1;
+            if (indexB === -1) return 1;
+
+            return indexA - indexB;
+          });
+        } catch (e) {
+          console.error('Error parsing wallet sort order:', e);
+          return fetchedWallets;
+        }
+      },
+
+      toggleReorderMode() {
+        if (!this.isReordering) {
+          this.previousViewMode = this.viewMode;
+          this.isReordering = true;
+          this.initialOrderJson = JSON.stringify(this.wallets.map((w) => w.id));
+        } else {
+          this.finishReorder();
+        }
+      },
+
+      moveWallet(index: number, direction: 'up' | 'down') {
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= this.wallets.length) return;
+
+        const updated = [...this.wallets];
+        const temp = updated[index];
+        updated[index] = updated[newIndex];
+        updated[newIndex] = temp;
+        this.wallets = updated;
+      },
+
+      finishReorder() {
+        const currentOrderJson = JSON.stringify(this.wallets.map((w) => w.id));
+
+        // Jika tidak ada perubahan urutan -> keluar tanpa konfirmasi
+        if (currentOrderJson === this.initialOrderJson) {
+          this.isReordering = false;
+          this.viewMode = this.previousViewMode;
+          return;
+        }
+
+        // Jika ada perubahan urutan -> simpan ke LocalStorage
+        if (confirm('Simpan perubahan urutan dompet?')) {
+          const orderIds = this.wallets.map((w) => w.id);
+          localStorage.setItem(
+            'studion_wallet_sort_order',
+            JSON.stringify(orderIds)
+          );
+        } else {
+          // Batal -> Kembalikan urutan dari LocalStorage / Default
+          this.fetchAllData();
+        }
+
+        this.isReordering = false;
+        this.viewMode = this.previousViewMode;
+      },
+
       async fetchAllData() {
         this.loading = true;
         try {
@@ -628,7 +842,10 @@ import {
             fetch('/api/wallets'),
             fetch('/api/transactions'),
           ]);
-          this.wallets = (await resW.json()) as WalletItem[];
+          const rawWallets = (await resW.json()) as WalletItem[];
+
+          // Terapkan urutan tersimpan di LocalStorage
+          this.wallets = this.applyLocalStorageOrder(rawWallets);
           this.transactions = (await resT.json()) as TransactionItem[];
         } catch (e) {
           console.error(e);
@@ -646,7 +863,6 @@ import {
         return formatCurrency(total);
       },
 
-      // Hitung total transaksi per dompet (baik sebagai wallet_id maupun to_wallet_id)
       getWalletTransactionCount(walletId: string) {
         if (!walletId) return 0;
         return this.transactions.filter(
@@ -655,12 +871,48 @@ import {
         ).length;
       },
 
-      // Getter Dompet Teratas (Saldo Tertinggi)
       get topWallet() {
         if (!this.wallets.length) return null;
         return [...this.wallets].sort((a, b) => {
           return this.getWalletBalance(b) - this.getWalletBalance(a);
         })[0];
+      },
+
+      getWalletDetailStats(walletId: string) {
+        if (!walletId) return { income: 0, expense: 0 };
+
+        const now = new Date();
+        const filteredTx = this.transactions.filter((t: TransactionItem) => {
+          const isRelated =
+            t.wallet_id === walletId || t.to_wallet_id === walletId;
+          if (!isRelated) return false;
+
+          if (this.detailStatsPeriod === 'all') return true;
+
+          const txDate = new Date(t.transaction_date || t.created_at || now);
+          const diffDays =
+            (now.getTime() - txDate.getTime()) / (1000 * 3600 * 24);
+
+          if (this.detailStatsPeriod === '1w') return diffDays <= 7;
+          if (this.detailStatsPeriod === '1m') return diffDays <= 30;
+          return true;
+        });
+
+        let income = 0;
+        let expense = 0;
+
+        filteredTx.forEach((t: TransactionItem) => {
+          if (t.type === 'income' && t.wallet_id === walletId) {
+            income += Number(t.amount);
+          } else if (t.type === 'expense' && t.wallet_id === walletId) {
+            expense += Number(t.amount);
+          } else if (t.type === 'transfer') {
+            if (t.to_wallet_id === walletId) income += Number(t.amount);
+            if (t.wallet_id === walletId) expense += Number(t.amount);
+          }
+        });
+
+        return { income, expense };
       },
 
       formatCurrency(val: number) {
@@ -669,6 +921,7 @@ import {
 
       showDetail(wallet: WalletItem) {
         this.selectedWallet = wallet;
+        this.detailStatsPeriod = '1m';
         this.openDetailModal = true;
       },
 
