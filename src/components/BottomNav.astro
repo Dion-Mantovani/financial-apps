@@ -4,9 +4,9 @@ import { Home, ArrowLeftRight, Plus, BarChart3, Settings } from '@lucide/astro';
 const pathname = Astro.url.pathname;
 ---
 
-<!-- Pembungkus Luar dengan Gradient Overlay ke warna background frame (#f8fafc / slate-50) -->
+<!-- Pembungkus Luar dengan Gradient Overlay ke warna background frame (slate-50) -->
 <div
-  class="pointer-events-none absolute right-0 bottom-0 left-0 z-50 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent p-4 pt-10 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+  class="pointer-events-none absolute bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent px-4 pt-10 pb-3 sm:pb-4"
 >
   <nav
     class="pointer-events-auto flex w-full items-center justify-between rounded-3xl border border-slate-200/80 bg-white/90 px-3 py-1.5 shadow-xl shadow-blue-950/10 backdrop-blur-xl"
