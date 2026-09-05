@@ -1,36 +1,59 @@
 ---
 import { Home, ArrowLeftRight, Plus, BarChart3, Settings } from '@lucide/astro';
+
+// Deteksi URL halaman saat ini untuk active state
+const pathname = Astro.url.pathname;
+
+const navItems = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/history', label: 'Transaksi', icon: ArrowLeftRight },
+  // Quick Add di posisi tengah
+  { href: '/analytic', label: 'Analitik', icon: BarChart3 },
+  { href: '/settings', label: 'Pengaturan', icon: Settings },
+];
 ---
 
 <div
-  class="from-background via-background/80 pointer-events-none absolute right-0 bottom-0 left-0 z-50 bg-linear-to-t to-transparent p-4 pt-8"
+  class="pointer-events-none fixed right-0 bottom-0 left-0 z-50 bg-linear-to-t from-slate-900/10 via-slate-900/5 to-transparent p-4 pt-6 pb-[calc(1rem+env(safe-area-inset-bottom))]"
 >
   <nav
-    class="border-border/80 pointer-events-auto flex w-full items-center justify-between rounded-3xl border bg-white/90 px-3 py-2 shadow-xl shadow-blue-950/5 backdrop-blur-xl"
+    class="pointer-events-auto flex w-full items-center justify-between rounded-3xl border border-slate-200/80 bg-white/90 px-3 py-1.5 shadow-xl shadow-blue-950/10 backdrop-blur-xl"
   >
-    <!-- 1. Home (Active Blue) -->
+    <!-- 1. Home -->
     <a
       href="/"
-      class="flex w-12 flex-col items-center justify-center py-1 text-blue-600 transition-colors"
+      class={`flex w-12 flex-col items-center justify-center py-1 transition-colors ${
+        pathname === '/'
+          ? 'text-blue-600 font-bold'
+          : 'text-slate-400 hover:text-slate-800 font-medium'
+      }`}
     >
-      <Home class="h-5 w-5 stroke-[2.2]" />
-      <span class="mt-1 text-[10px] font-semibold">Home</span>
+      <Home
+        class={`h-5 w-5 ${pathname === '/' ? 'stroke-[2.2]' : 'stroke-2'}`}
+      />
+      <span class="mt-1 text-[10px]">Home</span>
     </a>
 
     <!-- 2. Transaction -->
     <a
       href="/history"
-      class="flex w-12 flex-col items-center justify-center py-1 text-slate-400 transition-colors hover:text-slate-900"
+      class={`flex w-12 flex-col items-center justify-center py-1 transition-colors ${
+        pathname.startsWith('/history')
+          ? 'text-blue-600 font-bold'
+          : 'text-slate-400 hover:text-slate-800 font-medium'
+      }`}
     >
-      <ArrowLeftRight class="h-5 w-5 stroke-2" />
-      <span class="mt-1 text-[10px] font-medium">Transaksi</span>
+      <ArrowLeftRight
+        class={`h-5 w-5 ${pathname.startsWith('/history') ? 'stroke-[2.2]' : 'stroke-2'}`}
+      />
+      <span class="mt-1 text-[10px]">Transaksi</span>
     </a>
 
-    <!-- 3. Quick Add Button (Floating Center Blue -> Link to /transaction) -->
-    <div class="relative -top-6 flex justify-center">
+    <!-- 3. Floating Quick Add Button (/transaction) -->
+    <div class="relative -top-5 flex shrink-0 justify-center">
       <a
         href="/transaction"
-        class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-4 border-white bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 active:scale-95"
+        class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-4 border-slate-50 bg-blue-600 text-white shadow-lg shadow-blue-600/35 transition-all hover:bg-blue-700 active:scale-95"
         aria-label="Tambah Transaksi"
       >
         <Plus class="h-6 w-6 stroke-[2.5]" />
@@ -40,19 +63,31 @@ import { Home, ArrowLeftRight, Plus, BarChart3, Settings } from '@lucide/astro';
     <!-- 4. Analytics -->
     <a
       href="/analytic"
-      class="flex w-12 flex-col items-center justify-center py-1 text-slate-400 transition-colors hover:text-slate-900"
+      class={`flex w-12 flex-col items-center justify-center py-1 transition-colors ${
+        pathname.startsWith('/analytic')
+          ? 'text-blue-600 font-bold'
+          : 'text-slate-400 hover:text-slate-800 font-medium'
+      }`}
     >
-      <BarChart3 class="h-5 w-5 stroke-2" />
-      <span class="mt-1 text-[10px] font-medium">Analitik</span>
+      <BarChart3
+        class={`h-5 w-5 ${pathname.startsWith('/analytic') ? 'stroke-[2.2]' : 'stroke-2'}`}
+      />
+      <span class="mt-1 text-[10px]">Analitik</span>
     </a>
 
     <!-- 5. Settings -->
     <a
-      href="#"
-      class="flex w-12 flex-col items-center justify-center py-1 text-slate-400 transition-colors hover:text-slate-900"
+      href="/settings"
+      class={`flex w-12 flex-col items-center justify-center py-1 transition-colors ${
+        pathname.startsWith('/settings')
+          ? 'text-blue-600 font-bold'
+          : 'text-slate-400 hover:text-slate-800 font-medium'
+      }`}
     >
-      <Settings class="h-5 w-5 stroke-2" />
-      <span class="mt-1 text-[10px] font-medium">Pengaturan</span>
+      <Settings
+        class={`h-5 w-5 ${pathname.startsWith('/settings') ? 'stroke-[2.2]' : 'stroke-2'}`}
+      />
+      <span class="mt-1 text-[10px]">Pengaturan</span>
     </a>
   </nav>
 </div>
