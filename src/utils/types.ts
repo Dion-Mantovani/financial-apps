@@ -49,3 +49,24 @@ export interface CustomQuickItem {
   category_id?: string;
   isCustom?: boolean;
 }
+
+export interface BudgetItem {
+  id?: string;
+  user_id?: string;
+  category_id: string;
+  amount: number;
+  period: string; // Format: 'YYYY-MM'
+  created_at?: string;
+  categories?: CategoryItem;
+  [key: string]: any;
+}
+
+export interface ProcessedBudgetItem extends BudgetItem {
+  spent: number;
+  remaining: number;
+  percentage: number;
+  status: 'safe' | 'warning' | 'exceeded';
+  barColor: string;
+  badgeColor: string;
+  iconColor: string;
+}

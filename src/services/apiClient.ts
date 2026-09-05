@@ -27,6 +27,18 @@ export interface CategoryPayload {
   icon?: string;
 }
 
+export interface BudgetPayload {
+  id?: string;
+  category_id: string;
+  amount: number | string;
+  period: string;
+}
+
+export interface CopyBudgetPayload {
+  fromPeriod: string;
+  toPeriod: string;
+}
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
@@ -115,6 +127,42 @@ class ApiClient {
   // ==================== CATEGORIES ====================
   async getCategories<T = any>(): Promise<T> {
     return this.request<T>('/api/categories');
+  }
+
+  // ==================== BUDGETS ====================
+  // Tambahkan/Sesuaikan di src/services/apiClient.ts
+
+  async getBudgets<T = any>(period?: string): Promise<T> {
+    let url = '/api/budgets';
+    if (period) url += `?period=${period}`;
+    return this.request<T>(url);
+  }
+
+  async createBudget<T = any>(payload: BudgetPayload): Promise<T> {
+    return this.request<T>('/api/budgets', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateBudget<T = any>(payload: BudgetPayload): Promise<T> {
+    return this.request<T>('/api/budgets', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteBudget<T = any>(id: string): Promise<T> {
+    return this.request<T>(`/api/budgets?id=${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async copyPreviousBudget<T = any>(payload: CopyBudgetPayload): Promise<T> {
+    return this.request<T>('/api/budgets/copy', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 }
 

@@ -37,3 +37,20 @@ export const formatDateGroup = (dateStr?: string): string => {
 export const getTodayInputDate = (): string => {
   return new Date().toISOString().split('T')[0];
 };
+
+export function formatUltraCompact(value: number): string {
+  if (!value || value === 0) return '0';
+  const absValue = Math.abs(value);
+  const prefix = value < 0 ? '-' : '';
+
+  if (absValue >= 1_000_000_000) {
+    return `${prefix}${(absValue / 1_000_000_000).toFixed(1)}M`;
+  }
+  if (absValue >= 1_000_000) {
+    return `${prefix}${(absValue / 1_000_000).toFixed(1)}M`;
+  }
+  if (absValue >= 1_000) {
+    return `${prefix}${Math.round(absValue / 1_000)}rb`;
+  }
+  return `${prefix}${absValue}`;
+}
