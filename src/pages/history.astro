@@ -49,8 +49,9 @@ const quickFilterTypes = [
   <div x-data="historyApp()" class="space-y-4 pt-2 pb-10">
     <!-- STICKY HEADER -->
     <div
-      class="sticky top-0 z-30 -mx-5 mt-6 space-y-3 bg-slate-50/90 px-5 pb-1 backdrop-blur-md"
+      class="sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b border-slate-200/60 bg-slate-50/95 px-5 pt-8 pb-2 shadow-xs backdrop-blur-md"
     >
+      <!-- Isi header (TopBar, Search, MonthPicker, & Quick Filters) tetap sama -->
       <div class="flex items-center justify-between">
         <a
           href="/"
@@ -203,9 +204,22 @@ const quickFilterTypes = [
       <template x-for="group in groupedTransactions" :key="group.dateGroup">
         <div class="space-y-2">
           <div class="flex items-center justify-between px-1">
+            <!-- Tanggal di Kiri -->
             <span
               x-text="group.dateGroup"
               class="text-xs font-bold tracking-tight text-slate-800"></span>
+
+            <!-- Ringkasan Kanan (Sangat clean & halus) -->
+            <div
+              class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400"
+            >
+              <span x-text="`${group.count} transaksi`"></span>
+              <span>•</span>
+              <span
+                x-text="formatCurrency(group.totalAmount)"
+                :class="group.totalAmount >= 0 ? 'text-slate-600' : 'text-slate-500'"
+                class="font-bold"></span>
+            </div>
           </div>
 
           <div
@@ -602,297 +616,11 @@ const quickFilterTypes = [
 
 <!-- SCRIPT ALPINE CLIENT-SIDE -->
 <script>
-  import { formatCurrency, formatDateGroup } from '../utils/formatters';
+  import { historyController } from '../controllers/history.controller';
 
-  interface WalletItem {
-    id: string;
-    name: string;
-    [key: string]: any;
-  }
-
-  interface CategoryItem {
-    id: string;
-    name: string;
-    type: string;
-    icon?: string;
-    [key: string]: any;
-  }
-
-  interface TransactionItem {
-    id: string;
-    notes?: string;
-    amount: number;
-    type: 'income' | 'expense' | 'transfer';
-    wallet_id?: string;
-    to_wallet_id?: string;
-    category_id?: string;
-    transaction_date?: string;
-    created_at?: string;
-    wallets?: WalletItem;
-    to_wallets?: WalletItem;
-    categories?: CategoryItem;
-    [key: string]: any;
-  }
-
-  interface TransactionGroup {
-    dateGroup: string;
-    items: TransactionItem[];
-  }
+  declare const Alpine: any;
 
   document.addEventListener('alpine:init', () => {
-    (window as any).Alpine.data('historyApp', () => ({
-      activeTab: 'all',
-      openFilterModal: false,
-      openExportModal: false,
-      showSearchInput: false,
-      searchQuery: '',
-      copiedJson: false,
-
-      selectedMonth: new Date().toISOString().slice(0, 7),
-
-      filterDateFrom: '',
-      filterDateTo: '',
-      filterWalletId: '',
-      filterCategoryId: '',
-
-      transactions: [] as TransactionItem[],
-      wallets: [] as WalletItem[],
-      categories: [] as CategoryItem[],
-      loading: true,
-
-      init() {
-        this.fetchData();
-      },
-
-      openMonthPicker() {
-        const input = (this as any).$refs.monthInput;
-        if (input) {
-          if ('showPicker' in HTMLInputElement.prototype) {
-            input.showPicker();
-          } else {
-            input.click();
-          }
-        }
-      },
-
-      toggleSearch() {
-        this.showSearchInput = !this.showSearchInput;
-        if (this.showSearchInput) {
-          setTimeout(() => {
-            const input = document.querySelector(
-              'input[x-ref="searchInput"]'
-            ) as HTMLInputElement;
-            input?.focus();
-          }, 100);
-        } else {
-          this.searchQuery = '';
-        }
-      },
-
-      async fetchData() {
-        this.loading = true;
-        try {
-          const [resT, resW, resC] = await Promise.all([
-            fetch('/api/transactions'),
-            fetch('/api/wallets'),
-            fetch('/api/categories'),
-          ]);
-          this.transactions = (await resT.json()) as TransactionItem[];
-          this.wallets = (await resW.json()) as WalletItem[];
-          this.categories = (await resC.json()) as CategoryItem[];
-        } catch (e) {
-          console.error(e);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      goToEditPage(id: string) {
-        window.location.href = `/transaction?id=${id}`;
-      },
-
-      formatCurrency(val: number, type?: string) {
-        return formatCurrency(val, type);
-      },
-
-      formatDateGroup(dateStr?: string) {
-        return formatDateGroup(dateStr);
-      },
-
-      get formattedSelectedMonth() {
-        if (!this.selectedMonth) return 'Semua Periode';
-        const [year, month] = this.selectedMonth.split('-');
-        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-        return date.toLocaleDateString('id-ID', {
-          month: 'long',
-          year: 'numeric',
-        });
-      },
-
-      get hasActiveAdvanceFilter() {
-        return !!(
-          this.filterDateFrom ||
-          this.filterDateTo ||
-          this.filterWalletId ||
-          this.filterCategoryId
-        );
-      },
-
-      resetAdvanceFilters() {
-        this.filterDateFrom = '';
-        this.filterDateTo = '';
-        this.filterWalletId = '';
-        this.filterCategoryId = '';
-        this.openFilterModal = false;
-      },
-
-      get filteredTransactions() {
-        return this.transactions.filter((item: TransactionItem) => {
-          const matchTab =
-            this.activeTab === 'all' || item.type === this.activeTab;
-
-          const q = this.searchQuery.toLowerCase().trim();
-          const matchQuery =
-            !q ||
-            (item.notes && item.notes.toLowerCase().includes(q)) ||
-            (item.categories &&
-              item.categories.name.toLowerCase().includes(q)) ||
-            (item.wallets && item.wallets.name.toLowerCase().includes(q)) ||
-            (item.to_wallets && item.to_wallets.name.toLowerCase().includes(q));
-
-          const txDate = item.transaction_date
-            ? item.transaction_date.split('T')[0]
-            : '';
-          const matchMonth =
-            q || this.filterDateFrom || this.filterDateTo || !this.selectedMonth
-              ? true
-              : txDate.startsWith(this.selectedMonth);
-
-          const matchFrom =
-            !this.filterDateFrom || txDate >= this.filterDateFrom;
-          const matchTo = !this.filterDateTo || txDate <= this.filterDateTo;
-
-          const matchWallet =
-            !this.filterWalletId ||
-            item.wallet_id === this.filterWalletId ||
-            item.to_wallet_id === this.filterWalletId;
-
-          const matchCategory =
-            !this.filterCategoryId ||
-            item.category_id === this.filterCategoryId;
-
-          return (
-            matchTab &&
-            matchQuery &&
-            matchMonth &&
-            matchFrom &&
-            matchTo &&
-            matchWallet &&
-            matchCategory
-          );
-        });
-      },
-
-      get groupedTransactions() {
-        const groups: Record<string, TransactionGroup> = {};
-        this.filteredTransactions.forEach((item: TransactionItem) => {
-          const groupKey = this.formatDateGroup(
-            item.transaction_date || item.created_at
-          );
-          if (!groups[groupKey]) {
-            groups[groupKey] = { dateGroup: groupKey, items: [] };
-          }
-          groups[groupKey].items.push(item);
-        });
-        return Object.values(groups);
-      },
-
-      getFormattedExportData() {
-        return this.filteredTransactions.map((item: TransactionItem) => ({
-          id: item.id,
-          tanggal: item.transaction_date
-            ? item.transaction_date.split('T')[0]
-            : '',
-          tipe: item.type,
-          nominal: item.amount,
-          catatan: item.notes || '',
-          kategori: item.categories?.name || 'Umum',
-          dompet_asal: item.wallets?.name || '',
-          dompet_tujuan: item.to_wallets?.name || '',
-        }));
-      },
-
-      exportCSV() {
-        const data = this.getFormattedExportData();
-        const headers = [
-          'Tanggal',
-          'Tipe',
-          'Nominal',
-          'Catatan',
-          'Kategori',
-          'Dompet_Asal',
-          'Dompet_Tujuan',
-        ];
-        const csvRows = [
-          headers.join(','),
-          ...data.map((row) =>
-            [
-              `"${row.tanggal}"`,
-              `"${row.tipe}"`,
-              row.nominal,
-              `"${(row.catatan || '').replace(/"/g, '""')}"`,
-              `"${row.kategori}"`,
-              `"${row.dompet_asal}"`,
-              `"${row.dompet_tujuan}"`,
-            ].join(',')
-          ),
-        ];
-
-        const blob = new Blob([csvRows.join('\n')], {
-          type: 'text/csv;charset=utf-8;',
-        });
-        this.downloadFile(
-          blob,
-          `transaksi_studion_${new Date().toISOString().slice(0, 10)}.csv`
-        );
-        this.openExportModal = false;
-      },
-
-      downloadJSON() {
-        const data = this.getFormattedExportData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: 'application/json',
-        });
-        this.downloadFile(
-          blob,
-          `transaksi_studion_${new Date().toISOString().slice(0, 10)}.json`
-        );
-        this.openExportModal = false;
-      },
-
-      async copyJSON() {
-        const data = this.getFormattedExportData();
-        try {
-          await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-          this.copiedJson = true;
-          setTimeout(() => {
-            this.copiedJson = false;
-          }, 2000);
-        } catch (e) {
-          alert('Gagal menyalin data JSON!');
-        }
-      },
-
-      downloadFile(blob: Blob, filename: string) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      },
-    }));
+    Alpine.data('historyApp', historyController);
   });
 </script>

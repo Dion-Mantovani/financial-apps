@@ -28,6 +28,15 @@ import {
   ArrowDown,
   Check,
   Info,
+  Utensils,
+  Car,
+  ShoppingBag,
+  Gamepad2,
+  HeartPulse,
+  GraduationCap,
+  Briefcase,
+  Gift,
+  RotateCcw,
 } from '@lucide/astro';
 
 const weeklyExpenses = [
@@ -181,15 +190,36 @@ const weeklyExpenses = [
           Rp 0
         </h2>
         <div class="flex items-center gap-2 pt-0.5">
-          <div
-            class="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300 backdrop-blur-md"
-          >
-            <TrendingUp class="h-3 w-3 stroke-[2.5]" />
-            <span>+12.5%</span>
-          </div>
-          <span class="text-[10px] font-medium text-blue-200/60"
-            >dari bulan lalu</span
-          >
+          <!-- Jika Bulan Pertama -->
+          <template x-if="monthlyGrowth.isFirstMonth">
+            <div
+              class="flex items-center gap-1 rounded-full border border-blue-400/30 bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold text-blue-200 backdrop-blur-md"
+            >
+              <span>✨ Bulan Pertama</span>
+            </div>
+          </template>
+
+          <!-- Jika Sudah Ada Data Bulan Lalu -->
+          <template x-if="!monthlyGrowth.isFirstMonth">
+            <div
+              :class="monthlyGrowth.isUp ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300' : 'border-rose-400/30 bg-rose-500/15 text-rose-300'"
+              class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold backdrop-blur-md"
+            >
+              <template x-if="monthlyGrowth.isUp"
+                ><TrendingUp class="h-3 w-3 stroke-[2.5]" /></template
+              >
+              <template x-if="!monthlyGrowth.isUp"
+                ><TrendingDown class="h-3 w-3 stroke-[2.5]" /></template
+              >
+              <span x-text="monthlyGrowth.label"></span>
+            </div>
+          </template>
+
+          <span class="text-[10px] font-medium text-blue-200/60">
+            <span
+              x-text="monthlyGrowth.isFirstMonth ? 'memulai pencatatan' : 'dari awal bulan'"
+            ></span>
+          </span>
         </div>
       </div>
 
@@ -819,8 +849,9 @@ const weeklyExpenses = [
       </div>
 
       <div
-        class="relative space-y-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm"
+        class="relative space-y-3 overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm"
       >
+        <!-- BARIS ATAS: Bulan & Red Pill Total -->
         <div
           class="flex items-center justify-between border-b border-slate-100 pb-3"
         >
@@ -828,51 +859,25 @@ const weeklyExpenses = [
             class="text-sm font-bold text-slate-700"
             x-text="currentMonthName">Bulan Ini</span
           >
+
           <div
             class="flex items-center gap-1.5 rounded-full border border-rose-200/60 bg-rose-50/70 px-2.5 py-1 backdrop-blur-xs"
           >
             <TrendingDown class="h-2.5 w-2.5 stroke-[2.5] text-rose-500" />
             <span
               class="text-[11px] font-bold text-rose-500"
-              x-text="hideBalance ? 'Rp ••••••' : 'Rp 1.415.000'">Rp 0</span
+              x-text="hideBalance ? 'Rp ••••••' : formattedWeeklyExpenseTotal"
+              >Rp 0</span
             >
           </div>
         </div>
 
-        <div class="grid h-32 grid-cols-7 items-end gap-2 pt-2">
-          {
-            weeklyExpenses.map((item) => (
-              <div class="group flex h-full cursor-pointer flex-col items-center justify-end">
-                <span class="mb-1 text-[9px] font-bold text-slate-600 opacity-0 transition-opacity group-hover:opacity-100">
-                  {item.amount}
-                </span>
-                <div class="flex h-full w-full max-w-4.5 flex-col justify-end overflow-hidden rounded-md bg-slate-100">
-                  <div
-                    class={`w-full rounded-md transition-all duration-300 ${
-                      item.isHighest
-                        ? 'bg-blue-600 shadow-xs shadow-blue-500/30'
-                        : 'bg-blue-200 group-hover:bg-blue-400'
-                    }`}
-                    style={`height: ${item.height};`}
-                  />
-                </div>
-                <div class="mt-2 flex flex-col items-center leading-tight">
-                  <span
-                    class={`text-[10px] font-medium ${item.isHighest ? 'font-bold text-blue-600' : 'text-slate-400 group-hover:text-slate-700'}`}
-                  >
-                    {item.day}
-                  </span>
-                  <span
-                    class={`text-[10px] font-bold ${item.isHighest ? 'text-blue-600' : 'text-slate-700'}`}
-                  >
-                    {item.date}
-                  </span>
-                </div>
-              </div>
-            ))
-          }
+        <!-- CONTAINER APEXCHARTS -->
+        <div class="relative min-h-[140px] w-full">
+          <div x-ref="weeklyChart" class="w-full"></div>
         </div>
 
+        <!-- BARIS BAWAH: Link Analitik -->
         <div
           class="flex items-center justify-start border-t border-slate-100/80 pt-2"
         >
@@ -917,37 +922,88 @@ const weeklyExpenses = [
             class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
           >
             <div class="flex min-w-0 items-center gap-3">
+              <!-- Container Ikon Dinamis berdasarkan Tipe Transaksi & Master Category Icon -->
               <div
                 :class=`{
-                  'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
-                  'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
-                  'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
-                }`
+              'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
+              'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
+              'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
+            }`
                 class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border"
               >
-                <Zap class="h-4.5 w-4.5 stroke-2" />
+                <!-- Render Ikon Kategori Asli -->
+                <template x-if="getCategoryIcon(item) === 'utensils'"
+                  ><Utensils class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'car'"
+                  ><Car class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'shopping-bag'"
+                  ><ShoppingBag class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'receipt'"
+                  ><Receipt class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'gamepad-2'"
+                  ><Gamepad2 class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'heart-pulse'"
+                  ><HeartPulse class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'graduation-cap'"
+                  ><GraduationCap class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'more-horizontal'"
+                  ><MoreHorizontal class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'briefcase'"
+                  ><Briefcase class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'gift'"
+                  ><Gift class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'trending-up'"
+                  ><TrendingUp class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'rotate-ccw'"
+                  ><RotateCcw class="h-4.5 w-4.5 stroke-2" /></template
+                >
+                <template x-if="getCategoryIcon(item) === 'wallet'"
+                  ><Wallet class="h-4.5 w-4.5 stroke-2" /></template
+                >
+
+                <!-- Fallback Ikon default jika tidak ada match ikon spesifik -->
+                <template
+                  x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw','wallet'].includes(getCategoryIcon(item))"
+                >
+                  <Zap class="h-4.5 w-4.5 stroke-2" />
+                </template>
               </div>
+
+              <!-- Info Catatan & Kategori/Dompet -->
               <div class="flex min-w-0 flex-col">
                 <span
                   class="truncate text-xs font-bold text-slate-800"
                   x-text="item.notes || 'Transaksi'"></span>
                 <span class="text-[10px] font-medium text-slate-400">
-                  <span x-text="item.categories?.name || 'Umum'"></span> •
+                  <span x-text="item.categories?.name || getCategoryName(item)"
+                  ></span> •
                   <span
                     class="font-semibold text-slate-500"
-                    x-text="item.wallets?.name || 'Dompet'"></span>
+                    x-text="item.wallets?.name || getWalletName(item)"></span>
                 </span>
               </div>
             </div>
 
+            <!-- Nominal Transaksi -->
             <div class="flex shrink-0 items-center gap-1 pl-2">
               <span
                 x-text="hideBalance ? 'Rp ••••••' : formatCurrency(item.amount, item.type)"
                 :class=`{
-                  'text-emerald-600': item.type === 'income',
-                  'text-blue-600': item.type === 'transfer',
-                  'text-slate-800': item.type === 'expense'
-                }`
+              'text-emerald-600': item.type === 'income',
+              'text-blue-600': item.type === 'transfer',
+              'text-slate-800': item.type === 'expense'
+            }`
                 class="text-xs font-bold"></span>
             </div>
           </div>
@@ -959,465 +1015,11 @@ const weeklyExpenses = [
 
 <!-- SCRIPT ALPINE CLIENT-SIDE -->
 <script>
-  import { formatCurrency } from '../utils/formatters';
-  import { calculateTotalBalance } from '../utils/calculations';
+  import { dashboardController } from '../controllers/dashboard.controller';
 
   declare const Alpine: any;
 
-  interface WalletItem {
-    id: string;
-    name: string;
-    balance: number;
-    color?: string;
-    icon?: string;
-    [key: string]: any;
-  }
-
-  interface TransactionItem {
-    id: string;
-    notes?: string;
-    amount: number;
-    type: 'income' | 'expense' | 'transfer';
-    wallet_id: string;
-    to_wallet_id?: string;
-    category_id?: string;
-    transaction_date?: string;
-    created_at?: string;
-    wallets?: WalletItem;
-    categories?: any;
-    [key: string]: any;
-  }
-
-  interface CategoryItem {
-    id: string;
-    name: string;
-    type: string;
-    icon?: string;
-    [key: string]: any;
-  }
-
-  interface FeatureItem {
-    id: string;
-    label: string;
-    icon: string;
-    href: string;
-  }
-
-  interface CustomQuickItem {
-    title: string;
-    amount: number;
-    type: string;
-    wallet_id: string;
-    category_id?: string;
-    isCustom?: boolean;
-  }
-
   document.addEventListener('alpine:init', () => {
-    Alpine.data('dashboardApp', () => ({
-      showDetails: false,
-      openModal: false,
-      hideBalance: localStorage.getItem('studion_hide_balance') === 'true',
-      loading: true,
-
-      isReorderingFeatures: false,
-      initialFeaturesJson: '',
-      featuresList: [] as FeatureItem[],
-
-      wallets: [] as WalletItem[],
-      transactions: [] as TransactionItem[],
-      categories: [] as CategoryItem[],
-      customQuicks: [] as CustomQuickItem[],
-
-      isSubmittingQuick: false,
-      showToast: false,
-      toastMessage: '',
-
-      openCustomQuickModal: false,
-      customQuickForm: {
-        notes: '',
-        amount: '',
-        wallet_id: '',
-        category_id: '',
-        type: 'expense',
-      },
-
-      init() {
-        this.loadFeaturesOrder();
-        this.loadCustomQuicks();
-
-        (this as any).$watch('hideBalance', (val: boolean) => {
-          localStorage.setItem('studion_hide_balance', String(val));
-        });
-
-        (this as any).$watch('customQuickForm.type', () => {
-          const available = this.filteredCustomCategories;
-          if (available.length > 0) {
-            this.customQuickForm.category_id = available[0].id;
-          } else {
-            this.customQuickForm.category_id = '';
-          }
-        });
-
-        this.fetchData();
-      },
-
-      loadCustomQuicks() {
-        const saved = localStorage.getItem('studion_custom_quicks');
-        if (saved) {
-          try {
-            this.customQuicks = JSON.parse(saved);
-          } catch (e) {
-            console.error(e);
-            this.customQuicks = [];
-          }
-        } else {
-          this.customQuicks = [];
-        }
-      },
-
-      loadFeaturesOrder() {
-        const defaults = [
-          { id: 'wallet', label: 'Dompet', icon: 'wallet', href: '/wallets' },
-          {
-            id: 'budget',
-            label: 'Anggaran',
-            icon: 'piggy-bank',
-            href: '/budget',
-          },
-          {
-            id: 'categories',
-            label: 'Kategori',
-            icon: 'grid',
-            href: '/categories',
-          },
-          { id: 'goals', label: 'Impian', icon: 'target', href: '/goals' },
-          { id: 'debts', label: 'Utang', icon: 'receipt', href: '/debts' },
-          {
-            id: 'subscriptions',
-            label: 'Langganan',
-            icon: 'repeat',
-            href: '/subscriptions',
-          },
-          {
-            id: 'reports',
-            label: 'Laporan',
-            icon: 'bar-chart-2',
-            href: '/reports',
-          },
-        ];
-
-        const savedOrderJson = localStorage.getItem('studion_features_order');
-        if (savedOrderJson) {
-          try {
-            const savedIds: string[] = JSON.parse(savedOrderJson);
-            const ordered = [...defaults].sort((a, b) => {
-              const idxA = savedIds.indexOf(a.id);
-              const idxB = savedIds.indexOf(b.id);
-              if (idxA === -1) return 1;
-              if (idxB === -1) return -1;
-              return idxA - idxB;
-            });
-            this.featuresList = ordered;
-            return;
-          } catch (e) {
-            console.error(e);
-          }
-        }
-        this.featuresList = defaults;
-      },
-
-      async fetchData() {
-        this.loading = true;
-        try {
-          const [resW, resT, resC] = await Promise.all([
-            fetch('/api/wallets'),
-            fetch('/api/transactions'),
-            fetch('/api/categories'),
-          ]);
-          this.wallets = (await resW.json()) as WalletItem[];
-          this.transactions = (await resT.json()) as TransactionItem[];
-          this.categories = (await resC.json()) as CategoryItem[];
-
-          if (this.wallets.length > 0) {
-            this.customQuickForm.wallet_id = this.wallets[0].id;
-          }
-          const defaultCats = this.filteredCustomCategories;
-          if (defaultCats.length > 0) {
-            this.customQuickForm.category_id = defaultCats[0].id;
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      get filteredCustomCategories() {
-        return this.categories.filter(
-          (c) => c.type === this.customQuickForm.type
-        );
-      },
-
-      get formattedCustomAmount() {
-        if (!this.customQuickForm.amount) return '';
-        const num = parseInt(this.customQuickForm.amount, 10);
-        if (isNaN(num)) return '';
-        return new Intl.NumberFormat('id-ID').format(num);
-      },
-
-      handleCustomAmountInput(event: any) {
-        const rawValue = event.target.value.replace(/[^0-9]/g, '');
-        this.customQuickForm.amount = rawValue;
-        event.target.value = this.formattedCustomAmount;
-      },
-
-      async saveAndExecCustomQuick() {
-        if (!this.customQuickForm.notes.trim()) {
-          return alert('Catatan / Nama Transaksi wajib diisi!');
-        }
-        if (
-          !this.customQuickForm.amount ||
-          Number(this.customQuickForm.amount) <= 0
-        ) {
-          return alert('Nominal transaksi harus diisi!');
-        }
-        if (!this.customQuickForm.wallet_id) {
-          return alert('Pilih dompet terlebih dahulu!');
-        }
-
-        const newCustom: CustomQuickItem = {
-          title: this.customQuickForm.notes.trim(),
-          amount: Number(this.customQuickForm.amount),
-          type: this.customQuickForm.type,
-          wallet_id: this.customQuickForm.wallet_id,
-          category_id: this.customQuickForm.category_id || undefined,
-          isCustom: true,
-        };
-
-        this.customQuicks.unshift(newCustom);
-        if (this.customQuicks.length > 5) {
-          this.customQuicks = this.customQuicks.slice(0, 5);
-        }
-        localStorage.setItem(
-          'studion_custom_quicks',
-          JSON.stringify(this.customQuicks)
-        );
-
-        this.openCustomQuickModal = false;
-        await this.quickAddInstant(newCustom);
-
-        this.customQuickForm.notes = '';
-        this.customQuickForm.amount = '';
-      },
-
-      async quickAddInstant(item: any) {
-        if (this.isSubmittingQuick) return;
-
-        const targetWalletId =
-          item.wallet_id || (this.wallets.length > 0 ? this.wallets[0].id : '');
-        if (!targetWalletId) {
-          alert('Silakan buat dompet terlebih dahulu!');
-          return;
-        }
-
-        const today = new Date().toISOString().split('T')[0];
-
-        const payload = {
-          type: item.type || 'expense',
-          amount: String(item.amount),
-          wallet_id: targetWalletId,
-          category_id: item.category_id || undefined,
-          transaction_date: today,
-          notes: item.title,
-        };
-
-        this.isSubmittingQuick = true;
-
-        try {
-          const res = await fetch('/api/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-
-          if (res.ok) {
-            await this.fetchData();
-
-            this.toastMessage = `Berhasil mencatat "${item.title}"!`;
-            this.showToast = true;
-            setTimeout(() => {
-              this.showToast = false;
-            }, 2500);
-          } else {
-            alert('Gagal menambah transaksi instan!');
-          }
-        } catch (e) {
-          console.error(e);
-          alert('Terjadi kesalahan sistem.');
-        } finally {
-          this.isSubmittingQuick = false;
-        }
-      },
-
-      get topQuickFeatures() {
-        return this.featuresList.slice(0, 3);
-      },
-
-      toggleReorderFeatures() {
-        if (!this.isReorderingFeatures) {
-          this.initialFeaturesJson = JSON.stringify(
-            this.featuresList.map((f) => f.id)
-          );
-          this.isReorderingFeatures = true;
-        } else {
-          this.finishReorderFeatures();
-        }
-      },
-
-      moveFeature(index: number, direction: 'up' | 'down') {
-        const newIndex = direction === 'up' ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= this.featuresList.length) return;
-
-        const updated = [...this.featuresList];
-        const temp = updated[index];
-        updated[index] = updated[newIndex];
-        updated[newIndex] = temp;
-        this.featuresList = updated;
-      },
-
-      finishReorderFeatures() {
-        const currentOrderJson = JSON.stringify(
-          this.featuresList.map((f) => f.id)
-        );
-
-        if (currentOrderJson !== this.initialFeaturesJson) {
-          localStorage.setItem('studion_features_order', currentOrderJson);
-        }
-
-        this.isReorderingFeatures = false;
-      },
-
-      closeFeatureModal() {
-        if (this.isReorderingFeatures) {
-          this.finishReorderFeatures();
-        }
-        this.openModal = false;
-      },
-
-      get formattedTotalBalance() {
-        const total = calculateTotalBalance(this.wallets, this.transactions);
-        return formatCurrency(total);
-      },
-
-      get currentMonthName() {
-        return new Date().toLocaleDateString('id-ID', {
-          month: 'long',
-          year: 'numeric',
-        });
-      },
-
-      get formattedMonthlyIncome() {
-        const now = new Date();
-        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-        const total = this.transactions
-          .filter((t) => {
-            const txDate = t.transaction_date
-              ? t.transaction_date.split('T')[0]
-              : '';
-            return t.type === 'income' && txDate.startsWith(currentYearMonth);
-          })
-          .reduce((acc, t) => acc + Number(t.amount), 0);
-
-        return formatCurrency(total);
-      },
-
-      get formattedMonthlyExpense() {
-        const now = new Date();
-        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-        const total = this.transactions
-          .filter((t) => {
-            const txDate = t.transaction_date
-              ? t.transaction_date.split('T')[0]
-              : '';
-            return t.type === 'expense' && txDate.startsWith(currentYearMonth);
-          })
-          .reduce((acc, t) => acc + Number(t.amount), 0);
-
-        return formatCurrency(total);
-      },
-
-      get recentTransactionsList() {
-        return [...this.transactions].slice(0, 5);
-      },
-
-      get frequentTransactions() {
-        const customs = this.customQuicks.map((item) => ({
-          ...item,
-          isCustom: true,
-        }));
-
-        if (customs.length >= 5) {
-          return customs.slice(0, 5);
-        }
-
-        if (!this.transactions || this.transactions.length === 0) {
-          return customs;
-        }
-
-        const counts: Record<
-          string,
-          {
-            title: string;
-            amount: number;
-            type: string;
-            wallet_id: string;
-            category_id?: string;
-            count: number;
-          }
-        > = {};
-
-        this.transactions.forEach((tx) => {
-          if (!tx.notes || tx.type === 'transfer') return;
-          const key = `${tx.notes.trim().toLowerCase()}_${tx.amount}`;
-          if (!counts[key]) {
-            counts[key] = {
-              title: tx.notes.trim(),
-              amount: tx.amount,
-              type: tx.type || 'expense',
-              wallet_id: tx.wallet_id,
-              category_id: tx.category_id,
-              count: 1,
-            };
-          } else {
-            counts[key].count += 1;
-          }
-        });
-
-        const systemItems = Object.values(counts)
-          .sort((a, b) => b.count - a.count)
-          .filter(
-            (sys) =>
-              !customs.some(
-                (c) =>
-                  c.title.toLowerCase() === sys.title.toLowerCase() &&
-                  Number(c.amount) === Number(sys.amount)
-              )
-          );
-
-        const remainingSlots = 5 - customs.length;
-        return [...customs, ...systemItems.slice(0, remainingSlots)];
-      },
-
-      formatCurrency(val: number, type?: string) {
-        return formatCurrency(val, type);
-      },
-
-      formatNumber(val: number) {
-        if (!val) return '0';
-        return new Intl.NumberFormat('id-ID').format(val);
-      },
-    }));
+    Alpine.data('dashboardApp', dashboardController);
   });
 </script>
