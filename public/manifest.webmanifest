@@ -1,7 +1,6 @@
 {
   "name": "Studion Financial",
   "short_name": "Studion",
-  "description": "Aplikasi Pencatat Keuangan Personal",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
@@ -9,13 +8,9 @@
   "icons": [
     {
       "src": "/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
