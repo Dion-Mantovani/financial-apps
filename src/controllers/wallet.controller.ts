@@ -4,29 +4,14 @@ import {
   calculateSingleWalletBalance,
   calculateTotalBalance,
 } from '../utils/calculations';
-
-export interface WalletItem {
-  id: string;
-  name: string;
-  type: string;
-  balance: number;
-  color: string;
-  icon: string;
-  [key: string]: any;
-}
-
-export interface TransactionItem {
-  wallet_id: string;
-  to_wallet_id?: string;
-  amount: number;
-  type: 'income' | 'expense' | 'transfer';
-  transaction_date?: string;
-  created_at?: string;
-  [key: string]: any;
-}
+import { getCache, setCache } from '../utils/cache';
+import type { WalletItem, TransactionItem } from '../utils/types';
 
 export function walletController() {
   return {
+    // ==========================================
+    // 1. STATE MANAGEMENT
+    // ==========================================
     viewMode: localStorage.getItem('studion_wallet_view_mode') || 'card',
     previousViewMode: 'card',
     isReordering: false,
@@ -51,10 +36,129 @@ export function walletController() {
       icon: 'landmark',
     },
 
-    init() {
-      this.fetchAllData();
+    // ==========================================
+    // 2. LIFECYCLE & SWR DATA FETCHING
+    // ==========================================
+    async init() {
+      // Step 1: Load instan dari Cache (0 ms delay)
+      this.fetchDataFromCache();
+
+      // Step 2: Revalidate data dari Server di background
+      await this.fetchAllData();
     },
 
+    fetchDataFromCache() {
+      const cachedWallets = getCache<WalletItem[]>('studion_cache_wallets');
+      const cachedTransactions = getCache<TransactionItem[]>(
+        'studion_cache_transactions'
+      );
+
+      if (cachedWallets) {
+        this.wallets = this.applyLocalStorageOrder(cachedWallets);
+      }
+      if (cachedTransactions) {
+        this.transactions = cachedTransactions;
+      }
+
+      if (cachedWallets || cachedTransactions) {
+        this.loading = false;
+      }
+    },
+
+    async fetchAllData() {
+      if (this.wallets.length === 0) {
+        this.loading = true;
+      }
+
+      try {
+        const [rawWallets, rawTransactions] = await Promise.all([
+          apiClient.getWallets<WalletItem[]>(),
+          apiClient.getTransactions<TransactionItem[]>(),
+        ]);
+
+        this.wallets = this.applyLocalStorageOrder(rawWallets);
+        this.transactions = rawTransactions;
+
+        setCache('studion_cache_wallets', rawWallets);
+        setCache('studion_cache_transactions', rawTransactions);
+      } catch (e) {
+        console.error('SWR Revalidate Wallet Failed:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // ==========================================
+    // 3. COMPUTED & BALANCE CALCULATIONS
+    // ==========================================
+    get totalBalance() {
+      const total = calculateTotalBalance(this.wallets, this.transactions);
+      return formatCurrency(total);
+    },
+
+    get topWallet() {
+      if (!this.wallets.length) return null;
+      return [...this.wallets].sort((a, b) => {
+        return this.getWalletBalance(b) - this.getWalletBalance(a);
+      })[0];
+    },
+
+    getWalletBalance(wallet: WalletItem) {
+      return calculateSingleWalletBalance(wallet, this.transactions);
+    },
+
+    getWalletTransactionCount(walletId: string) {
+      if (!walletId) return 0;
+      return this.transactions.filter(
+        (t: TransactionItem) =>
+          t.wallet_id === walletId || t.to_wallet_id === walletId
+      ).length;
+    },
+
+    getWalletDetailStats(walletId: string) {
+      if (!walletId) return { income: 0, expense: 0 };
+
+      const now = new Date();
+      const filteredTx = this.transactions.filter((t: TransactionItem) => {
+        const isRelated =
+          t.wallet_id === walletId || t.to_wallet_id === walletId;
+        if (!isRelated) return false;
+
+        if (this.detailStatsPeriod === 'all') return true;
+
+        const txDate = new Date(t.transaction_date || t.created_at || now);
+        const diffDays =
+          (now.getTime() - txDate.getTime()) / (1000 * 3600 * 24);
+
+        if (this.detailStatsPeriod === '1w') return diffDays <= 7;
+        if (this.detailStatsPeriod === '1m') return diffDays <= 30;
+        return true;
+      });
+
+      let income = 0;
+      let expense = 0;
+
+      filteredTx.forEach((t: TransactionItem) => {
+        if (t.type === 'income' && t.wallet_id === walletId) {
+          income += Number(t.amount || 0);
+        } else if (t.type === 'expense' && t.wallet_id === walletId) {
+          expense += Number(t.amount || 0);
+        } else if (t.type === 'transfer') {
+          if (t.to_wallet_id === walletId) income += Number(t.amount || 0);
+          if (t.wallet_id === walletId) expense += Number(t.amount || 0);
+        }
+      });
+
+      return { income, expense };
+    },
+
+    formatCurrency(val: number) {
+      return formatCurrency(val);
+    },
+
+    // ==========================================
+    // 4. UI HANDLERS & REORDER LOGIC
+    // ==========================================
     toggleViewMode() {
       this.viewMode = this.viewMode === 'card' ? 'list' : 'card';
       localStorage.setItem('studion_wallet_view_mode', this.viewMode);
@@ -125,88 +229,6 @@ export function walletController() {
       this.viewMode = this.previousViewMode;
     },
 
-    async fetchAllData() {
-      this.loading = true;
-      try {
-        const [rawWallets, rawTransactions] = await Promise.all([
-          apiClient.getWallets<WalletItem[]>(),
-          apiClient.getTransactions<TransactionItem[]>(),
-        ]);
-
-        this.wallets = this.applyLocalStorageOrder(rawWallets);
-        this.transactions = rawTransactions;
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    getWalletBalance(wallet: WalletItem) {
-      return calculateSingleWalletBalance(wallet, this.transactions);
-    },
-
-    get totalBalance() {
-      const total = calculateTotalBalance(this.wallets, this.transactions);
-      return formatCurrency(total);
-    },
-
-    getWalletTransactionCount(walletId: string) {
-      if (!walletId) return 0;
-      return this.transactions.filter(
-        (t: TransactionItem) =>
-          t.wallet_id === walletId || t.to_wallet_id === walletId
-      ).length;
-    },
-
-    get topWallet() {
-      if (!this.wallets.length) return null;
-      return [...this.wallets].sort((a, b) => {
-        return this.getWalletBalance(b) - this.getWalletBalance(a);
-      })[0];
-    },
-
-    getWalletDetailStats(walletId: string) {
-      if (!walletId) return { income: 0, expense: 0 };
-
-      const now = new Date();
-      const filteredTx = this.transactions.filter((t: TransactionItem) => {
-        const isRelated =
-          t.wallet_id === walletId || t.to_wallet_id === walletId;
-        if (!isRelated) return false;
-
-        if (this.detailStatsPeriod === 'all') return true;
-
-        const txDate = new Date(t.transaction_date || t.created_at || now);
-        const diffDays =
-          (now.getTime() - txDate.getTime()) / (1000 * 3600 * 24);
-
-        if (this.detailStatsPeriod === '1w') return diffDays <= 7;
-        if (this.detailStatsPeriod === '1m') return diffDays <= 30;
-        return true;
-      });
-
-      let income = 0;
-      let expense = 0;
-
-      filteredTx.forEach((t: TransactionItem) => {
-        if (t.type === 'income' && t.wallet_id === walletId) {
-          income += Number(t.amount);
-        } else if (t.type === 'expense' && t.wallet_id === walletId) {
-          expense += Number(t.amount);
-        } else if (t.type === 'transfer') {
-          if (t.to_wallet_id === walletId) income += Number(t.amount);
-          if (t.wallet_id === walletId) expense += Number(t.amount);
-        }
-      });
-
-      return { income, expense };
-    },
-
-    formatCurrency(val: number) {
-      return formatCurrency(val);
-    },
-
     showDetail(wallet: WalletItem) {
       this.selectedWallet = wallet;
       this.detailStatsPeriod = '1m';
@@ -233,6 +255,9 @@ export function walletController() {
       this.openFormModal = true;
     },
 
+    // ==========================================
+    // 5. API ACTIONS (SAVE & DELETE)
+    // ==========================================
     async saveWallet() {
       if (!this.formData.name) return alert('Nama dompet harus diisi!');
       try {
@@ -242,7 +267,7 @@ export function walletController() {
           await apiClient.createWallet(this.formData);
         }
         this.openFormModal = false;
-        this.fetchAllData();
+        await this.fetchAllData();
       } catch (e: any) {
         alert(e.message || 'Gagal menyimpan dompet!');
       }
@@ -253,7 +278,7 @@ export function walletController() {
       try {
         await apiClient.deleteWallet(this.selectedWallet.id);
         this.openDetailModal = false;
-        this.fetchAllData();
+        await this.fetchAllData();
       } catch (e: any) {
         alert(e.message || 'Gagal menghapus dompet!');
       }

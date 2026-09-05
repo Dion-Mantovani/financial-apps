@@ -1,52 +1,29 @@
 import { apiClient } from '../services/apiClient';
 import { formatCurrency, formatDateGroup } from '../utils/formatters';
-
-export interface WalletItem {
-  id: string;
-  name: string;
-  [key: string]: any;
-}
-
-export interface CategoryItem {
-  id: string;
-  name: string;
-  type: string;
-  icon?: string;
-  [key: string]: any;
-}
-
-export interface TransactionItem {
-  id: string;
-  notes?: string;
-  amount: number;
-  type: 'income' | 'expense' | 'transfer';
-  wallet_id?: string;
-  to_wallet_id?: string;
-  category_id?: string;
-  transaction_date?: string;
-  created_at?: string;
-  wallets?: WalletItem;
-  to_wallets?: WalletItem;
-  categories?: CategoryItem;
-  [key: string]: any;
-}
+import { getCache, setCache } from '../utils/cache';
+import type { WalletItem, CategoryItem, TransactionItem } from '../utils/types';
 
 export interface TransactionGroup {
   dateGroup: string;
+  totalAmount: number;
+  count: number;
   items: TransactionItem[];
 }
 
 export function historyController() {
   return {
+    // ==========================================
+    // 1. STATE MANAGEMENT
+    // ==========================================
     activeTab: 'all',
     openFilterModal: false,
     openExportModal: false,
     showSearchInput: false,
     searchQuery: '',
     copiedJson: false,
+    loading: true,
 
     selectedMonth: new Date().toISOString().slice(0, 7),
-
     filterDateFrom: '',
     filterDateTo: '',
     filterWalletId: '',
@@ -55,39 +32,41 @@ export function historyController() {
     transactions: [] as TransactionItem[],
     wallets: [] as WalletItem[],
     categories: [] as CategoryItem[],
-    loading: true,
 
-    init() {
-      this.fetchData();
+    // ==========================================
+    // 2. LIFECYCLE & SWR DATA FETCHING
+    // ==========================================
+    async init() {
+      // Step 1: Load instan dari cache LocalStorage (0 ms delay)
+      this.fetchDataFromCache();
+
+      // Step 2: Revalidate data dari server di background
+      await this.fetchData();
     },
 
-    openMonthPicker() {
-      const input = (this as any).$refs.monthInput;
-      if (input) {
-        if ('showPicker' in HTMLInputElement.prototype) {
-          input.showPicker();
-        } else {
-          input.click();
-        }
-      }
-    },
+    fetchDataFromCache() {
+      const cachedTransactions = getCache<TransactionItem[]>(
+        'studion_cache_transactions'
+      );
+      const cachedWallets = getCache<WalletItem[]>('studion_cache_wallets');
+      const cachedCategories = getCache<CategoryItem[]>(
+        'studion_cache_categories'
+      );
 
-    toggleSearch() {
-      this.showSearchInput = !this.showSearchInput;
-      if (this.showSearchInput) {
-        setTimeout(() => {
-          const input = document.querySelector(
-            'input[x-ref="searchInput"]'
-          ) as HTMLInputElement;
-          input?.focus();
-        }, 100);
-      } else {
-        this.searchQuery = '';
+      if (cachedTransactions) this.transactions = cachedTransactions;
+      if (cachedWallets) this.wallets = cachedWallets;
+      if (cachedCategories) this.categories = cachedCategories;
+
+      if (cachedTransactions || cachedWallets || cachedCategories) {
+        this.loading = false;
       }
     },
 
     async fetchData() {
-      this.loading = true;
+      if (this.transactions.length === 0) {
+        this.loading = true;
+      }
+
       try {
         const [rawTransactions, rawWallets, rawCategories] = await Promise.all([
           apiClient.getTransactions<TransactionItem[]>(),
@@ -98,25 +77,23 @@ export function historyController() {
         this.transactions = rawTransactions;
         this.wallets = rawWallets;
         this.categories = rawCategories;
+
+        setCache('studion_cache_transactions', rawTransactions);
+        setCache('studion_cache_wallets', rawWallets);
+        setCache('studion_cache_categories', rawCategories);
       } catch (e) {
-        console.error(e);
+        console.error(
+          'SWR Revalidate History Failed, menggunakan data cache:',
+          e
+        );
       } finally {
         this.loading = false;
       }
     },
 
-    goToEditPage(id: string) {
-      window.location.href = `/transaction?id=${id}`;
-    },
-
-    formatCurrency(val: number, type?: string) {
-      return formatCurrency(val, type);
-    },
-
-    formatDateGroup(dateStr?: string) {
-      return formatDateGroup(dateStr);
-    },
-
+    // ==========================================
+    // 3. COMPUTED / GETTERS (FILTER & GROUPING)
+    // ==========================================
     get formattedSelectedMonth() {
       if (!this.selectedMonth) return 'Semua Periode';
       const [year, month] = this.selectedMonth.split('-');
@@ -134,14 +111,6 @@ export function historyController() {
         this.filterWalletId ||
         this.filterCategoryId
       );
-    },
-
-    resetAdvanceFilters() {
-      this.filterDateFrom = '';
-      this.filterDateTo = '';
-      this.filterWalletId = '';
-      this.filterCategoryId = '';
-      this.openFilterModal = false;
     },
 
     get filteredTransactions() {
@@ -189,15 +158,7 @@ export function historyController() {
     },
 
     get groupedTransactions() {
-      const groups: Record<
-        string,
-        {
-          dateGroup: string;
-          totalAmount: number;
-          count: number;
-          items: TransactionItem[];
-        }
-      > = {};
+      const groups: Record<string, TransactionGroup> = {};
 
       this.filteredTransactions.forEach((item: TransactionItem) => {
         const groupKey = this.formatDateGroup(
@@ -216,16 +177,66 @@ export function historyController() {
         groups[groupKey].items.push(item);
         groups[groupKey].count += 1;
 
-        // Hitung Net Flow hari itu (Income menambah, Expense mengurangi)
         if (item.type === 'income')
-          groups[groupKey].totalAmount += Number(item.amount);
+          groups[groupKey].totalAmount += Number(item.amount || 0);
         if (item.type === 'expense')
-          groups[groupKey].totalAmount -= Number(item.amount);
+          groups[groupKey].totalAmount -= Number(item.amount || 0);
       });
 
       return Object.values(groups);
     },
 
+    // ==========================================
+    // 4. UI HANDLERS & NAVIGATION
+    // ==========================================
+    openMonthPicker() {
+      const input = (this as any).$refs.monthInput;
+      if (input) {
+        if ('showPicker' in HTMLInputElement.prototype) {
+          input.showPicker();
+        } else {
+          input.click();
+        }
+      }
+    },
+
+    toggleSearch() {
+      this.showSearchInput = !this.showSearchInput;
+      if (this.showSearchInput) {
+        setTimeout(() => {
+          const input = document.querySelector(
+            'input[x-ref="searchInput"]'
+          ) as HTMLInputElement;
+          input?.focus();
+        }, 100);
+      } else {
+        this.searchQuery = '';
+      }
+    },
+
+    resetAdvanceFilters() {
+      this.filterDateFrom = '';
+      this.filterDateTo = '';
+      this.filterWalletId = '';
+      this.filterCategoryId = '';
+      this.openFilterModal = false;
+    },
+
+    goToEditPage(id: string) {
+      window.location.href = `/transaction?id=${id}`;
+    },
+
+    formatCurrency(val: number, type?: string) {
+      return formatCurrency(val, type);
+    },
+
+    formatDateGroup(dateStr?: string) {
+      return formatDateGroup(dateStr);
+    },
+
+    // ==========================================
+    // 5. EXPORT & DOWNLOAD DATA
+    // ==========================================
     getFormattedExportData() {
       return this.filteredTransactions.map((item: TransactionItem) => ({
         id: item.id,

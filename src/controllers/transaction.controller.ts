@@ -1,41 +1,17 @@
 import { apiClient } from '../services/apiClient';
 import { getTodayInputDate } from '../utils/formatters';
-
-export interface WalletItem {
-  id: string;
-  name: string;
-  color?: string;
-  icon?: string;
-  [key: string]: any;
-}
-
-export interface CategoryItem {
-  id: string;
-  name: string;
-  type: string;
-  icon?: string;
-  [key: string]: any;
-}
-
-export interface TransactionItem {
-  id?: string;
-  notes?: string;
-  amount?: number | string;
-  wallet_id?: string;
-  to_wallet_id?: string;
-  category_id?: string;
-  type?: string;
-  transaction_date?: string;
-  created_at?: string;
-  categories?: any;
-  [key: string]: any;
-}
+import { getCache, setCache } from '../utils/cache';
+import type { WalletItem, CategoryItem, TransactionItem } from '../utils/types';
 
 export function transactionController() {
   return {
+    // ==========================================
+    // 1. STATE MANAGEMENT
+    // ==========================================
     wallets: [] as WalletItem[],
     categories: [] as CategoryItem[],
     pastTransactions: [] as TransactionItem[],
+
     isSubmitting: false,
     isEditMode: false,
     transactionId: '',
@@ -55,6 +31,9 @@ export function transactionController() {
       notes: '',
     },
 
+    // ==========================================
+    // 2. LIFECYCLE & SWR DATA FETCHING
+    // ==========================================
     async init() {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('id');
@@ -64,12 +43,12 @@ export function transactionController() {
         this.formData.type = typeParam;
       }
 
-      await this.loadMasterData();
+      // Step 1: Load instan dari Cache (0 ms delay)
+      this.loadMasterDataFromCache();
 
       if (editId) {
         this.isEditMode = true;
         this.transactionId = editId;
-        await this.loadTransactionForEdit(editId);
       } else {
         setTimeout(() => {
           const input = document.querySelector(
@@ -79,6 +58,14 @@ export function transactionController() {
         }, 100);
       }
 
+      // Step 2: Revalidate data dari Server di background
+      await this.loadMasterData();
+
+      if (this.isEditMode && editId) {
+        await this.loadTransactionForEdit(editId);
+      }
+
+      // Watcher perubahan tipe transaksi & dompet utama
       (this as any).$watch('formData.type', (value: string) => {
         this.autoCategoryDetected = false;
         this.updateDefaultCategory();
@@ -94,11 +81,117 @@ export function transactionController() {
       });
     },
 
+    loadMasterDataFromCache() {
+      const cachedWallets = getCache<WalletItem[]>('studion_cache_wallets');
+      const cachedCategories = getCache<CategoryItem[]>(
+        'studion_cache_categories'
+      );
+      const cachedTransactions = getCache<TransactionItem[]>(
+        'studion_cache_transactions'
+      );
+
+      if (cachedWallets) this.wallets = cachedWallets;
+      if (cachedCategories) this.categories = cachedCategories;
+      if (cachedTransactions) this.pastTransactions = cachedTransactions;
+
+      if (this.wallets.length > 0 && !this.formData.wallet_id) {
+        this.formData.wallet_id = this.wallets[0].id;
+      }
+
+      this.updateDefaultCategory();
+      this.updateDefaultToWallet();
+    },
+
+    async loadMasterData() {
+      try {
+        const [rawWallets, rawCategories, rawTransactions] = await Promise.all([
+          apiClient.getWallets<WalletItem[]>(),
+          apiClient.getCategories<CategoryItem[]>(),
+          apiClient.getTransactions<TransactionItem[]>(),
+        ]);
+
+        this.wallets = rawWallets;
+        this.categories = rawCategories;
+        this.pastTransactions = rawTransactions;
+
+        setCache('studion_cache_wallets', rawWallets);
+        setCache('studion_cache_categories', rawCategories);
+        setCache('studion_cache_transactions', rawTransactions);
+
+        if (this.wallets.length > 0 && !this.formData.wallet_id) {
+          this.formData.wallet_id = this.wallets[0].id;
+        }
+
+        this.updateDefaultCategory();
+        this.updateDefaultToWallet();
+      } catch (e) {
+        console.error('SWR Revalidate Transaction Master Data Failed:', e);
+      }
+    },
+
+    async loadTransactionForEdit(id: string) {
+      try {
+        const target = this.pastTransactions.find((t: any) => t.id === id);
+
+        if (target) {
+          this.formData = {
+            type: target.type || 'expense',
+            amount: target.amount ? String(target.amount) : '',
+            wallet_id: target.wallet_id || '',
+            to_wallet_id: target.to_wallet_id || '',
+            category_id: target.category_id || '',
+            transaction_date: target.transaction_date
+              ? target.transaction_date.split('T')[0]
+              : getTodayInputDate(),
+            notes: target.notes || '',
+          };
+        }
+      } catch (e) {
+        console.error('Gagal memuat data transaksi edit:', e);
+      }
+    },
+
+    // ==========================================
+    // 3. COMPUTED / GETTERS
+    // ==========================================
     get formattedAmount() {
       if (!this.formData.amount) return '';
       const num = parseInt(this.formData.amount, 10);
       if (isNaN(num)) return '';
       return new Intl.NumberFormat('id-ID').format(num);
+    },
+
+    get selectedWalletName() {
+      const w = this.wallets.find(
+        (item) => item.id === this.formData.wallet_id
+      );
+      return w ? w.name : 'Pilih Dompet';
+    },
+
+    get selectedToWalletName() {
+      const w = this.wallets.find(
+        (item) => item.id === this.formData.to_wallet_id
+      );
+      return w ? w.name : 'Pilih Tujuan';
+    },
+
+    get selectedCategoryName() {
+      const c = this.categories.find(
+        (item) => item.id === this.formData.category_id
+      );
+      return c ? c.name : 'Pilih Kategori';
+    },
+
+    get filteredCategories() {
+      return this.categories.filter(
+        (c: CategoryItem) => c.type === this.formData.type
+      );
+    },
+
+    get availableToWallets() {
+      return this.wallets.filter(
+        (w: WalletItem) => w.id !== this.formData.wallet_id
+      );
     },
 
     get frequentTransactions() {
@@ -122,7 +215,6 @@ export function transactionController() {
         if (!tx.notes || tx.type === 'transfer') return;
 
         const key = `${tx.notes.trim().toLowerCase()}_${tx.amount}`;
-
         const matchedCat = this.categories.find((c) => c.id === tx.category_id);
         const catIcon = matchedCat ? matchedCat.icon : '';
 
@@ -156,13 +248,9 @@ export function transactionController() {
         .slice(0, 5);
     },
 
-    formatCurrencyNumber(val: any) {
-      if (!val) return '0';
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      if (isNaN(num)) return '0';
-      return new Intl.NumberFormat('id-ID').format(num);
-    },
-
+    // ==========================================
+    // 4. UI HANDLERS & FORM LOGIC
+    // ==========================================
     handleAmountInput(event: any) {
       const rawValue = event.target.value.replace(/[^0-9]/g, '');
       this.formData.amount = rawValue;
@@ -186,32 +274,10 @@ export function transactionController() {
       this.showWalletModal = false;
     },
 
-    get selectedWalletName() {
-      const w = this.wallets.find(
-        (item) => item.id === this.formData.wallet_id
-      );
-      return w ? w.name : 'Pilih Dompet';
-    },
-
-    get selectedToWalletName() {
-      const w = this.wallets.find(
-        (item) => item.id === this.formData.to_wallet_id
-      );
-      return w ? w.name : 'Pilih Tujuan';
-    },
-
-    get selectedCategoryName() {
-      const c = this.categories.find(
-        (item) => item.id === this.formData.category_id
-      );
-      return c ? c.name : 'Pilih Kategori';
-    },
-
     handleNotesInput() {
       if (this.isEditMode || this.formData.type === 'transfer') return;
 
       const inputNote = this.formData.notes.trim().toLowerCase();
-
       if (inputNote.length < 2) {
         this.autoCategoryDetected = false;
         return;
@@ -242,63 +308,6 @@ export function transactionController() {
       }
 
       this.autoCategoryDetected = false;
-    },
-
-    async loadMasterData() {
-      try {
-        const [rawWallets, rawCategories, rawTransactions] = await Promise.all([
-          apiClient.getWallets<WalletItem[]>(),
-          apiClient.getCategories<CategoryItem[]>(),
-          apiClient.getTransactions<TransactionItem[]>(),
-        ]);
-
-        this.wallets = rawWallets;
-        this.categories = rawCategories;
-        this.pastTransactions = rawTransactions;
-
-        if (this.wallets.length > 0 && !this.formData.wallet_id) {
-          this.formData.wallet_id = this.wallets[0].id;
-        }
-
-        this.updateDefaultCategory();
-        this.updateDefaultToWallet();
-      } catch (e) {
-        console.error(e);
-      }
-    },
-
-    async loadTransactionForEdit(id: string) {
-      try {
-        const target = this.pastTransactions.find((t: any) => t.id === id);
-
-        if (target) {
-          this.formData = {
-            type: target.type || 'expense',
-            amount: target.amount ? String(target.amount) : '',
-            wallet_id: target.wallet_id || '',
-            to_wallet_id: target.to_wallet_id || '',
-            category_id: target.category_id || '',
-            transaction_date: target.transaction_date
-              ? target.transaction_date.split('T')[0]
-              : getTodayInputDate(),
-            notes: target.notes || '',
-          };
-        }
-      } catch (e) {
-        console.error('Gagal memuat data transaksi:', e);
-      }
-    },
-
-    get filteredCategories() {
-      return this.categories.filter(
-        (c: CategoryItem) => c.type === this.formData.type
-      );
-    },
-
-    get availableToWallets() {
-      return this.wallets.filter(
-        (w: WalletItem) => w.id !== this.formData.wallet_id
-      );
     },
 
     updateDefaultToWallet() {
@@ -349,6 +358,9 @@ export function transactionController() {
       }
     },
 
+    // ==========================================
+    // 5. API ACTIONS (SAVE & DELETE)
+    // ==========================================
     async saveTransaction(addAnother = false) {
       if (!this.formData.amount || Number(this.formData.amount) <= 0) {
         return alert('Nominal transaksi harus diisi!');

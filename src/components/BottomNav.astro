@@ -1,20 +1,12 @@
 ---
 import { Home, ArrowLeftRight, Plus, BarChart3, Settings } from '@lucide/astro';
 
-// Deteksi URL halaman saat ini untuk active state
 const pathname = Astro.url.pathname;
-
-const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/history', label: 'Transaksi', icon: ArrowLeftRight },
-  // Quick Add di posisi tengah
-  { href: '/analytic', label: 'Analitik', icon: BarChart3 },
-  { href: '/settings', label: 'Pengaturan', icon: Settings },
-];
 ---
 
+<!-- Pembungkus Luar dengan Gradient Overlay ke warna background frame (#f8fafc / slate-50) -->
 <div
-  class="pointer-events-none fixed right-0 bottom-0 left-0 z-50 bg-linear-to-t from-slate-900/10 via-slate-900/5 to-transparent p-4 pt-6 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+  class="pointer-events-none absolute right-0 bottom-0 left-0 z-50 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent p-4 pt-10 pb-[calc(1rem+env(safe-area-inset-bottom))]"
 >
   <nav
     class="pointer-events-auto flex w-full items-center justify-between rounded-3xl border border-slate-200/80 bg-white/90 px-3 py-1.5 shadow-xl shadow-blue-950/10 backdrop-blur-xl"

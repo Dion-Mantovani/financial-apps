@@ -1,20 +1,9 @@
-export interface Wallet {
-  id: string;
-  balance: number;
-  [key: string]: any;
-}
-
-export interface Transaction {
-  wallet_id: string;
-  amount: number;
-  type: 'income' | 'expense' | 'transfer';
-  [key: string]: any;
-}
+import type { WalletItem, TransactionItem } from './types';
 
 // Hitung saldo real-time 1 dompet (Saldo Awal + Mutasi)
 export const calculateSingleWalletBalance = (
-  wallet: Wallet,
-  transactions: Transaction[]
+  wallet: WalletItem,
+  transactions: TransactionItem[]
 ): number => {
   if (!wallet || !wallet.id) return 0;
   const initial = Number(wallet.balance || 0);
@@ -41,8 +30,8 @@ export const calculateSingleWalletBalance = (
 
 // Hitung total saldo gabungan seluruh dompet
 export const calculateTotalBalance = (
-  wallets: Wallet[],
-  transactions: Transaction[]
+  wallets: WalletItem[],
+  transactions: TransactionItem[]
 ): number => {
   return wallets.reduce(
     (acc, wallet) => acc + calculateSingleWalletBalance(wallet, transactions),
