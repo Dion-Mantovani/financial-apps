@@ -70,3 +70,69 @@ export interface ProcessedBudgetItem extends BudgetItem {
   badgeColor: string;
   iconColor: string;
 }
+
+export interface AnalyticsSummary {
+  income: number;
+  expense: number;
+  netCashflow: number;
+  expenseRatio: number;
+  incomeDiffPercentage: number | null;
+  expenseDiffPercentage: number | null;
+  savingRate: number;
+}
+
+export interface AnalyticsCategorySpending {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  amount: number;
+  count: number;
+  percentage: number;
+}
+
+export interface AnalyticsChartData {
+  labels: string[];
+  incomeData: number[];
+  expenseData: number[];
+}
+
+export interface AnalyticsMatrixMetrics {
+  core: MatrixMetricItem[];
+  behavior: MatrixMetricItem[];
+  projection: MatrixMetricItem[];
+}
+
+export interface MatrixMetricItem {
+  label: string;
+  value: string;
+  status: string;
+  color: string;
+  icon: string;
+}
+
+export interface AnalyticsResponse {
+  summary: AnalyticsSummary;
+  chartData: AnalyticsChartData;
+  topCategories: AnalyticsCategorySpending[];
+  aiInsight: string;
+  recommendation: string;
+  matrixMetrics: AnalyticsMatrixMetrics;
+  stackedBarData?: {
+    labels: string[]; // ['Jul', 'Agu', 'Sep'] atau ['W1', 'W2', 'W3'] atau ['2024', '2025', '2026']
+    series: StackedBarSeries[];
+  };
+  donutData?: DonutChartData;
+}
+
+export interface StackedBarSeries {
+  name: string; // Nama Kategori (misal: "Makan & Minum")
+  color: string; // Warna Kategori
+  data: number[]; // Nominal pengeluaran di 3 periode [P1, P2, P3]
+}
+
+export interface DonutChartData {
+  labels: string[];
+  series: number[];
+  colors: string[];
+}

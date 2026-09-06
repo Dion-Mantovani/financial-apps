@@ -37,17 +37,8 @@ import {
   Briefcase,
   Gift,
   RotateCcw,
+  CreditCard,
 } from '@lucide/astro';
-
-const weeklyExpenses = [
-  { day: 'Sen', date: '21', amount: '120rb', height: '40%', isHighest: false },
-  { day: 'Sel', date: '22', amount: '250rb', height: '70%', isHighest: false },
-  { day: 'Rab', date: '23', amount: '85rb', height: '30%', isHighest: false },
-  { day: 'Kam', date: '24', amount: '410rb', height: '100%', isHighest: true },
-  { day: 'Jum', date: '25', amount: '190rb', height: '55%', isHighest: false },
-  { day: 'Sab', date: '26', amount: '300rb', height: '80%', isHighest: false },
-  { day: 'Ming', date: '27', amount: '60rb', height: '20%', isHighest: false },
-];
 ---
 
 <Layout title="Dashboard - Financial Tracker">
@@ -332,7 +323,7 @@ const weeklyExpenses = [
                 ><Repeat class="h-5 w-5 stroke-2" /></template
               >
               <template x-if="item.icon === 'bar-chart-2'"
-                ><BarChart2 class="h-5 w-5 stroke-2" /></template
+                ><CreditCard class="h-5 w-5 stroke-2" /></template
               >
             </div>
             <span
@@ -447,8 +438,8 @@ const weeklyExpenses = [
                     <template x-if="item.icon === 'repeat'"
                       ><Repeat class="h-5 w-5 stroke-2" /></template
                     >
-                    <template x-if="item.icon === 'bar-chart-2'"
-                      ><BarChart2 class="h-5 w-5 stroke-2" /></template
+                    <template x-if="item.icon === 'credit-card'"
+                      ><CreditCard class="h-5 w-5 stroke-2" /></template
                     >
                   </div>
                   <span

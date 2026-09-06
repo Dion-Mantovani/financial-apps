@@ -164,10 +164,10 @@ export function dashboardController() {
           href: '/subscriptions',
         },
         {
-          id: 'reports',
-          label: 'Laporan',
-          icon: 'bar-chart-2',
-          href: '/reports',
+          id: 'bills',
+          label: 'Tagihan',
+          icon: 'credit-card',
+          href: '/bills',
         },
       ];
 

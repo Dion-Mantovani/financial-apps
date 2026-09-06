@@ -1,0 +1,100 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { ArrowLeft, Repeat, Plus, Tv, Music, Cloud } from '@lucide/astro';
+---
+
+<Layout title="Langganan - Studion App">
+  <div class="space-y-4 pt-2 pb-10">
+    <!-- HEADER -->
+    <div class="mt-6 flex items-center justify-between pb-1">
+      <a
+        href="/"
+        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+      >
+        <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
+      </a>
+      <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
+        Langganan Rutin
+      </h1>
+      <div class="w-9"></div>
+    </div>
+
+    <!-- TOTAL ESTIMASI BULANAN -->
+    <div
+      class="rounded-3xl border border-blue-100 bg-blue-50/60 p-4 text-center"
+    >
+      <span class="text-[10px] font-bold tracking-wider text-blue-500 uppercase"
+        >Total Rutin Bulanan</span
+      >
+      <p class="mt-0.5 text-2xl font-black text-blue-900">Rp 313.000</p>
+    </div>
+
+    <!-- LIST LANGGANAN -->
+    <div
+      class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white p-2 shadow-sm"
+    >
+      <div class="flex items-center justify-between p-3">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"
+          >
+            <Tv class="h-4.5 w-4.5 stroke-2" />
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-800">Netflix Premium</p>
+            <p class="text-[10px] text-slate-400">Debet otomatis tgl 12</p>
+          </div>
+        </div>
+        <p class="text-xs font-black text-slate-900">
+          Rp 186.000<span class="text-[9px] font-normal text-slate-400"
+            >/bln</span>
+        </p>
+      </div>
+
+      <div class="flex items-center justify-between p-3">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"
+          >
+            <Music class="h-4.5 w-4.5 stroke-2" />
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-800">Spotify Family</p>
+            <p class="text-[10px] text-slate-400">Debet otomatis tgl 20</p>
+          </div>
+        </div>
+        <p class="text-xs font-black text-slate-900">
+          Rp 86.900<span class="text-[9px] font-normal text-slate-400"
+            >/bln</span>
+        </p>
+      </div>
+
+      <div class="flex items-center justify-between p-3">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"
+          >
+            <Cloud class="h-4.5 w-4.5 stroke-2" />
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-800">iCloud 200GB</p>
+            <p class="text-[10px] text-slate-400">Debet otomatis tgl 28</p>
+          </div>
+        </div>
+        <p class="text-xs font-black text-slate-900">
+          Rp 45.000<span class="text-[9px] font-normal text-slate-400"
+            >/bln</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- TOMBOL TAMBAH -->
+    <button
+      type="button"
+      class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/40 py-3.5 text-blue-600 shadow-2xs transition-all hover:bg-blue-100/60 active:scale-95"
+    >
+      <Plus class="h-4 w-4 stroke-[2.5]" />
+      <span class="text-xs font-bold">Tambah Langganan</span>
+    </button>
+  </div>
+</Layout>

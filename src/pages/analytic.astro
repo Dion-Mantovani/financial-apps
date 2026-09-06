@@ -13,136 +13,48 @@ import {
   Zap,
   Target,
   Bot,
+  Car,
+  Receipt,
+  Gamepad2,
+  HeartPulse,
+  GraduationCap,
+  MoreHorizontal,
+  Briefcase,
+  Gift,
+  TrendingUp,
+  RotateCcw,
+  Wallet,
+  ArrowRightLeft,
+  Smartphone,
+  PiggyBank,
+  LineChart,
+  CreditCard,
+  HelpCircle,
+  X,
+  Tag,
+  Flame,
+  ShieldCheck,
+  Calculator,
+  Clock,
+  Sparkles,
 } from '@lucide/astro';
-
-// Mock Data Top Spending
-const topCategories = [
-  {
-    name: 'Makanan & Minuman',
-    amount: 'Rp 1.450.000',
-    percentage: 40,
-    icon: Utensils,
-    color: 'bg-blue-600',
-  },
-  {
-    name: 'Belanja Bulanan',
-    amount: 'Rp 1.350.000',
-    percentage: 37,
-    icon: ShoppingBag,
-    color: 'bg-indigo-500',
-  },
-  {
-    name: 'Utilitas & Tagihan',
-    amount: 'Rp 545.000',
-    percentage: 15,
-    icon: Zap,
-    color: 'bg-amber-500',
-  },
-  {
-    name: 'Transport & Bensin',
-    amount: 'Rp 320.000',
-    percentage: 8,
-    icon: Fuel,
-    color: 'bg-emerald-500',
-  },
-];
-
-// Mock Data Matrix Metrics Dikelompokkan
-const matrixCategory = {
-  core: [
-    {
-      label: 'Burn Rate Harian',
-      value: 'Rp 121.000 /hr',
-      status: 'Normal',
-      color: 'text-slate-800',
-    },
-    {
-      label: 'Sisa Saldo Harian',
-      value: 'Rp 165.000 /hr',
-      status: 'Aman',
-      color: 'text-emerald-600',
-    },
-    {
-      label: 'Skor Kesehatan',
-      value: '85 / 100',
-      status: 'Sangat Sehat',
-      color: 'text-emerald-600',
-    },
-    {
-      label: 'Kepatuhan Anggaran',
-      value: '92%',
-      status: 'Disiplin',
-      color: 'text-blue-600',
-    },
-  ],
-  behavior: [
-    {
-      label: 'Hari Terboros',
-      value: 'Kamis (24 Agt)',
-      status: 'Rp 410.000',
-      color: 'text-rose-600',
-    },
-    {
-      label: 'Transaksi Tertinggi',
-      value: 'Gaji Freelance',
-      status: '+3.500.000',
-      color: 'text-emerald-600',
-    },
-    {
-      label: 'Transaksi Tersering',
-      value: 'Kopi Kenangan',
-      status: '12x Bulan Ini',
-      color: 'text-slate-800',
-    },
-    {
-      label: 'Rata-rata Transaksi',
-      value: 'Rp 142.000',
-      status: 'Stabil',
-      color: 'text-blue-600',
-    },
-  ],
-  projection: [
-    {
-      label: 'Proyeksi Akhir Bulan',
-      value: 'Rp 1.150.000',
-      status: 'Surplus',
-      color: 'text-blue-600',
-    },
-    {
-      label: 'Daya Tahan Saldo',
-      value: '122 Hari',
-      status: 'Sangat Safe',
-      color: 'text-emerald-600',
-    },
-    {
-      label: 'Potensi Hemat AI',
-      value: 'Rp 400.000',
-      status: 'Rekomendasi',
-      color: 'text-amber-600',
-    },
-    {
-      label: 'Target Investasi',
-      value: 'Rp 2.500.000',
-      status: 'On Track',
-      color: 'text-emerald-600',
-    },
-  ],
-};
 ---
 
 <Layout title="Analitik Keuangan - Studion App">
-  <div
-    x-data="{
-      period: 'monthly', // 'weekly' | 'monthly' | 'yearly'
-      chartType: 'area', // 'area' | 'bar' | 'radar'
-      matrixTab: 'core'  // 'core' | 'behavior' | 'projection'
-    }"
-    class="space-y-4 pt-2 pb-10"
-  >
+  <div x-data="analyticsController()" class="space-y-4 pt-2 pb-10">
+    <!-- Hidden Input Month Picker -->
+    <input
+      type="month"
+      x-ref="monthInput"
+      x-model="selectedMonth"
+      class="sr-only hidden"
+    />
+
+    <!-- STICKY HEADER -->
     <div
-      class="sticky top-0 z-30 -mx-5 mt-6 space-y-3 bg-slate-50/90 px-5 pb-1 backdrop-blur-md"
+      class="sticky top-0 z-40 -mx-5 -mt-2 space-y-3 bg-slate-50 px-5 pt-8 pb-1"
     >
-      <!-- 1. HEADER HALAMAN NON-NAVBAR (Back Kiri + Judul Tengah) -->
+      <!-- 1. HEADER HALAMAN -->
       <div class="flex items-center justify-between">
         <a
           href="/"
@@ -159,56 +71,55 @@ const matrixCategory = {
       </div>
 
       <!-- 2. TOP CONTROL BAR STICKY -->
-      <div
-        class="sticky top-0 z-30 -mx-5 bg-slate-50/90 px-5 pb-2 backdrop-blur-md"
-      >
-        <div class="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
-          >
-            <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
-            <span class="text-xs font-bold text-slate-800">Agustus 2026</span>
-            <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
-          </button>
+      <div class="flex items-center justify-between gap-2 pb-1">
+        <button
+          type="button"
+          @click="openMonthPicker()"
+          class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
+        >
+          <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
+          <span
+            class="text-xs font-bold text-slate-800"
+            x-text="period === 'yearly' ? selectedMonth.split('-')[0] : formattedSelectedMonth"
+          ></span>
+          <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
+        </button>
 
-          <div
-            class="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-2xs"
-          >
-            {
-              ['weekly', 'monthly', 'yearly'].map((type) => (
-                <button
-                  type="button"
-                  x-on:click={`period = '${type}'`}
-                  x-bind:class={`period === '${type}' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-500 font-medium hover:text-slate-800'`}
-                  class="cursor-pointer rounded-xl px-2.5 py-1 text-[10px] capitalize transition-all"
-                >
-                  {type === 'weekly'
-                    ? 'Minggu'
-                    : type === 'monthly'
-                      ? 'Bulan'
-                      : 'Tahun'}
-                </button>
-              ))
-            }
-          </div>
+        <div
+          class="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-2xs"
+        >
+          <template x-for="type in ['weekly', 'monthly', 'yearly']" :key="type">
+            <button
+              type="button"
+              @click="period = type"
+              :class="period === type ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-500 font-medium hover:text-slate-800'"
+              class="cursor-pointer rounded-xl px-2.5 py-1 text-[10px] capitalize transition-all"
+              x-text="type === 'weekly' ? 'Minggu' : type === 'monthly' ? 'Bulan' : 'Tahun'"
+            ></button>
+          </template>
         </div>
       </div>
     </div>
 
     <!-- 3. HERO CHART FRAME BOLD DARK GLASS -->
     <div
-      class="relative space-y-3 overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-slate-900 via-blue-950 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
+      class="relative space-y-3 rounded-3xl border border-white/15 bg-linear-to-br from-slate-900 via-blue-950 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
     >
+      <!-- CONTAINER BLUR ACCENT (Diberi overflow-hidden tersendiri agar efek glow tidak bocor ke luar card tapi tetep halus) -->
       <div
-        class="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl"
+        class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
       >
-      </div>
-      <div
-        class="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-cyan-400/15 blur-3xl"
-      >
+        <div
+          class="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl"
+        >
+        </div>
+        <div
+          class="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-cyan-400/15 blur-3xl"
+        >
+        </div>
       </div>
 
+      <!-- HEADER TITLE CHART -->
       <div
         class="relative z-10 flex items-center justify-between border-b border-white/10 pb-3"
       >
@@ -229,159 +140,161 @@ const matrixCategory = {
           <button
             type="button"
             @click="chartType = 'area'"
-            :class="chartType === 'area' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
-            class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+            :class=`chartType === 'area' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'`
+            class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
           >
             Area
           </button>
           <button
             type="button"
             @click="chartType = 'bar'"
-            :class="chartType === 'bar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
-            class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+            :class=`chartType === 'bar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'`
+            class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
           >
             Bar
           </button>
           <button
             type="button"
-            @click="chartType = 'radar'"
-            :class="chartType === 'radar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70 hover:text-white'"
+            @click="if (period !== 'weekly') chartType = 'radar'"
+            :disabled="period === 'weekly'"
+            :class=`[
+              period === 'weekly' ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:text-white',
+              chartType === 'radar' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200/70'
+            ]`
             class="rounded-lg px-2 py-0.5 text-[9px] transition-all"
+            :title="period === 'weekly' ? 'Donut chart hanya tersedia untuk Bulanan & Tahunan' : 'Lihat Donut Chart'"
           >
-            Radar
+            Donut
           </button>
         </div>
       </div>
 
-      <!-- VIEW 1: AREA CHART WITH NEON GLOW STROKE -->
-      <div
-        x-show="chartType === 'area'"
-        class="relative z-10 flex h-44 w-full flex-col justify-end pt-2"
-      >
-        <svg
-          class="h-full w-full overflow-visible"
-          viewBox="0 0 300 100"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="area-glow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"></stop>
-              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"
-              ></stop>
-            </linearGradient>
-          </defs>
-          <path
-            d="M0,75 Q75,15 150,55 T300,10 L300,100 L0,100 Z"
-            fill="url(#area-glow)"></path>
-          <path
-            d="M0,75 Q75,15 150,55 T300,10"
-            fill="none"
-            stroke="#38bdf8"
-            stroke-width="3.5"
-            stroke-linecap="round"></path>
-        </svg>
-
-        <div
-          class="flex justify-between border-t border-white/10 pt-2 text-[9px] font-bold text-blue-200/60"
-        >
-          <span>Mg 1</span>
-          <span>Mg 2</span>
-          <span>Mg 3</span>
-          <span>Mg 4</span>
-        </div>
+      <!-- VIEW 1: AREA CHART (APEXCHARTS DINAMIS) -->
+      <div x-show="chartType === 'area'" class="relative z-10 h-44 w-full pt-1">
+        <div id="apex-area-chart" class="w-full"></div>
       </div>
 
-      <!-- VIEW 2: DUAL BAR CHART -->
-      <div
-        x-show="chartType === 'bar'"
-        x-cloak
-        class="relative z-10 grid h-44 grid-cols-4 items-end gap-4 border-b border-white/10 pt-4 pb-2"
-      >
-        {
-          [
-            { in: 80, out: 45 },
-            { in: 45, out: 65 },
-            { in: 95, out: 80 },
-            { in: 35, out: 50 },
-          ].map((item, idx) => (
-            <div class="flex h-full flex-col items-center justify-end gap-1.5">
-              <div class="flex h-full w-full items-end justify-center gap-1.5">
-                <div
-                  class="w-3 rounded-t-md bg-cyan-400 shadow-xs shadow-cyan-400/50"
-                  style={`height: ${item.in}%;`}
-                />
-                <div
-                  class="w-3 rounded-t-md bg-rose-500 shadow-xs shadow-rose-500/50"
-                  style={`height: ${item.out}%;`}
-                />
-              </div>
-              <span class="text-[9px] font-bold text-blue-200/60">
-                Mg {idx + 1}
-              </span>
-            </div>
-          ))
-        }
+      <!-- VIEW 2: STACKED BAR CHART (APEXCHARTS) -->
+      <div x-show="chartType === 'bar'" class="relative z-10 h-44 w-full pt-1">
+        <div id="apex-bar-chart" class="w-full"></div>
       </div>
 
-      <!-- VIEW 3: RADAR RING BREAKDOWN -->
+      <!-- VIEW 3: DONUT / RADAR RING BREAKDOWN -->
       <div
         x-show="chartType === 'radar'"
-        x-cloak
-        class="relative z-10 flex h-44 items-center justify-center pt-2"
+        class="relative z-10 h-44 w-full overflow-visible pt-1"
       >
-        <div
-          class="relative flex h-32 w-32 items-center justify-center rounded-full border-8 border-cyan-400 border-t-amber-400 border-r-emerald-400 shadow-lg shadow-cyan-500/20"
-        >
-          <div class="flex flex-col items-center">
-            <span class="text-xs font-black text-white">Breakdown</span>
-            <span class="text-[9px] font-medium text-cyan-200"
-              >Terdistribusi</span
-            >
-          </div>
-        </div>
+        <div id="apex-donut-chart" class="w-full"></div>
       </div>
     </div>
 
-    <!-- 4. SUMMARY PEMASUKAN vs PENGELUARAN -->
-    <div class="grid grid-cols-2 gap-2.5">
-      <div
-        class="space-y-1 rounded-3xl border border-slate-200/70 bg-white p-3.5 shadow-2xs"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1.5 text-emerald-600">
-            <ArrowDownLeft class="h-4 w-4 stroke-[2.5]" />
-            <span class="text-[10px] font-bold tracking-wide uppercase"
-              >Pemasukan</span
-            >
+    <!-- 4. SUMMARY PEMASUKAN, PENGELUARAN & NET CASH FLOW -->
+    <div class="space-y-2.5">
+      <!-- Grid Pemasukan & Pengeluaran -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- Card Pemasukan -->
+        <div
+          class="space-y-1.5 rounded-3xl border border-slate-200/70 bg-white p-4 shadow-2xs"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-emerald-600">
+              <div
+                class="flex h-6 w-6 items-center justify-center rounded-xl bg-emerald-50"
+              >
+                <ArrowDownLeft class="h-3.5 w-3.5 stroke-[2.5]" />
+              </div>
+              <span class="text-[9px] font-bold tracking-wide uppercase"
+                >Pemasukan</span
+              >
+            </div>
+
+            <!-- Badge hanya muncul jika ada perbandingan dengan bulan/periode lalu -->
+            <template x-if="data.summary.incomeDiffPercentage !== null">
+              <span
+                class="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600"
+                x-text="data.summary.incomeDiffPercentage >= 0 ? `+${data.summary.incomeDiffPercentage}%` : `${data.summary.incomeDiffPercentage}%`"
+              ></span>
+            </template>
           </div>
           <span
-            class="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600"
-            >+12%</span
-          >
+            class="block text-base font-black tracking-tight text-slate-900"
+            x-text="formatCurrency(data.summary.income)"></span>
         </div>
-        <span class="block pt-1 text-base font-black text-slate-900"
-          >Rp 8.500.000</span
+
+        <!-- Card Pengeluaran -->
+        <div
+          class="space-y-1.5 rounded-3xl border border-slate-200/70 bg-white p-4 shadow-2xs"
         >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-rose-600">
+              <div
+                class="flex h-6 w-6 items-center justify-center rounded-xl bg-rose-50"
+              >
+                <ArrowUpRight class="h-3.5 w-3.5 stroke-[2.5]" />
+              </div>
+              <span class="text-[9px] font-bold tracking-wide uppercase"
+                >Pengeluaran</span
+              >
+            </div>
+
+            <!-- Badge hanya muncul jika ada perbandingan dengan bulan/periode lalu -->
+            <template x-if="data.summary.expenseDiffPercentage !== null">
+              <span
+                class="rounded-full bg-rose-50 px-2 py-0.5 text-[9px] font-extrabold text-rose-600"
+                x-text="data.summary.expenseDiffPercentage >= 0 ? `+${data.summary.expenseDiffPercentage}%` : `${data.summary.expenseDiffPercentage}%`"
+              ></span>
+            </template>
+          </div>
+          <span
+            class="block text-base font-black tracking-tight text-slate-900"
+            x-text="formatCurrency(data.summary.expense)"></span>
+        </div>
       </div>
 
+      <!-- Hero Card: Net Cash Flow -->
       <div
-        class="space-y-1 rounded-3xl border border-slate-200/70 bg-white p-3.5 shadow-2xs"
+        :class="data.summary.netCashflow >= 0 ? 'border-emerald-200/80 bg-emerald-50/30' : 'border-rose-200/80 bg-rose-50/30'"
+        class="relative overflow-hidden rounded-3xl border p-4 shadow-2xs transition-all"
       >
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1.5 text-rose-600">
-            <ArrowUpRight class="h-4 w-4 stroke-[2.5]" />
-            <span class="text-[10px] font-bold tracking-wide uppercase"
-              >Pengeluaran</span
+          <div class="flex items-center gap-3">
+            <div
+              :class="data.summary.netCashflow >= 0 ? 'bg-emerald-600 text-white shadow-emerald-600/20' : 'bg-rose-600 text-white shadow-rose-600/20'"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-md"
             >
+              <Wallet class="h-5 w-5 stroke-2" />
+            </div>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-1.5">
+                <span
+                  class="text-[10px] font-bold tracking-wider text-slate-500 uppercase"
+                  >Net Cash Flow</span
+                >
+                <span
+                  :class="data.summary.netCashflow >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'"
+                  class="py-0.2 rounded-md px-1.5 text-[8px] font-extrabold uppercase"
+                  x-text="data.summary.netCashflow >= 0 ? 'Surplus' : 'Defisit'"
+                ></span>
+              </div>
+              <span
+                :class="data.summary.netCashflow >= 0 ? 'text-emerald-700' : 'text-rose-700'"
+                class="text-lg font-black tracking-tight"
+                x-text="formatCurrency(data.summary.netCashflow)"></span>
+            </div>
           </div>
-          <span
-            class="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600"
-            >-5%</span
+
+          <!-- Micro Info: Rasio Beban Pengeluaran -->
+          <div
+            class="flex flex-col items-center rounded-2xl border border-slate-200/60 bg-white/80 px-3 py-1.5 shadow-2xs backdrop-blur-xs"
           >
+            <span class="text-[8.5px] font-bold text-slate-400 uppercase"
+              >Rasio Beban</span
+            >
+            <span
+              class="text-xs font-black text-slate-800"
+              x-text="`${data.summary.expenseRatio}%`"></span>
+          </div>
         </div>
-        <span class="block pt-1 text-base font-black text-slate-900"
-          >Rp 3.650.000</span
-        >
       </div>
     </div>
 
@@ -405,17 +318,16 @@ const matrixCategory = {
           >Insight</span
         >
       </div>
-      <p class="text-[11px] leading-relaxed font-semibold text-slate-600">
-        Pengeluaran kategori <strong class="text-slate-900"
-          >Makanan & Minuman</strong
-        > menyerap 40% anggaranmu. Mengurangi jajan luar 2x seminggu dapat menambah
-        tabungan <strong>Rp 400.000/bulan</strong>!
+      <p
+        class="text-[11px] leading-relaxed font-semibold text-slate-600"
+        x-text="data.aiInsight"
+      >
       </p>
     </div>
 
-    <!-- 6. SAVING RATE HERO BADGE & REKOMENDASI -->
+    <!-- 6. SAVING RATE HERO BADGE & REKOMENDASI SURPLUS -->
     <div
-      class="space-y-3 rounded-3xl border border-slate-200/70 bg-white p-4 shadow-2xs"
+      class="space-y-3.5 rounded-3xl border border-slate-200/70 bg-white p-4.5 shadow-2xs"
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -437,42 +349,78 @@ const matrixCategory = {
         <div
           class="flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1.5"
         >
-          <span class="text-sm font-black text-emerald-600">57.0%</span>
-          <span class="text-[9px] font-bold text-emerald-700 uppercase"
-            >(Tinggi)</span
-          >
+          <span
+            class="text-sm font-black text-emerald-600"
+            x-text="`${data.summary.savingRate}.0%`"></span>
+          <span
+            class="text-[9px] font-bold text-emerald-700 uppercase"
+            x-text="data.summary.savingRate >= 20 ? '(Tinggi)' : '(Rendah)'"
+          ></span>
         </div>
       </div>
 
-      <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div
-          class="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-400 shadow-xs"
-          style="width: 57%;"
-        >
-        </div>
-      </div>
-
+      <!-- Progress Bar -->
       <div
-        class="space-y-1 rounded-2xl border border-slate-200/60 bg-slate-50 p-3 text-[10px] font-medium text-slate-600"
+        class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner"
       >
-        <span class="block font-bold text-slate-800"
-          >💡 Rekomendasi Alokasi Surplus:</span
+        <div
+          class="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-400 shadow-xs transition-all duration-700"
+          :style="`width: ${Math.min(data.summary.savingRate, 100)}%;`"
         >
-        <p>
-          Disarankan mengalokasikan <strong>Rp 2.500.000</strong> dari sisa kas bulan
-          ini ke instrumen Reksa Dana / Pasar Uang di Bibit.
-        </p>
+        </div>
       </div>
+
+      <!-- KOTAK REKOMENDASI SURPLUS (Hanya muncul jika Net Cashflow > 0) -->
+      <template x-if="data.summary.netCashflow > 0">
+        <div
+          class="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-100/80 p-3.5 shadow-inner transition-all"
+        >
+          <!-- Aksesori aksen garis tipis kiri -->
+          <div
+            class="absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-emerald-500"
+          >
+          </div>
+
+          <div
+            class="space-y-1 pl-1.5 text-[10.5px] font-medium text-slate-600"
+          >
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs">💡</span>
+              <span class="font-bold tracking-tight text-slate-800"
+                >Rekomendasi Alokasi Surplus</span
+              >
+            </div>
+            <p
+              class="leading-relaxed text-slate-600"
+              x-text="data.recommendation"
+            >
+            </p>
+          </div>
+        </div>
+      </template>
     </div>
 
-    <!-- 7. TABEL MATRIX METRICS -->
+    <!-- 7. TABEL MATRIX METRICS DENGAN IKON & KAMUS ISTILAH -->
     <div class="space-y-3 pt-1">
       <div class="flex items-center justify-between px-0.5">
-        <span class="text-xs font-bold tracking-tight text-slate-800"
-          >Matriks Finansial Mendalam</span
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-bold tracking-tight text-slate-800"
+            >Matriks Finansial Mendalam</span
+          >
+        </div>
+
+        <!-- Tombol Kamus / Info Istilah -->
+        <button
+          type="button"
+          @click="showGlossaryModal = true"
+          class="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 active:scale-95"
         >
+          <HelpCircle class="h-3.5 w-3.5 stroke-[2.5] text-blue-600" />
+          <span>Kamus Istilah</span>
+        </button>
       </div>
 
+      <!-- Tab Selector -->
       <div
         class="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200/80 bg-white p-1 shadow-2xs"
       >
@@ -481,91 +429,234 @@ const matrixCategory = {
           @click="matrixTab = 'core'"
           :class="matrixTab === 'core' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
           class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+          >Utama</button
         >
-          Utama
-        </button>
         <button
           type="button"
           @click="matrixTab = 'behavior'"
           :class="matrixTab === 'behavior' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
           class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+          >Perilaku</button
         >
-          Perilaku
-        </button>
         <button
           type="button"
           @click="matrixTab = 'projection'"
           :class="matrixTab === 'projection' ? 'bg-blue-600 text-white font-bold shadow-2xs' : 'text-slate-600 font-semibold hover:bg-slate-50'"
           class="cursor-pointer rounded-xl py-1.5 text-[10px] transition-all"
+          >Proyeksi</button
         >
-          Proyeksi
-        </button>
       </div>
 
+      <!-- Grid Items Matriks dengan Ikon Penanda -->
       <div>
-        <div x-show="matrixTab === 'core'" class="grid grid-cols-2 gap-2">
-          {
-            matrixCategory.core.map((item) => (
-              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
-                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
-                  {item.label}
-                </span>
-                <span class={`block text-xs font-black ${item.color}`}>
-                  {item.value}
-                </span>
-                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
-                  {item.status}
-                </span>
-              </div>
-            ))
-          }
-        </div>
-
-        <div
-          x-show="matrixTab === 'behavior'"
-          x-cloak
-          class="grid grid-cols-2 gap-2"
+        <template
+          x-for="tabKey in ['core', 'behavior', 'projection']"
+          :key="tabKey"
         >
-          {
-            matrixCategory.behavior.map((item) => (
-              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
-                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
-                  {item.label}
-                </span>
-                <span class={`block text-xs font-black ${item.color}`}>
-                  {item.value}
-                </span>
-                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
-                  {item.status}
-                </span>
-              </div>
-            ))
-          }
-        </div>
+          <div x-show="matrixTab === tabKey" class="grid grid-cols-2 gap-2">
+            <template
+              x-for="item in data.matrixMetrics[tabKey]"
+              :key="item.label"
+            >
+              <div
+                class="space-y-1 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs"
+              >
+                <!-- Label + Ikon Penanda -->
+                <div class="flex items-center gap-1.5">
+                  <template x-if="item.icon === 'flame'"
+                    ><Flame
+                      class="h-3.5 w-3.5 stroke-[2.5] text-amber-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'wallet'"
+                    ><Wallet
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'activity'"
+                    ><Activity
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'shield-check'"
+                    ><ShieldCheck
+                      class="h-3.5 w-3.5 stroke-[2.5] text-indigo-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'arrow-up-right'"
+                    ><ArrowUpRight
+                      class="h-3.5 w-3.5 stroke-[2.5] text-rose-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'receipt'"
+                    ><Receipt
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'tag'"
+                    ><Tag
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'calculator'"
+                    ><Calculator
+                      class="h-3.5 w-3.5 stroke-[2.5] text-slate-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'trending-up'"
+                    ><TrendingUp
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'clock'"
+                    ><Clock
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'sparkles'"
+                    ><Sparkles
+                      class="h-3.5 w-3.5 stroke-[2.5] text-amber-500"
+                    /></template
+                  >
+                  <template x-if="item.icon === 'piggy-bank'"
+                    ><PiggyBank
+                      class="h-3.5 w-3.5 stroke-[2.5] text-teal-500"
+                    /></template
+                  >
 
-        <div
-          x-show="matrixTab === 'projection'"
-          x-cloak
-          class="grid grid-cols-2 gap-2"
-        >
-          {
-            matrixCategory.projection.map((item) => (
-              <div class="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-2xs">
-                <span class="block text-[9px] font-medium tracking-wide text-slate-400 uppercase">
-                  {item.label}
-                </span>
-                <span class={`block text-xs font-black ${item.color}`}>
-                  {item.value}
-                </span>
-                <span class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600">
-                  {item.status}
-                </span>
+                  <span
+                    class="block truncate text-[9px] font-bold tracking-wide text-slate-400 uppercase"
+                    x-text="item.label"></span>
+                </div>
+
+                <span
+                  :class="`block text-xs font-black ${item.color}`"
+                  x-text="item.value"></span>
+                <span
+                  class="inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-600"
+                  x-text="item.status"></span>
               </div>
-            ))
-          }
-        </div>
+            </template>
+          </div>
+        </template>
       </div>
     </div>
+
+    <!-- MODAL KAMUS ISTILAH FINANSIAL -->
+    <template x-teleport="body">
+      <div
+        x-show="showGlossaryModal"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-4 backdrop-blur-xs sm:items-center"
+      >
+        <div
+          @click.away="showGlossaryModal = false"
+          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+        >
+          <div
+            class="flex items-center justify-between border-b border-slate-100 pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+              >
+                <HelpCircle class="h-4 w-4 stroke-[2.5]" />
+              </div>
+              <h3 class="text-xs font-extrabold text-slate-900">
+                Kamus Istilah Matriks
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="showGlossaryModal = false"
+              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div
+            class="no-scrollbar max-h-[60vh] space-y-2 divide-y divide-slate-100 overflow-y-auto pt-2"
+          >
+            <template x-for="g in glossaryItems" :key="g.term">
+              <div class="pt-2">
+                <div class="flex items-center gap-1.5">
+                  <template x-if="g.icon === 'flame'"
+                    ><Flame
+                      class="h-3.5 w-3.5 stroke-[2.5] text-amber-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'wallet'"
+                    ><Wallet
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'activity'"
+                    ><Activity
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'shield-check'"
+                    ><ShieldCheck
+                      class="h-3.5 w-3.5 stroke-[2.5] text-indigo-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'arrow-up-right'"
+                    ><ArrowUpRight
+                      class="h-3.5 w-3.5 stroke-[2.5] text-rose-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'receipt'"
+                    ><Receipt
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'tag'"
+                    ><Tag
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'calculator'"
+                    ><Calculator
+                      class="h-3.5 w-3.5 stroke-[2.5] text-slate-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'trending-up'"
+                    ><TrendingUp
+                      class="h-3.5 w-3.5 stroke-[2.5] text-blue-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'clock'"
+                    ><Clock
+                      class="h-3.5 w-3.5 stroke-[2.5] text-emerald-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'sparkles'"
+                    ><Sparkles
+                      class="h-3.5 w-3.5 stroke-[2.5] text-amber-500"
+                    /></template
+                  >
+                  <template x-if="g.icon === 'piggy-bank'"
+                    ><PiggyBank
+                      class="h-3.5 w-3.5 stroke-[2.5] text-teal-500"
+                    /></template
+                  >
+
+                  <span
+                    class="block text-xs font-bold text-slate-800"
+                    x-text="g.term"></span>
+                </div>
+                <p
+                  class="mt-1 pl-5 text-[11px] leading-relaxed font-medium text-slate-500"
+                  x-text="g.desc"
+                >
+                </p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- 8. TOP SPENDING CATEGORY -->
     <div class="space-y-2.5 pt-1">
@@ -573,41 +664,114 @@ const matrixCategory = {
         <span class="text-xs font-bold tracking-tight text-slate-800"
           >Top Pengeluaran Kategori</span
         >
-        <span class="text-[10px] font-semibold text-blue-600">Agustus 2026</span
-        >
+        <span
+          class="text-[10px] font-semibold text-blue-600"
+          x-text="formattedSelectedMonth"></span>
       </div>
 
       <div
         class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-2xs"
       >
-        {
-          topCategories.map((cat) => (
-            <div class="flex items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80">
+        <template x-for="cat in data.topCategories" :key="cat.id">
+          <div
+            class="space-y-2 p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
+          >
+            <!-- Baris Atas -->
+            <div class="flex items-center justify-between">
               <div class="flex min-w-0 items-center gap-3">
+                <!-- Container Ikon Default Blue -->
                 <div
-                  class={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-white ${cat.color}`}
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600"
                 >
-                  <cat.icon class="h-4.5 w-4.5 stroke-2" />
+                  <template x-if="cat.icon === 'utensils'"
+                    ><Utensils class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'car'"
+                    ><Car class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'shopping-bag'"
+                    ><ShoppingBag class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'receipt'"
+                    ><Receipt class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'gamepad-2'"
+                    ><Gamepad2 class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'heart-pulse'"
+                    ><HeartPulse class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'graduation-cap'"
+                    ><GraduationCap class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'more-horizontal'"
+                    ><MoreHorizontal class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'briefcase'"
+                    ><Briefcase class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'gift'"
+                    ><Gift class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'trending-up'"
+                    ><TrendingUp class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template x-if="cat.icon === 'rotate-ccw'"
+                    ><RotateCcw class="h-4.5 w-4.5 stroke-2" /></template
+                  >
+                  <template
+                    x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw'].includes(cat.icon)"
+                  >
+                    <Tag class="h-4.5 w-4.5 stroke-2" />
+                  </template>
                 </div>
+
                 <div class="flex min-w-0 flex-col">
-                  <span class="truncate text-xs font-bold text-slate-800">
-                    {cat.name}
-                  </span>
-                  <span class="text-[10px] font-medium text-slate-400">
-                    Porsi: {cat.percentage}% dari pengeluaran
-                  </span>
+                  <span
+                    class="truncate text-xs font-bold text-slate-800"
+                    x-text="cat.name"></span>
+
+                  <!-- Micro Info Ringkas -->
+                  <div
+                    class="flex items-center gap-1.5 text-[10px] font-medium text-slate-400"
+                  >
+                    <span
+                      class="font-semibold text-slate-600"
+                      x-text="`${cat.percentage}% total`"></span>
+                    <span>•</span>
+                    <span x-text="`${cat.count}x transaksi`"></span>
+                  </div>
                 </div>
               </div>
 
               <div class="flex shrink-0 flex-col items-end pl-2">
-                <span class="text-xs font-black text-slate-900">
-                  {cat.amount}
-                </span>
+                <span
+                  class="text-xs font-black text-slate-900"
+                  x-text="formatCurrency(cat.amount)"></span>
               </div>
             </div>
-          ))
-        }
+
+            <!-- Progress Bar Visual Default Theme -->
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                class="h-full rounded-full bg-blue-600 transition-all duration-500"
+                :style="`width: ${Math.min(cat.percentage, 100)}%;`"
+              >
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+  import { analyticsController } from '../controllers/analytics.controller';
+
+  declare const Alpine: any;
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('analyticsController', analyticsController);
+  });
+</script>

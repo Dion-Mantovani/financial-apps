@@ -130,8 +130,6 @@ class ApiClient {
   }
 
   // ==================== BUDGETS ====================
-  // Tambahkan/Sesuaikan di src/services/apiClient.ts
-
   async getBudgets<T = any>(period?: string): Promise<T> {
     let url = '/api/budgets';
     if (period) url += `?period=${period}`;
@@ -163,6 +161,16 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  // ==================== ANALYTICS ====================
+  async getAnalytics<T = any>(
+    periodType: string = 'monthly',
+    date: string = ''
+  ): Promise<T> {
+    let url = `/api/analytics?periodType=${periodType}`;
+    if (date) url += `&date=${date}`;
+    return this.request<T>(url);
   }
 }
 
