@@ -1,0 +1,48 @@
+---
+import {
+  Utensils,
+  Car,
+  ShoppingBag,
+  Briefcase,
+  Gift,
+  HeartPulse,
+  Gamepad2,
+  Tag,
+} from '@lucide/astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = 'h-5 w-5 stroke-2' } = Astro.props;
+---
+
+<!-- Render semua icon dengan instruksi Alpine x-show -->
+<Utensils
+  x-show="cat.icon === 'utensils' || selectedCategory?.icon === 'utensils'"
+  class={className}
+/>
+<Car
+  x-show="cat.icon === 'car' || selectedCategory?.icon === 'car'"
+  class={className}
+/>
+<ShoppingBag
+  x-show="cat.icon === 'shopping-bag' || selectedCategory?.icon === 'shopping-bag'"
+  class={className}
+/>
+<Gamepad2
+  x-show="cat.icon === 'gamepad-2' || selectedCategory?.icon === 'gamepad-2'"
+  class={className}
+/>
+<HeartPulse
+  x-show="cat.icon === 'heart-pulse' || selectedCategory?.icon === 'heart-pulse'"
+  class={className}
+/>
+<Briefcase
+  x-show="cat.icon === 'briefcase' || selectedCategory?.icon === 'briefcase'"
+  class={className}
+/>
+<Gift
+  x-show="cat.icon === 'gift' || selectedCategory?.icon === 'gift'"
+  class={className}
+/>

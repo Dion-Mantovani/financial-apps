@@ -18,98 +18,218 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  AlertTriangle,
+  ChevronDown,
+  PiggyBank,
+  QrCode,
+  Briefcase,
+  Building,
 } from '@lucide/astro';
 ---
 
 <Layout title="Dompet Saya - Studion App">
   <div
     x-data="{
-      isReordering: false,
-      openDetailModal: false,
-      openFormModal: false,
-      isEdit: false,
-      selectedWallet: {},
-      formData: {
-        id: null,
-        name: '',
-        type: 'bank',
-        icon: 'landmark',
-        color: '#0d3b66',
-        balance: 0
-      },
-      wallets: [
-        { id: 'w1', name: 'BCA', type: 'Bank', icon: 'landmark', color: '#0d3b66', balance: 12500000, txCount: 15 },
-        { id: 'w2', name: 'Gopay', type: 'E-Wallet', icon: 'credit-card', color: '#1d63b8', balance: 1450000, txCount: 8 },
-        { id: 'w3', name: 'Cash', type: 'Cash', icon: 'coins', color: '#3b82f6', balance: 300000, txCount: 4 }
+  // Gunakan getter agar selalu mengambil instance store yang valid dari Alpine
+  get accStore() {
+    return Alpine.store('accountStore');
+  },
+  get txStore() {
+    return Alpine.store('transactionStore');
+  },
+
+  isReordering: false,
+  openDetailModal: false,
+  openFormModal: false,
+  openCorrectionModal: false,
+  isEdit: false,
+  openIconPicker: false,
+  selectedWallet: {},
+  formData: {
+    id: null,
+    name: '',
+    icon: 'landmark',
+    initial_balance: 0
+  },
+  newCorrectionBalance: 0,
+
+      // Semua ikon dompet yang tersedia
+      availableIcons: [
+        { id: 'landmark', name: 'Bank Utama' },
+        { id: 'building', name: 'Bank Cabang' },
+        { id: 'credit-card', name: 'Kartu Kredit' },
+        { id: 'coins', name: 'Tunai / Cash' },
+        { id: 'wallet', name: 'Dompet Fisik' },
+        { id: 'piggy-bank', name: 'Celengan' },
+        { id: 'qr-code', name: 'E-Wallet QR' },
+        { id: 'briefcase', name: 'Gaji / Bisnis' },
       ],
-      transactions: [1, 2, 3, 4, 5, 6, 7],
-      get totalBalance() {
-        const total = this.wallets.reduce((acc, w) => acc + w.balance, 0);
-        return 'Rp ' + total.toLocaleString('id-ID');
+
+      async init() {
+        if (this.accStore && !this.accStore.accounts?.length) {
+          await this.accStore.init();
+        }
+        if (this.txStore && !this.txStore.transactions?.length) {
+          await this.txStore.init();
+        }
       },
+
+      get wallets() {
+        return this.accStore?.accounts || [];
+      },
+
+      get totalBalance() {
+        if (!this.accStore || typeof this.accStore.getTotalAssets !== 'function') return 'Rp 0';
+        const total = this.accStore.getTotalAssets(this.txStore?.transactions || []);
+        return 'Rp ' + (total || 0).toLocaleString('id-ID');
+      },
+
       get topWallet() {
         if (!this.wallets.length) return null;
-        return [...this.wallets].sort((a, b) => b.balance - a.balance)[0];
+        return [...this.wallets].map(w => ({
+          ...w,
+          realBalance: this.accStore.getBalance(w, this.txStore?.transactions || [])
+        })).sort((a, b) => b.realBalance - a.realBalance)[0];
       },
+
       formatCurrency(val) {
         return 'Rp ' + (val || 0).toLocaleString('id-ID');
       },
+
+      getAccountRealBalance(id) {
+  if (!this.accStore || typeof this.accStore.getBalance !== 'function') {
+    return 0;
+  }
+
+  const account = this.wallets.find((wallet) => wallet.id === id);
+
+  if (!account) {
+    return 0;
+  }
+
+  return this.accStore.getBalance(
+    account,
+    this.txStore?.transactions || []
+  );
+},
+
       getWalletTransactionCount(id) {
-        const w = this.wallets.find(x => x.id === id);
-        return w ? w.txCount : 0;
+        if (!this.txStore?.transactions) return 0;
+        return this.txStore.transactions.filter(
+          tx => tx.account_id === id || tx.to_account_id === id
+        ).length;
       },
+
       toggleReorderMode() {
         this.isReordering = !this.isReordering;
       },
-      moveWallet(index, direction) {
+
+      async moveWallet(index, direction) {
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= this.wallets.length) return;
-        const temp = this.wallets[index];
-        this.wallets[index] = this.wallets[targetIndex];
-        this.wallets[targetIndex] = temp;
+        
+        const updatedList = [...this.wallets];
+        const temp = updatedList[index];
+        updatedList[index] = updatedList[targetIndex];
+        updatedList[targetIndex] = temp;
+        
+        await this.accStore.reorderAccounts(updatedList.map(a => a.id));
       },
+
       finishReorder() {
         this.isReordering = false;
       },
+
       showDetail(wallet) {
         this.selectedWallet = wallet;
         this.openDetailModal = true;
       },
+
       openAddModal() {
         this.isEdit = false;
-        this.formData = { id: null, name: '', type: 'bank', icon: 'landmark', color: '#0d3b66', balance: 0 };
+        this.formData = { id: null, name: '', icon: 'landmark', initial_balance: 0 };
+        this.openIconPicker = false;
         this.openFormModal = true;
       },
+
       openEditFromDetail() {
         this.isEdit = true;
-        this.formData = { ...this.selectedWallet };
+        this.formData = { 
+          id: this.selectedWallet.id,
+          name: this.selectedWallet.name,
+          icon: this.selectedWallet.icon,
+          initial_balance: this.selectedWallet.initial_balance
+        };
         this.openDetailModal = false;
+        this.openIconPicker = false;
         this.openFormModal = true;
       },
-      deleteWalletFromDetail() {
-        this.wallets = this.wallets.filter(w => w.id !== this.selectedWallet.id);
+
+      async deleteWalletFromDetail() {
+        const txCount = this.getWalletTransactionCount(this.selectedWallet.id);
+        if (txCount > 0) {
+          if (!confirm(`Akun ini memiliki ${txCount} transaksi. Yakin ingin menghapus beserta seluruh riwayat transaksinya?`)) {
+            return;
+          }
+        }
+        await this.accStore.deleteAccount(this.selectedWallet.id, this.txStore);
         this.openDetailModal = false;
       },
-      saveWallet() {
-        if (this.isEdit) {
-          const idx = this.wallets.findIndex(w => w.id === this.formData.id);
-          if (idx !== -1) {
-            this.wallets[idx] = { ...this.formData, balance: parseInt(this.formData.balance) || 0 };
-          }
-        } else {
-          this.wallets.push({
-            id: 'w' + (this.wallets.length + 1),
-            ...this.formData,
-            balance: parseInt(this.formData.balance) || 0,
-            txCount: 0
-          });
-        }
+
+      async saveWallet() {
+    if (!this.formData.name.trim()) return;
+    const targetBalance = Number(this.formData.initial_balance) || 0;
+
+    // Pastikan accStore sudah siap sebelum memanggil method
+    if (!this.accStore) {
+      console.error('accountStore belum terinisialisasi!');
+      return;
+    }
+
+    if (this.isEdit) {
+      const txCount = this.getWalletTransactionCount(this.formData.id);
+      const currentInitial = this.selectedWallet.initial_balance;
+
+      if (txCount > 0 && targetBalance !== currentInitial) {
+        this.newCorrectionBalance = targetBalance;
         this.openFormModal = false;
+        this.openCorrectionModal = true;
+        return;
+      }
+
+      await this.accStore.updateAccount(this.formData.id, {
+        name: this.formData.name.trim(),
+        icon: this.formData.icon,
+        initial_balance: targetBalance
+      });
+    } else {
+      await this.accStore.addAccount({
+        name: this.formData.name.trim(),
+        icon: this.formData.icon,
+        initial_balance: targetBalance
+      });
+    }
+    this.openFormModal = false;
+  },
+
+      async confirmCorrection() {
+        await this.accStore.updateAccount(this.formData.id, {
+          name: this.formData.name.trim(),
+          icon: this.formData.icon
+        });
+
+        await this.accStore.correctBalance(
+          this.formData.id,
+          this.newCorrectionBalance,
+          this.txStore
+        );
+
+        this.openCorrectionModal = false;
       }
     }"
     class="space-y-5 pt-2 pb-12"
   >
-    <!-- 1. STICKY HEADER (Jarak & Style Disamakan dengan History Page) -->
+    <!-- 1. STICKY HEADER -->
     <div
       class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
     >
@@ -129,11 +249,10 @@ import {
       </div>
     </div>
 
-    <!-- 2. CARD UTAMA (TOTAL SALDO & MICRO INFO SIMPEL) -->
+    <!-- 2. CARD UTAMA (TOTAL SALDO & MICRO INFO) -->
     <div
       class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
     >
-      <!-- Watermark Lingkaran Halus -->
       <div
         class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
       >
@@ -155,7 +274,6 @@ import {
           >
         </div>
 
-        <!-- REORDER TRIGGER -->
         <button
           type="button"
           @click="toggleReorderMode()"
@@ -176,7 +294,6 @@ import {
         </h2>
       </div>
 
-      <!-- Micro Info bawaan awal (Dikecilin & Rapi) -->
       <div
         class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3"
       >
@@ -224,7 +341,7 @@ import {
           </div>
           <div class="flex min-w-0 flex-col">
             <span
-              x-text="transactions.length"
+              x-text="txStore?.transactions?.length || 0"
               class="text-[11px] leading-tight font-extrabold text-white"
               >0</span
             >
@@ -271,10 +388,22 @@ import {
       </template>
     </div>
 
-    <!-- 4. DAFTAR DOMPET (EKSKLUSIF MODE LIST) -->
+    <!-- 4. DAFTAR DOMPET -->
     <div
       class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
     >
+      <template x-if="accStore?.isLoading">
+        <div class="text-muted-foreground p-4 text-center text-xs">
+          Memuat dompet...
+        </div>
+      </template>
+
+      <template x-if="!accStore?.isLoading && wallets.length === 0">
+        <div class="text-muted-foreground p-6 text-center text-xs">
+          Belum ada dompet. Klik tombol di bawah untuk menambah.
+        </div>
+      </template>
+
       <template x-for="(wallet, index) in wallets" :key="wallet.id">
         <div
           @click="!isReordering && showDetail(wallet)"
@@ -303,18 +432,33 @@ import {
               </div>
             </template>
 
-            <!-- Monochromatic Icon Box -->
+            <!-- Dynamic Icon Box -->
             <div
               class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
             >
               <template x-if="wallet.icon === 'landmark'"
                 ><Landmark class="h-5 w-5 stroke-2" /></template
               >
+              <template x-if="wallet.icon === 'building'"
+                ><Building class="h-5 w-5 stroke-2" /></template
+              >
               <template x-if="wallet.icon === 'credit-card'"
                 ><CreditCard class="h-5 w-5 stroke-2" /></template
               >
               <template x-if="wallet.icon === 'coins'"
                 ><Coins class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'wallet'"
+                ><Wallet class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'piggy-bank'"
+                ><PiggyBank class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'qr-code'"
+                ><QrCode class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="wallet.icon === 'briefcase'"
+                ><Briefcase class="h-5 w-5 stroke-2" /></template
               >
             </div>
 
@@ -325,8 +469,6 @@ import {
               <div
                 class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium"
               >
-                <span class="capitalize" x-text="wallet.type"></span>
-                <span>•</span>
                 <span
                   x-text="`${getWalletTransactionCount(wallet.id)} transaksi`"
                 ></span>
@@ -336,7 +478,7 @@ import {
 
           <div class="flex shrink-0 flex-col items-end">
             <span
-              x-text="formatCurrency(wallet.balance)"
+              x-text="formatCurrency(getAccountRealBalance(wallet.id))"
               class="text-foreground text-xs font-extrabold"></span>
           </div>
         </div>
@@ -356,214 +498,347 @@ import {
     </div>
 
     <!-- 6. MODAL DETAIL DOMPET -->
-    <template x-teleport="body">
+    <div
+      x-show="openDetailModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
       <div
-        x-show="openDetailModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+        @click.away="openDetailModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border pb-16 shadow-2xl transition-transform sm:rounded-4xl"
       >
-        <div
-          @click.away="openDetailModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border shadow-2xl transition-transform sm:rounded-4xl"
-        >
-          <div class="bg-card-blue-dark relative p-6 text-white">
-            <!-- Watermark Lingkaran -->
-            <div
-              class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
-            >
-            </div>
-
-            <div class="relative z-10 flex items-center justify-between">
-              <span
-                x-text="selectedWallet.type"
-                class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
-              ></span>
-              <button
-                type="button"
-                @click="openDetailModal = false"
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
-              >
-                <X class="h-4 w-4 stroke-[2.5]" />
-              </button>
-            </div>
-
-            <div class="relative z-10 mt-5 flex items-center gap-3.5">
-              <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
-              >
-                <template x-if="selectedWallet.icon === 'landmark'"
-                  ><Landmark class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedWallet.icon === 'credit-card'"
-                  ><CreditCard class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedWallet.icon === 'coins'"
-                  ><Coins class="h-6 w-6 stroke-2" /></template
-                >
-              </div>
-
-              <div class="flex min-w-0 flex-col">
-                <h2
-                  x-text="selectedWallet.name"
-                  class="truncate text-lg font-black tracking-tight text-white"
-                >
-                </h2>
-                <span
-                  x-text="`${getWalletTransactionCount(selectedWallet.id)} Total Transaksi`"
-                  class="text-[10px] text-white/70"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4 p-6">
-            <div
-              class="border-border bg-background rounded-2xl border p-4 text-center"
-            >
-              <span
-                class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-                >Saldo Real-Time</span
-              >
-              <p
-                x-text="formatCurrency(selectedWallet.balance)"
-                class="text-primary mt-0.5 text-2xl font-black tracking-tight"
-              >
-              </p>
-            </div>
-
-            <div class="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                @click="deleteWalletFromDetail()"
-                class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
-              >
-                <Trash2 class="h-4 w-4 stroke-2" />
-                <span>Hapus</span>
-              </button>
-
-              <button
-                type="button"
-                @click="openEditFromDetail()"
-                class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
-              >
-                <Pencil class="h-4 w-4 stroke-2" />
-                <span>Edit Dompet</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- 7. MODAL FORM TAMBAH/EDIT DOMPET -->
-    <template x-teleport="body">
-      <div
-        x-show="openFormModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
-      >
-        <div
-          @click.away="openFormModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
-        >
+        <div class="bg-card-blue-dark relative p-6 text-white">
           <div
-            class="border-border flex items-center justify-between border-b pb-3"
+            class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
           >
-            <div class="flex items-center gap-2">
-              <div
-                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
-              >
-                <Sparkles class="h-4 w-4 stroke-2" />
-              </div>
-              <h3
-                x-text="isEdit ? 'Edit Dompet' : 'Tambah Dompet Baru'"
-                class="text-primary text-base font-extrabold"
-              >
-              </h3>
-            </div>
+          </div>
+
+          <div class="relative z-10 flex items-center justify-between">
+            <span
+              class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
+              >Detail Dompet</span
+            >
             <button
               type="button"
-              @click="openFormModal = false"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              @click="openDetailModal = false"
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
 
-          <form @submit.prevent="saveWallet()" class="mt-4 space-y-4">
-            <div class="space-y-1.5">
-              <label
-                class="text-muted-foreground block text-[10px] font-bold uppercase"
-                >Nama Dompet</label
+          <div class="relative z-10 mt-5 flex items-center gap-3.5">
+            <div
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
+            >
+              <template x-if="selectedWallet.icon === 'landmark'"
+                ><Landmark class="h-6 w-6 stroke-2" /></template
               >
-              <input
-                type="text"
-                x-model="formData.name"
-                placeholder="misal: BCA, Cash, Gopay"
-                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
-                required
-              />
+              <template x-if="selectedWallet.icon === 'building'"
+                ><Building class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'credit-card'"
+                ><CreditCard class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'coins'"
+                ><Coins class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'wallet'"
+                ><Wallet class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'piggy-bank'"
+                ><PiggyBank class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'qr-code'"
+                ><QrCode class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedWallet.icon === 'briefcase'"
+                ><Briefcase class="h-6 w-6 stroke-2" /></template
+              >
             </div>
 
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="space-y-1.5">
-                <label
-                  class="text-muted-foreground block text-[10px] font-bold uppercase"
-                  >Tipe Dompet</label
-                >
-                <select
-                  x-model="formData.type"
-                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
-                >
-                  <option value="bank">Bank</option>
-                  <option value="cash">Cash</option>
-                  <option value="e-wallet">E-Wallet</option>
-                </select>
-              </div>
-              <div class="space-y-1.5">
-                <label
-                  class="text-muted-foreground block text-[10px] font-bold uppercase"
-                  >Ikon</label
-                >
-                <select
-                  x-model="formData.icon"
-                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
-                >
-                  <option value="landmark">Bank</option>
-                  <option value="credit-card">E-Wallet</option>
-                  <option value="coins">Cash</option>
-                </select>
-              </div>
+            <div class="flex min-w-0 flex-col">
+              <h2
+                x-text="selectedWallet.name"
+                class="truncate text-lg font-black tracking-tight text-white"
+              >
+              </h2>
+              <span
+                x-text="`${getWalletTransactionCount(selectedWallet.id)} Total Transaksi`"
+                class="text-[10px] text-white/70"></span>
             </div>
+          </div>
+        </div>
 
-            <div class="space-y-1.5">
-              <label
-                class="text-muted-foreground block text-[10px] font-bold uppercase"
-                >Saldo Awal (Rp)</label
-              >
-              <input
-                type="number"
-                x-model="formData.balance"
-                placeholder="0"
-                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
-              />
-            </div>
+        <div class="space-y-4 p-6">
+          <div
+            class="border-border bg-background rounded-2xl border p-4 text-center"
+          >
+            <span
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              >Saldo Real-Time</span
+            >
+            <p
+              x-text="formatCurrency(getAccountRealBalance(selectedWallet.id))"
+              class="text-primary mt-0.5 text-2xl font-black tracking-tight"
+            >
+            </p>
+          </div>
 
-            <div class="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                @click="openFormModal = false"
-                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
-                >Batal</button
-              >
-              <button
-                type="submit"
-                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
-                >Simpan Dompet</button
-              >
-            </div>
-          </form>
+          <div class="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              @click="deleteWalletFromDetail()"
+              class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
+            >
+              <Trash2 class="h-4 w-4 stroke-2" />
+              <span>Hapus</span>
+            </button>
+
+            <button
+              type="button"
+              @click="openEditFromDetail()"
+              class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+            >
+              <Pencil class="h-4 w-4 stroke-2" />
+              <span>Edit Dompet</span>
+            </button>
+          </div>
         </div>
       </div>
-    </template>
+    </div>
+
+    <!-- 7. MODAL KOREKSI SALDO -->
+    <div
+      x-show="openCorrectionModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
+      <div
+        @click.away="openCorrectionModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col space-y-4 rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
+      >
+        <div class="flex items-center gap-3 text-amber-600">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100"
+          >
+            <AlertTriangle class="h-5 w-5 stroke-2" />
+          </div>
+          <div>
+            <h3 class="text-foreground text-sm font-extrabold">
+              Koreksi Saldo Akun
+            </h3>
+            <p class="text-muted-foreground text-[10px]">
+              Akun ini sudah memiliki riwayat transaksi.
+            </p>
+          </div>
+        </div>
+
+        <p class="text-muted-foreground text-xs leading-relaxed">
+          Perubahan saldo awal tidak disarankan secara langsung karena ada
+          transaksi tercatat. Sistem akan membuat <strong
+            class="text-foreground">Transaksi Koreksi Saldo</strong
+          > otomatis agar total saldo dompet menjadi <strong
+            class="text-foreground"
+            x-text="formatCurrency(newCorrectionBalance)"></strong>.
+        </p>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button
+            type="button"
+            @click="openCorrectionModal = false"
+            class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+            >Batal</button
+          >
+          <button
+            type="button"
+            @click="confirmCorrection()"
+            class="shadow-soft w-2/3 cursor-pointer rounded-2xl bg-amber-600 py-3.5 text-xs font-bold text-white hover:bg-amber-500 active:scale-95"
+            >Buat Koreksi</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. MODAL FORM TAMBAH/EDIT DOMPET -->
+    <div
+      x-show="openFormModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
+      <div
+        @click.away="openFormModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
+      >
+        <div
+          class="border-border flex items-center justify-between border-b pb-3"
+        >
+          <div class="flex items-center gap-2">
+            <div
+              class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
+            >
+              <Sparkles class="h-4 w-4 stroke-2" />
+            </div>
+            <h3
+              x-text="isEdit ? 'Edit Dompet' : 'Tambah Dompet Baru'"
+              class="text-primary text-base font-extrabold"
+            >
+            </h3>
+          </div>
+          <button
+            type="button"
+            @click="openFormModal = false"
+            class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+          >
+            <X class="h-4 w-4 stroke-[2.5]" />
+          </button>
+        </div>
+
+        <form @submit.prevent="saveWallet()" class="mt-4 space-y-4">
+          <!-- NAMA DOMPET -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Nama Dompet</label
+            >
+            <input
+              type="text"
+              x-model="formData.name"
+              placeholder="misal: BCA, Cash, Gopay"
+              class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+              required
+            />
+          </div>
+
+          <!-- IKON DOMPET (VISUAL DROPDOWN GRID - TANPA FILTER TIPE) -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Ikon Dompet</label
+            >
+
+            <button
+              type="button"
+              @click="openIconPicker = !openIconPicker"
+              class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-blue-soft text-primary flex h-7 w-7 items-center justify-center rounded-xl"
+                >
+                  <template x-if="formData.icon === 'landmark'"
+                    ><Landmark class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'building'"
+                    ><Building class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'credit-card'"
+                    ><CreditCard class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'coins'"
+                    ><Coins class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'wallet'"
+                    ><Wallet class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'piggy-bank'"
+                    ><PiggyBank class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'qr-code'"
+                    ><QrCode class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'briefcase'"
+                    ><Briefcase class="h-4 w-4 stroke-2" /></template
+                  >
+                </div>
+                <span
+                  class="text-xs font-semibold"
+                  x-text="availableIcons.find(i => i.id === formData.icon)?.name || 'Pilih Icon'"
+                ></span>
+              </div>
+
+              <ChevronDown
+                class="text-muted-foreground h-4 w-4 transition-transform"
+                :class="openIconPicker ? 'rotate-180' : ''"
+              />
+            </button>
+
+            <div
+              x-show="openIconPicker"
+              x-collapse
+              class="border-border bg-background no-scrollbar max-h-40 overflow-y-auto rounded-2xl border p-3"
+            >
+              <div class="grid grid-cols-4 gap-2">
+                <template x-for="item in availableIcons" :key="item.id">
+                  <button
+                    type="button"
+                    @click="formData.icon = item.id; openIconPicker = false"
+                    :class="formData.icon === item.id ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1' : 'bg-card text-muted-foreground hover:bg-muted hover:text-foreground'"
+                    class="flex cursor-pointer flex-col items-center justify-center rounded-xl p-2 transition-all"
+                  >
+                    <template x-if="item.id === 'landmark'"
+                      ><Landmark class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'building'"
+                      ><Building class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'credit-card'"
+                      ><CreditCard class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'coins'"
+                      ><Coins class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'wallet'"
+                      ><Wallet class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'piggy-bank'"
+                      ><PiggyBank class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'qr-code'"
+                      ><QrCode class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'briefcase'"
+                      ><Briefcase class="h-5 w-5 stroke-2" /></template
+                    >
+
+                    <span
+                      class="mt-1 max-w-full truncate text-[9px] font-semibold"
+                      x-text="item.name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- SALDO AWAL -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Saldo Awal (Rp)</label
+            >
+            <input
+              type="number"
+              x-model="formData.initial_balance"
+              placeholder="0"
+              class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
+            />
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button
+              type="button"
+              @click="openFormModal = false"
+              class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+              >Batal</button
+            >
+            <button
+              type="submit"
+              class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
+              >Simpan Dompet</button
+            >
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </Layout>

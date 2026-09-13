@@ -17,61 +17,190 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  AlertTriangle,
+  Receipt,
+  CircleEllipsis,
+  Wallet,
+  Zap,
+  Droplets,
+  Wifi,
+  Home,
+  Shirt,
+  Coffee,
+  Film,
+  Dumbbell,
+  Scissors,
+  GraduationCap,
+  Baby,
+  PawPrint,
+  Plane,
+  Fuel,
+  Wrench,
+  PiggyBank,
+  CreditCard,
+  Coins,
+  Building,
+  Tag,
+  ChevronDown,
 } from '@lucide/astro';
 ---
 
 <Layout title="Manajemen Kategori - Studion App">
   <div
     x-data="{
-      activeTab: 'expense',
-      openFormModal: false,
-      openDetailModal: false,
-      isEdit: false,
-      selectedCategory: { id: '', name: '', type: 'expense', icon: 'utensils' },
-      formData: {
-        id: null,
-        name: '',
-        type: 'expense',
-        icon: 'utensils'
-      },
-      categories: [
-        { id: 'c1', name: 'Makanan & Minuman', type: 'expense', icon: 'utensils' },
-        { id: 'c2', name: 'Transportasi', type: 'expense', icon: 'car' },
-        { id: 'c3', name: 'Belanja', type: 'expense', icon: 'shopping-bag' },
-        { id: 'c4', name: 'Hiburan & Hobi', type: 'expense', icon: 'gamepad-2' },
-        { id: 'c5', name: 'Kesehatan', type: 'expense', icon: 'heart-pulse' },
-        { id: 'c6', name: 'Gaji Bulanan', type: 'income', icon: 'briefcase' },
-        { id: 'c7', name: 'Bonus & Hadiah', type: 'income', icon: 'gift' }
+       catStore: Alpine.store('categoryStore'),
+  txStore: Alpine.store('transactionStore'),
+       activeTab: 'expense',
+  openFormModal: false,
+  openDetailModal: false,
+  openReassignModal: false,
+  openIconPicker: false,
+  isEdit: false,
+
+  selectedCategory: {
+    id: '',
+    name: '',
+    type: 'expense',
+    icon: 'utensils'
+  },
+
+  formData: {
+    id: null,
+    name: '',
+    type: 'expense',
+    icon: 'utensils'
+  },
+
+  targetCategoryId: '',
+
+      // Master List Ikon beserta Pemetaan Tipe
+      availableIcons: [
+        // --- EXPENSE ICONS ---
+        { id: 'utensils', name: 'Makanan', type: 'expense' },
+        { id: 'car', name: 'Transport', type: 'expense' },
+        { id: 'shopping-bag', name: 'Belanja', type: 'expense' },
+        { id: 'gamepad-2', name: 'Hiburan', type: 'expense' },
+        { id: 'heart-pulse', name: 'Kesehatan', type: 'expense' },
+        { id: 'receipt', name: 'Tagihan', type: 'expense' },
+        { id: 'zap', name: 'Listrik', type: 'expense' },
+        { id: 'droplets', name: 'Air', type: 'expense' },
+        { id: 'wifi', name: 'Internet', type: 'expense' },
+        { id: 'home', name: 'Rumah', type: 'expense' },
+        { id: 'coffee', name: 'Kopi', type: 'expense' },
+        { id: 'shirt', name: 'Fashion', type: 'expense' },
+        { id: 'film', name: 'Streaming', type: 'expense' },
+        { id: 'dumbbell', name: 'Olahraga', type: 'expense' },
+        { id: 'scissors', name: 'Perawatan', type: 'expense' },
+        { id: 'graduation-cap', name: 'Pendidikan', type: 'expense' },
+        { id: 'baby', name: 'Anak', type: 'expense' },
+        { id: 'paw-print', name: 'Peliharaan', type: 'expense' },
+        { id: 'plane', name: 'Travel', type: 'expense' },
+        { id: 'fuel', name: 'Bensin', type: 'expense' },
+        { id: 'wrench', name: 'Servis', type: 'expense' },
+        { id: 'credit-card', name: 'Cicilan', type: 'expense' },
+
+        // --- INCOME ICONS ---
+        { id: 'briefcase', name: 'Pekerjaan', type: 'income' },
+        { id: 'gift', name: 'Hadiah', type: 'income' },
+        { id: 'trending-up', name: 'Investasi', type: 'income' },
+        { id: 'wallet', name: 'Gaji', type: 'income' },
+        { id: 'piggy-bank', name: 'Tabungan', type: 'income' },
+        { id: 'coins', name: 'Passive', type: 'income' },
+        { id: 'building', name: 'Sewa', type: 'income' },
+
+        // --- KEDUA TIPE ---
+        { id: 'circle-ellipsis', name: 'Lainnya', type: 'both' },
       ],
+
+      async init() {
+        if (!this.catStore.categories.length) {
+          await this.catStore.init();
+        }
+        if (!this.txStore.transactions.length) {
+          await this.txStore.init();
+        }
+      },
+
+      get filteredCategories() {
+        return this.catStore.categories.filter(c => c.type === this.activeTab);
+      },
+
+      get availableReassignCategories() {
+        return this.catStore.categories.filter(c => c.type === this.selectedCategory.type && c.id !== this.selectedCategory.id);
+      },
+
+      get usedTransactionCount() {
+        if (!this.selectedCategory.id) return 0;
+        return this.txStore.transactions.filter(tx => tx.category_id === this.selectedCategory.id).length;
+      },
+
+      // Filter Ikon Sesuai Tipe yang Dipilih di Form
+      get filteredAvailableIcons() {
+        return this.availableIcons.filter(
+          (icon) => icon.type === this.formData.type || icon.type === 'both'
+        );
+      },
+
+      setFormType(type) {
+        this.formData.type = type;
+        // Validasi: Jika ikon saat ini tidak ada di tipe baru, reset ke default tipe tersebut
+        if (!this.filteredAvailableIcons.some(i => i.id === this.formData.icon)) {
+          this.formData.icon = type === 'expense' ? 'utensils' : 'wallet';
+        }
+      },
+
       showDetail(cat) {
         this.selectedCategory = { ...cat };
         this.openDetailModal = true;
       },
+
       openAddModal() {
         this.isEdit = false;
-        this.formData = { id: null, name: '', type: this.activeTab, icon: 'utensils' };
+        this.formData = { id: null, name: '', type: this.activeTab, icon: this.activeTab === 'expense' ? 'utensils' : 'wallet' };
+        this.openIconPicker = false;
         this.openFormModal = true;
       },
+
       openEditFromDetail() {
         this.isEdit = true;
         this.formData = { ...this.selectedCategory };
         this.openDetailModal = false;
+        this.openIconPicker = false;
         this.openFormModal = true;
       },
-      deleteCategoryFromDetail() {
-        this.categories = this.categories.filter(c => c.id !== this.selectedCategory.id);
-        this.openDetailModal = false;
-      },
-      saveCategory() {
-        if (this.isEdit) {
-          const idx = this.categories.findIndex(c => c.id === this.formData.id);
-          if (idx !== -1) {
-            this.categories[idx] = { ...this.categories[idx], ...this.formData };
-          }
+
+      async attemptDeleteCategory() {
+        if (this.usedTransactionCount > 0) {
+          const available = this.availableReassignCategories;
+          this.targetCategoryId = available.length > 0 ? available[0].id : '';
+          this.openDetailModal = false;
+          this.openReassignModal = true;
         } else {
-          this.categories.push({
-            id: 'c' + Date.now(),
-            ...this.formData
+          await this.catStore.deleteCategory(this.selectedCategory.id);
+          this.openDetailModal = false;
+        }
+      },
+
+      async confirmReassignAndDelete() {
+        if (!this.targetCategoryId) return;
+        await this.catStore.deleteCategory(this.selectedCategory.id, this.targetCategoryId, this.txStore);
+        this.openReassignModal = false;
+      },
+
+      async saveCategory() {
+        if (!this.formData.name.trim()) return;
+
+        if (this.isEdit) {
+          await this.catStore.updateCategory(this.formData.id, {
+            name: this.formData.name.trim(),
+            type: this.formData.type,
+            icon: this.formData.icon
+          });
+        } else {
+          await this.catStore.addCategory({
+            name: this.formData.name.trim(),
+            type: this.formData.type,
+            icon: this.formData.icon
           });
         }
         this.openFormModal = false;
@@ -143,13 +272,26 @@ import {
       </button>
     </div>
 
-    <!-- 4. DAFTAR KATEGORI LIST (Bersih Tanpa Nominal) -->
+    <!-- 4. DAFTAR KATEGORI LIST -->
     <div
       class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
     >
-      <template x-for="cat in categories" :key="cat.id">
+      <template x-if="catStore.isLoading">
+        <div class="text-muted-foreground p-4 text-center text-xs">
+          Memuat kategori...
+        </div>
+      </template>
+
+      <template x-if="!catStore.isLoading && filteredCategories.length === 0">
+        <div class="text-muted-foreground p-6 text-center text-xs">
+          Belum ada kategori <span
+            x-text="activeTab === 'expense' ? 'pengeluaran' : 'pemasukan'"
+          ></span>.
+        </div>
+      </template>
+
+      <template x-for="cat in filteredCategories" :key="cat.id">
         <div
-          x-show="cat.type === activeTab"
           @click="showDetail(cat)"
           class="hover:bg-muted/50 flex cursor-pointer items-center justify-between p-4 transition-colors"
         >
@@ -178,6 +320,78 @@ import {
               <template x-if="cat.icon === 'gift'"
                 ><Gift class="h-5 w-5 stroke-2" /></template
               >
+              <template x-if="cat.icon === 'receipt'"
+                ><Receipt class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'circle-ellipsis'"
+                ><CircleEllipsis class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'trending-up'"
+                ><TrendingUp class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'wallet'"
+                ><Wallet class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'zap'"
+                ><Zap class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'droplets'"
+                ><Droplets class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'wifi'"
+                ><Wifi class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'home'"
+                ><Home class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'shirt'"
+                ><Shirt class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'coffee'"
+                ><Coffee class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'film'"
+                ><Film class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'dumbbell'"
+                ><Dumbbell class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'scissors'"
+                ><Scissors class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'graduation-cap'"
+                ><GraduationCap class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'baby'"
+                ><Baby class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'paw-print'"
+                ><PawPrint class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'plane'"
+                ><Plane class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'fuel'"
+                ><Fuel class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'wrench'"
+                ><Wrench class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'piggy-bank'"
+                ><PiggyBank class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'credit-card'"
+                ><CreditCard class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'coins'"
+                ><Coins class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'building'"
+                ><Building class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'tag'"
+                ><Tag class="h-5 w-5 stroke-2" /></template
+              >
             </div>
 
             <span
@@ -191,199 +405,585 @@ import {
     </div>
 
     <!-- 5. MODAL DETAIL KATEGORI -->
-    <template x-teleport="body">
+    <div
+      x-show="openDetailModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
       <div
-        x-show="openDetailModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+        @click.away="openDetailModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border pb-14 shadow-2xl transition-transform sm:rounded-4xl"
       >
-        <div
-          @click.away="openDetailModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border shadow-2xl transition-transform sm:rounded-4xl"
-        >
-          <div class="bg-card-blue-dark relative p-6 text-white">
-            <div
-              class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
-            >
-            </div>
-
-            <div class="relative z-10 flex items-center justify-between">
-              <span
-                x-text="selectedCategory.type === 'expense' ? 'Kategori Pengeluaran' : 'Kategori Pemasukan'"
-                class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
-              ></span>
-              <button
-                type="button"
-                @click="openDetailModal = false"
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
-              >
-                <X class="h-4 w-4 stroke-[2.5]" />
-              </button>
-            </div>
-
-            <div class="relative z-10 mt-5 flex items-center gap-3.5">
-              <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
-              >
-                <template x-if="selectedCategory.icon === 'utensils'"
-                  ><Utensils class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'car'"
-                  ><Car class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'shopping-bag'"
-                  ><ShoppingBag class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'gamepad-2'"
-                  ><Gamepad2 class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'heart-pulse'"
-                  ><HeartPulse class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'briefcase'"
-                  ><Briefcase class="h-6 w-6 stroke-2" /></template
-                >
-                <template x-if="selectedCategory.icon === 'gift'"
-                  ><Gift class="h-6 w-6 stroke-2" /></template
-                >
-              </div>
-
-              <div class="flex min-w-0 flex-col">
-                <h2
-                  x-text="selectedCategory.name"
-                  class="truncate text-lg font-black tracking-tight text-white"
-                >
-                </h2>
-              </div>
-            </div>
-          </div>
-
-          <div class="p-6">
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                @click="deleteCategoryFromDetail()"
-                class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
-              >
-                <Trash2 class="h-4 w-4 stroke-2" />
-                <span>Hapus</span>
-              </button>
-
-              <button
-                type="button"
-                @click="openEditFromDetail()"
-                class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
-              >
-                <Pencil class="h-4 w-4 stroke-2" />
-                <span>Edit Kategori</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- 6. MODAL FORM TAMBAH / EDIT KATEGORI -->
-    <template x-teleport="body">
-      <div
-        x-show="openFormModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
-      >
-        <div
-          @click.away="openFormModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
-        >
+        <div class="bg-card-blue-dark relative p-6 text-white">
           <div
-            class="border-border flex items-center justify-between border-b pb-3"
+            class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
           >
-            <div class="flex items-center gap-2">
-              <div
-                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
-              >
-                <Sparkles class="h-4 w-4 stroke-2" />
-              </div>
-              <h3
-                x-text="isEdit ? 'Edit Kategori' : 'Tambah Kategori Baru'"
-                class="text-primary text-base font-extrabold"
-              >
-              </h3>
-            </div>
+          </div>
+
+          <div class="relative z-10 flex items-center justify-between">
+            <span
+              x-text="selectedCategory.type === 'expense' ? 'Kategori Pengeluaran' : 'Kategori Pemasukan'"
+              class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
+            ></span>
             <button
               type="button"
-              @click="openFormModal = false"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              @click="openDetailModal = false"
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
 
-          <form @submit.prevent="saveCategory()" class="mt-4 space-y-4">
-            <div class="space-y-1.5">
-              <label
-                class="text-muted-foreground block text-[10px] font-bold uppercase"
-                >Nama Kategori</label
+          <div class="relative z-10 mt-5 flex items-center gap-3.5">
+            <div
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
+            >
+              <template x-if="selectedCategory.icon === 'utensils'"
+                ><Utensils class="h-6 w-6 stroke-2" /></template
               >
-              <input
-                type="text"
-                x-model="formData.name"
-                placeholder="misal: Makanan & Minuman, Bonus"
-                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
-                required
-              />
+              <template x-if="selectedCategory.icon === 'car'"
+                ><Car class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'shopping-bag'"
+                ><ShoppingBag class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'gamepad-2'"
+                ><Gamepad2 class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'heart-pulse'"
+                ><HeartPulse class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'briefcase'"
+                ><Briefcase class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'gift'"
+                ><Gift class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'receipt'"
+                ><Receipt class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'circle-ellipsis'"
+                ><CircleEllipsis class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'trending-up'"
+                ><TrendingUp class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'wallet'"
+                ><Wallet class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'zap'"
+                ><Zap class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'droplets'"
+                ><Droplets class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'wifi'"
+                ><Wifi class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'home'"
+                ><Home class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'shirt'"
+                ><Shirt class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'coffee'"
+                ><Coffee class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'film'"
+                ><Film class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'dumbbell'"
+                ><Dumbbell class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'scissors'"
+                ><Scissors class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'graduation-cap'"
+                ><GraduationCap class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'baby'"
+                ><Baby class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'paw-print'"
+                ><PawPrint class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'plane'"
+                ><Plane class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'fuel'"
+                ><Fuel class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'wrench'"
+                ><Wrench class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'piggy-bank'"
+                ><PiggyBank class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'credit-card'"
+                ><CreditCard class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'coins'"
+                ><Coins class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'building'"
+                ><Building class="h-6 w-6 stroke-2" /></template
+              >
+              <template x-if="selectedCategory.icon === 'tag'"
+                ><Tag class="h-6 w-6 stroke-2" /></template
+              >
             </div>
 
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="space-y-1.5">
-                <label
-                  class="text-muted-foreground block text-[10px] font-bold uppercase"
-                  >Tipe</label
-                >
-                <select
-                  x-model="formData.type"
-                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
-                >
-                  <option value="expense">Pengeluaran</option>
-                  <option value="income">Pemasukan</option>
-                </select>
-              </div>
-
-              <div class="space-y-1.5">
-                <label
-                  class="text-muted-foreground block text-[10px] font-bold uppercase"
-                  >Ikon</label
-                >
-                <select
-                  x-model="formData.icon"
-                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
-                >
-                  <option value="utensils">Makanan</option>
-                  <option value="car">Transportasi</option>
-                  <option value="shopping-bag">Belanja</option>
-                  <option value="gamepad-2">Hiburan</option>
-                  <option value="heart-pulse">Kesehatan</option>
-                  <option value="briefcase">Pekerjaan</option>
-                  <option value="gift">Hadiah</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                @click="openFormModal = false"
-                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
-                >Batal</button
+            <div class="flex min-w-0 flex-col">
+              <h2
+                x-text="selectedCategory.name"
+                class="truncate text-lg font-black tracking-tight text-white"
               >
-              <button
-                type="submit"
-                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
-                >Simpan Kategori</button
-              >
+              </h2>
+              <span
+                class="text-[10px] text-white/70"
+                x-text="`Digunakan oleh ${usedTransactionCount} transaksi`"
+              ></span>
             </div>
-          </form>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="attemptDeleteCategory()"
+              class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
+            >
+              <Trash2 class="h-4 w-4 stroke-2" />
+              <span>Hapus</span>
+            </button>
+
+            <button
+              type="button"
+              @click="openEditFromDetail()"
+              class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+            >
+              <Pencil class="h-4 w-4 stroke-2" />
+              <span>Edit Kategori</span>
+            </button>
+          </div>
         </div>
       </div>
-    </template>
+    </div>
+
+    <!-- 6. MODAL REASSIGN KATEGORI -->
+    <div
+      x-show="openReassignModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
+      <div
+        @click.away="openReassignModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col space-y-4 rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
+      >
+        <div class="flex items-center gap-3 text-rose-600">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100"
+          >
+            <AlertTriangle class="h-5 w-5 stroke-2" />
+          </div>
+          <div>
+            <h3 class="text-foreground text-sm font-extrabold">
+              Kategori Masih Digunakan
+            </h3>
+            <p
+              class="text-muted-foreground text-[10px]"
+              x-text="`Ada ${usedTransactionCount} transaksi menggunakan kategori ini.`"
+            >
+            </p>
+          </div>
+        </div>
+
+        <p class="text-muted-foreground text-xs leading-relaxed">
+          Pilih kategori pengganti untuk memindahkan transaksi tersebut sebelum
+          menghapus <strong
+            class="text-foreground"
+            x-text="selectedCategory.name"></strong>.
+        </p>
+
+        <template x-if="availableReassignCategories.length > 0">
+          <div class="space-y-1.5">
+            <label class="text-muted-foreground text-[10px] font-bold uppercase"
+              >Kategori Pengganti</label
+            >
+            <select
+              x-model="targetCategoryId"
+              class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
+            >
+              <template x-for="c in availableReassignCategories" :key="c.id">
+                <option :value="c.id" x-text="c.name"></option>
+              </template>
+            </select>
+          </div>
+        </template>
+
+        <template x-if="availableReassignCategories.length === 0">
+          <p class="text-xs font-semibold text-rose-500">
+            Tidak ada kategori pengganti dengan tipe yang sama. Buat kategori
+            lain terlebih dahulu.
+          </p>
+        </template>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button
+            type="button"
+            @click="openReassignModal = false"
+            class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+            >Batal</button
+          >
+          <button
+            type="button"
+            @click="confirmReassignAndDelete()"
+            :disabled="!targetCategoryId"
+            class="shadow-soft w-2/3 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white hover:bg-rose-500 active:scale-95 disabled:opacity-50"
+            >Pindahkan & Hapus</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. MODAL FORM TAMBAH / EDIT KATEGORI -->
+    <div
+      x-show="openFormModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+    >
+      <div
+        @click.away="openFormModal = false"
+        class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
+      >
+        <div
+          class="border-border flex items-center justify-between border-b pb-3"
+        >
+          <div class="flex items-center gap-2">
+            <div
+              class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
+            >
+              <Sparkles class="h-4 w-4 stroke-2" />
+            </div>
+            <h3
+              x-text="isEdit ? 'Edit Kategori' : 'Tambah Kategori Baru'"
+              class="text-primary text-base font-extrabold"
+            >
+            </h3>
+          </div>
+          <button
+            type="button"
+            @click="openFormModal = false"
+            class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+          >
+            <X class="h-4 w-4 stroke-[2.5]" />
+          </button>
+        </div>
+
+        <form @submit.prevent="saveCategory()" class="mt-4 space-y-4">
+          <!-- NAMA KATEGORI -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Nama Kategori</label
+            >
+            <input
+              type="text"
+              x-model="formData.name"
+              placeholder="misal: Makanan, Pendidikan, Pulsa"
+              class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+              required
+            />
+          </div>
+
+          <!-- TIPE KATEGORI (SEGMENTED SELECTOR WITH AUTO ICON FILTER) -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Tipe Transaksi</label
+            >
+            <div
+              class="border-border bg-background grid grid-cols-2 gap-2 rounded-2xl border p-1"
+            >
+              <button
+                type="button"
+                @click="setFormType('expense')"
+                :class="formData.type === 'expense' ? 'bg-rose-500 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'"
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all"
+              >
+                <TrendingDown class="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>Pengeluaran</span>
+              </button>
+
+              <button
+                type="button"
+                @click="setFormType('income')"
+                :class="formData.type === 'income' ? 'bg-emerald-600 text-white shadow-xs' : 'text-muted-foreground hover:text-foreground'"
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all"
+              >
+                <TrendingUp class="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>Pemasukan</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- IKON KATEGORI (VISUAL GRID PICKER FILTERED BY TYPE) -->
+          <div class="space-y-1.5">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Pilih Ikon</label
+            >
+
+            <!-- Trigger Dropdown -->
+            <button
+              type="button"
+              @click="openIconPicker = !openIconPicker"
+              class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-blue-soft text-primary flex h-7 w-7 items-center justify-center rounded-xl"
+                >
+                  <template x-if="formData.icon === 'utensils'"
+                    ><Utensils class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'car'"
+                    ><Car class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'shopping-bag'"
+                    ><ShoppingBag class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'gamepad-2'"
+                    ><Gamepad2 class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'heart-pulse'"
+                    ><HeartPulse class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'briefcase'"
+                    ><Briefcase class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'gift'"
+                    ><Gift class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'receipt'"
+                    ><Receipt class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'circle-ellipsis'"
+                    ><CircleEllipsis class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'trending-up'"
+                    ><TrendingUp class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'wallet'"
+                    ><Wallet class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'zap'"
+                    ><Zap class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'droplets'"
+                    ><Droplets class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'wifi'"
+                    ><Wifi class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'home'"
+                    ><Home class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'shirt'"
+                    ><Shirt class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'coffee'"
+                    ><Coffee class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'film'"
+                    ><Film class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'dumbbell'"
+                    ><Dumbbell class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'scissors'"
+                    ><Scissors class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'graduation-cap'"
+                    ><GraduationCap class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'baby'"
+                    ><Baby class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'paw-print'"
+                    ><PawPrint class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'plane'"
+                    ><Plane class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'fuel'"
+                    ><Fuel class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'wrench'"
+                    ><Wrench class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'piggy-bank'"
+                    ><PiggyBank class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'credit-card'"
+                    ><CreditCard class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'coins'"
+                    ><Coins class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'building'"
+                    ><Building class="h-4 w-4 stroke-2" /></template
+                  >
+                  <template x-if="formData.icon === 'tag'"
+                    ><Tag class="h-4 w-4 stroke-2" /></template
+                  >
+                </div>
+                <span
+                  class="text-xs font-semibold capitalize"
+                  x-text="availableIcons.find(i => i.id === formData.icon)?.name || 'Pilih Icon'"
+                ></span>
+              </div>
+
+              <ChevronDown
+                class="text-muted-foreground h-4 w-4 transition-transform"
+                :class="openIconPicker ? 'rotate-180' : ''"
+              />
+            </button>
+
+            <!-- Expandable Icon Grid (Filtered for Active Type) -->
+            <div
+              x-show="openIconPicker"
+              x-collapse
+              class="border-border bg-background no-scrollbar max-h-48 overflow-y-auto rounded-2xl border p-3"
+            >
+              <div class="grid grid-cols-5 gap-2">
+                <template x-for="item in filteredAvailableIcons" :key="item.id">
+                  <button
+                    type="button"
+                    @click="formData.icon = item.id; openIconPicker = false"
+                    :class="formData.icon === item.id ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1' : 'bg-card text-muted-foreground hover:bg-muted hover:text-foreground'"
+                    class="flex cursor-pointer flex-col items-center justify-center rounded-xl p-2 transition-all"
+                    :title="item.name"
+                  >
+                    <template x-if="item.id === 'utensils'"
+                      ><Utensils class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'car'"
+                      ><Car class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'shopping-bag'"
+                      ><ShoppingBag class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'gamepad-2'"
+                      ><Gamepad2 class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'heart-pulse'"
+                      ><HeartPulse class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'briefcase'"
+                      ><Briefcase class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'gift'"
+                      ><Gift class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'receipt'"
+                      ><Receipt class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'circle-ellipsis'"
+                      ><CircleEllipsis class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'trending-up'"
+                      ><TrendingUp class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'wallet'"
+                      ><Wallet class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'zap'"
+                      ><Zap class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'droplets'"
+                      ><Droplets class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'wifi'"
+                      ><Wifi class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'home'"
+                      ><Home class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'shirt'"
+                      ><Shirt class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'coffee'"
+                      ><Coffee class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'film'"
+                      ><Film class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'dumbbell'"
+                      ><Dumbbell class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'scissors'"
+                      ><Scissors class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'graduation-cap'"
+                      ><GraduationCap class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'baby'"
+                      ><Baby class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'paw-print'"
+                      ><PawPrint class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'plane'"
+                      ><Plane class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'fuel'"
+                      ><Fuel class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'wrench'"
+                      ><Wrench class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'piggy-bank'"
+                      ><PiggyBank class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'credit-card'"
+                      ><CreditCard class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'coins'"
+                      ><Coins class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'building'"
+                      ><Building class="h-5 w-5 stroke-2" /></template
+                    >
+                    <template x-if="item.id === 'tag'"
+                      ><Tag class="h-5 w-5 stroke-2" /></template
+                    >
+
+                    <span
+                      class="mt-1 max-w-full truncate text-[9px] font-semibold"
+                      x-text="item.name"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button
+              type="button"
+              @click="openFormModal = false"
+              class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+              >Batal</button
+            >
+            <button
+              type="submit"
+              class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
+              >Simpan Kategori</button
+            >
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </Layout>

@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
 import {
   X,
   ArrowUpRight,
@@ -14,9 +15,6 @@ import {
   History,
   Zap,
   ChevronRight,
-  Utensils,
-  Car,
-  ShoppingBag,
 } from '@lucide/astro';
 
 const transactionTypes = [
@@ -71,87 +69,357 @@ const frequentTransactions = [
 <Layout title="Transaksi - Studion App" hideBottomNav={true}>
   <div
     x-data="{
+      accStore: Alpine.store('accountStore'),
+      catStore: Alpine.store('categoryStore'),
+      txStore: Alpine.store('transactionStore'),
+
       isEditMode: false,
       isSubmitting: false,
+
       showWalletModal: false,
       showCategoryModal: false,
+
       walletSheetTarget: 'source',
+
       autoCategoryDetected: false,
+
       formattedAmount: '',
       rawAmount: 0,
+
+      formattedFee: '',
+      rawFee: 0,
+
+      errorMessage: '',
+
       formData: {
         type: 'expense',
         transaction_date: new Date().toISOString().split('T')[0],
-        wallet_id: 'w1',
-        to_wallet_id: 'w2',
-        category_id: 'c1',
-        notes: ''
+        account_id: '',
+        to_account_id: '',
+        category_id: '',
+        fee: null,
+        description: ''
       },
-      wallets: [
-        { id: 'w1', name: 'BCA Utama', color: '#0d3b66', icon: 'landmark' },
-        { id: 'w2', name: 'Gopay', color: '#1d63b8', icon: 'credit-card' },
-        { id: 'w3', name: 'Dompet Cash', color: '#3b82f6', icon: 'coins' }
-      ],
-      categories: [
-        { id: 'c1', name: 'Makanan & Minuman', icon: 'utensils', type: 'expense' },
-        { id: 'c2', name: 'Transportasi', icon: 'car', type: 'expense' },
-        { id: 'c3', name: 'Belanja', icon: 'shopping-bag', type: 'expense' },
-        { id: 'c4', name: 'Gaji Bulanan', icon: 'briefcase', type: 'income' },
-        { id: 'c5', name: 'Transfer Antar Dompet', icon: 'rotate-ccw', type: 'transfer' }
-      ],
-      handleAmountInput(e) {
-        let val = e.target.value.replace(/[^0-9]/g, '');
-        this.rawAmount = val ? parseInt(val) : 0;
-        this.formattedAmount = this.rawAmount ? this.rawAmount.toLocaleString('id-ID') : '';
+
+      async init() {
+        this.errorMessage = '';
+
+        if (!this.accStore.accounts.length) {
+          await this.accStore.init();
+        }
+
+        if (!this.catStore.categories.length) {
+          await this.catStore.init();
+        }
+
+        if (!this.txStore.transactions.length) {
+          await this.txStore.init();
+        }
+
+        if (!this.formData.account_id && this.accStore.activeAccounts.length) {
+          this.formData.account_id = this.accStore.activeAccounts[0].id;
+        }
+
+        this.syncDefaultCategory();
       },
+
+      get activeAccounts() {
+        return this.accStore?.activeAccounts || [];
+      },
+
+      get selectedAccount() {
+        return this.activeAccounts.find(
+          account => account.id === this.formData.account_id
+        );
+      },
+
+      get selectedToAccount() {
+        return this.activeAccounts.find(
+          account => account.id === this.formData.to_account_id
+        );
+      },
+
+      get expenseCategories() {
+        return this.catStore?.expenseCategories || [];
+      },
+
+      get incomeCategories() {
+        return this.catStore?.incomeCategories || [];
+      },
+
+      get filteredCategories() {
+        if (this.formData.type === 'expense') {
+          return this.expenseCategories;
+        }
+
+        if (this.formData.type === 'income') {
+          return this.incomeCategories;
+        }
+
+        return [];
+      },
+
+      get availableToAccounts() {
+        return this.activeAccounts.filter(
+          account => account.id !== this.formData.account_id
+        );
+      },
+
+      get selectedAccountName() {
+        return this.selectedAccount?.name || 'Pilih Akun';
+      },
+
+      get selectedToAccountName() {
+        return this.selectedToAccount?.name || 'Pilih Akun Tujuan';
+      },
+
+      get selectedCategoryName() {
+        const category = this.filteredCategories.find(
+          category => category.id === this.formData.category_id
+        );
+
+        return category ? category.name : 'Pilih Kategori';
+      },
+
+      get formattedAmountPreview() {
+        return this.rawAmount
+          ? this.rawAmount.toLocaleString('id-ID')
+          : '';
+      },
+
+      get formattedFeePreview() {
+        return this.rawFee
+          ? this.rawFee.toLocaleString('id-ID')
+          : '';
+      },
+
+      handleAmountInput(event) {
+        const value = event.target.value.replace(/[^0-9]/g, '');
+
+        this.rawAmount = value ? parseInt(value, 10) : 0;
+        this.formattedAmount = this.rawAmount
+          ? this.rawAmount.toLocaleString('id-ID')
+          : '';
+
+        this.errorMessage = '';
+      },
+
+      handleFeeInput(event) {
+        const value = event.target.value.replace(/[^0-9]/g, '');
+
+        this.rawFee = value ? parseInt(value, 10) : 0;
+        this.formattedFee = this.rawFee
+          ? this.rawFee.toLocaleString('id-ID')
+          : '';
+
+        this.errorMessage = '';
+      },
+
       applyQuickData(item) {
         this.formData.type = item.type;
-        this.rawAmount = parseInt(item.amount);
+
+        this.rawAmount = parseInt(item.amount, 10);
         this.formattedAmount = this.rawAmount.toLocaleString('id-ID');
-        this.formData.notes = item.title;
+
+        this.formData.description = item.title;
+
+        this.syncDefaultCategory();
+
+        const suggestedCategory = this.txStore.suggestCategory(
+          item.title
+        );
+
+        if (suggestedCategory) {
+          const categoryExists = this.filteredCategories.some(
+            category => category.id === suggestedCategory
+          );
+
+          if (categoryExists) {
+            this.formData.category_id = suggestedCategory;
+            this.autoCategoryDetected = true;
+          }
+        }
+
+        this.errorMessage = '';
       },
+
+      syncDefaultCategory() {
+        if (this.formData.type === 'transfer') {
+          this.formData.category_id = '';
+          this.autoCategoryDetected = false;
+          return;
+        }
+
+        const categories = this.filteredCategories;
+
+        const currentExists = categories.some(
+          category => category.id === this.formData.category_id
+        );
+
+        if (!currentExists) {
+          this.formData.category_id = categories.length
+            ? categories[0].id
+            : '';
+        }
+      },
+
+      changeTransactionType(type) {
+        this.formData.type = type;
+
+        this.formData.category_id = '';
+        this.formData.to_account_id = '';
+        this.rawFee = 0;
+        this.formattedFee = '';
+        this.autoCategoryDetected = false;
+
+        this.syncDefaultCategory();
+        this.errorMessage = '';
+      },
+
       openWalletSheet(target) {
         this.walletSheetTarget = target;
         this.showWalletModal = true;
       },
-      selectWallet(id) {
+
+      selectAccount(id) {
         if (this.walletSheetTarget === 'source') {
-          this.formData.wallet_id = id;
+          this.formData.account_id = id;
+
+          if (this.formData.to_account_id === id) {
+            this.formData.to_account_id = '';
+          }
         } else {
-          this.formData.to_wallet_id = id;
+          this.formData.to_account_id = id;
         }
+
         this.showWalletModal = false;
       },
-      get selectedWalletName() {
-        const w = this.wallets.find(x => x.id === this.formData.wallet_id);
-        return w ? w.name : 'Pilih Dompet';
+
+      openCategoryModal() {
+        if (!this.filteredCategories.length) {
+          this.errorMessage =
+            'Belum ada kategori untuk tipe transaksi ini.';
+          return;
+        }
+
+        this.showCategoryModal = true;
       },
-      get selectedToWalletName() {
-        const w = this.wallets.find(x => x.id === this.formData.to_wallet_id);
-        return w ? w.name : 'Pilih Dompet Tujuan';
+
+      selectCategory(id) {
+        this.formData.category_id = id;
+        this.autoCategoryDetected = false;
+        this.showCategoryModal = false;
       },
-      get selectedCategoryName() {
-        const c = this.categories.find(x => x.id === this.formData.category_id);
-        return c ? c.name : 'Pilih Kategori';
+
+      validateForm() {
+        if (!this.rawAmount || this.rawAmount <= 0) {
+          this.errorMessage = 'Nominal transaksi harus lebih dari Rp 0.';
+          return false;
+        }
+
+        if (!this.formData.account_id) {
+          this.errorMessage = 'Silakan pilih akun terlebih dahulu.';
+          return false;
+        }
+
+        if (this.formData.type === 'transfer') {
+          if (!this.formData.to_account_id) {
+            this.errorMessage =
+              'Silakan pilih akun tujuan transfer.';
+            return false;
+          }
+
+          if (
+            this.formData.account_id ===
+            this.formData.to_account_id
+          ) {
+            this.errorMessage =
+              'Akun asal dan akun tujuan tidak boleh sama.';
+            return false;
+          }
+
+          if (this.rawFee < 0) {
+            this.errorMessage = 'Biaya transfer tidak valid.';
+            return false;
+          }
+        } else {
+          if (!this.formData.category_id) {
+            this.errorMessage =
+              'Silakan pilih kategori transaksi.';
+            return false;
+          }
+        }
+
+        if (!this.formData.transaction_date) {
+          this.errorMessage = 'Tanggal transaksi wajib diisi.';
+          return false;
+        }
+
+        return true;
       },
-      get filteredCategories() {
-        return this.categories.filter(x => x.type === this.formData.type || this.formData.type === 'transfer');
-      },
-      get availableToWallets() {
-        return this.wallets.filter(x => x.id !== this.formData.wallet_id);
+
+      async saveTransaction() {
+        if (this.isSubmitting) return;
+
+        this.errorMessage = '';
+
+        if (!this.validateForm()) {
+          return;
+        }
+
+        this.isSubmitting = true;
+
+        try {
+          const txData = {
+            type: this.formData.type,
+            amount: this.rawAmount,
+            account_id: this.formData.account_id,
+            to_account_id:
+              this.formData.type === 'transfer'
+                ? this.formData.to_account_id
+                : null,
+            category_id:
+              this.formData.type === 'transfer'
+                ? null
+                : this.formData.category_id,
+            fee:
+              this.formData.type === 'transfer' && this.rawFee > 0
+                ? this.rawFee
+                : null,
+            transaction_date: this.formData.transaction_date,
+            description: this.formData.description.trim()
+          };
+
+          await this.txStore.addTransaction(
+            txData,
+            this.catStore.categories
+          );
+
+          window.location.href = '/history';
+        } catch (error) {
+          console.error(
+            'Gagal menyimpan transaksi:',
+            error
+          );
+
+          this.errorMessage =
+            'Transaksi gagal disimpan. Silakan coba lagi.';
+        } finally {
+          this.isSubmitting = false;
+        }
       }
     }"
     class="space-y-6 pt-5 pb-12"
   >
-    <!-- 1. TOPBAR HEADER & CARD INPUT NOMINAL -->
+    <!-- 1. HEADER & NOMINAL -->
     <div
       class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
     >
-      <!-- Watermark Lingkaran Halus -->
       <div
         class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
       >
       </div>
+
       <div
         class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"
       >
@@ -164,11 +432,13 @@ const frequentTransactions = [
           >
             <Sparkles class="h-4 w-4 stroke-[2.2] text-white" />
           </div>
+
           <div>
             <h1
               x-text="isEditMode ? 'Edit Transaksi' : 'Tambah Transaksi'"
               class="text-base font-extrabold tracking-tight text-white"
             >
+              Tambah Transaksi
             </h1>
           </div>
         </div>
@@ -182,15 +452,16 @@ const frequentTransactions = [
         </a>
       </div>
 
-      <!-- INPUT NOMINAL UTAMA -->
       <div class="relative z-10 mt-6 mb-2 space-y-1 text-center">
         <span
           class="text-[9px] font-extrabold tracking-widest text-white/70 uppercase"
         >
           Nominal Transaksi
         </span>
+
         <div class="flex items-center justify-center gap-1.5">
-          <span class="text-xl font-extrabold text-white/90">Rp</span>
+          <span class="text-xl font-extrabold text-white/90"> Rp </span>
+
           <input
             type="text"
             inputmode="numeric"
@@ -209,10 +480,12 @@ const frequentTransactions = [
       <div class="space-y-2.5 pt-1">
         <div class="flex items-center gap-1.5 px-1">
           <History class="text-blue-main h-3.5 w-3.5 stroke-[2.2]" />
-          <span class="text-primary text-xs font-bold">Sering Digunakan</span>
-          <span class="text-muted-foreground text-[10px] font-medium"
-            >(Auto-fill)</span
-          >
+
+          <span class="text-primary text-xs font-bold"> Sering Digunakan </span>
+
+          <span class="text-muted-foreground text-[10px] font-medium">
+            (Auto-fill)
+          </span>
         </div>
 
         <div class="relative w-full">
@@ -227,9 +500,11 @@ const frequentTransactions = [
                   class="group border-border bg-card hover:border-blue-main hover:bg-blue-soft/50 flex shrink-0 cursor-pointer items-center gap-2 rounded-2xl border px-3.5 py-2 shadow-xs transition-all active:scale-95"
                 >
                   <Zap class="text-blue-main h-3.5 w-3.5 shrink-0 stroke-2" />
+
                   <span class="text-foreground text-[11px] font-semibold">
                     {item.title}
                   </span>
+
                   <span class="text-blue-main text-[10px] font-bold">
                     Rp {parseInt(item.amount).toLocaleString('id-ID')}
                   </span>
@@ -241,7 +516,7 @@ const frequentTransactions = [
       </div>
     </template>
 
-    <!-- 3. TIPE TRANSAKSI (SEGMENTED SELECTOR) -->
+    <!-- 3. TIPE TRANSAKSI -->
     <div
       class="border-border bg-card grid grid-cols-3 gap-2 rounded-2xl border p-1 shadow-xs"
     >
@@ -249,7 +524,7 @@ const frequentTransactions = [
         transactionTypes.map((item) => (
           <button
             type="button"
-            x-on:click={`formData.type = '${item.id}'`}
+            x-on:click={`changeTransactionType('${item.id}')`}
             x-bind:class={`formData.type === '${item.id}' ? '${item.activeClass}' : 'text-muted-foreground hover:text-foreground'`}
             class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all active:scale-95"
           >
@@ -260,16 +535,17 @@ const frequentTransactions = [
       }
     </div>
 
-    <!-- 4. FORM INPUT DETAILS (Clean Rounded Cards) -->
+    <!-- 4. FORM DETAIL -->
     <div
       class="border-border bg-card shadow-soft space-y-4 rounded-[28px] border p-5"
     >
-      <!-- Tanggal -->
+      <!-- TANGGAL -->
       <div class="space-y-1.5">
         <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
           <Calendar class="text-blue-main h-3.5 w-3.5 stroke-2" />
           <span>Tanggal</span>
         </label>
+
         <input
           type="date"
           x-model="formData.transaction_date"
@@ -277,84 +553,121 @@ const frequentTransactions = [
         />
       </div>
 
-      <!-- TRIGGER INPUTS -->
-      <div class="grid grid-cols-2 gap-3">
-        <!-- TRIGGER DOMPET ASAL -->
+      <!-- ACCOUNT SOURCE -->
+      <div class="space-y-1.5">
+        <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
+          <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
+
+          <span x-text="formData.type === 'transfer' ? 'Akun Asal' : 'Akun'">
+            Akun
+          </span>
+        </label>
+
+        <button
+          type="button"
+          @click="openWalletSheet('source')"
+          class="border-border bg-background text-foreground hover:border-blue-main flex w-full cursor-pointer items-center justify-between rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all active:scale-95"
+        >
+          <span class="truncate font-bold" x-text="selectedAccountName">
+            Pilih Akun
+          </span>
+
+          <ChevronRight class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+        </button>
+      </div>
+
+      <!-- TRANSFER DESTINATION -->
+      <template x-if="formData.type === 'transfer'">
         <div class="space-y-1.5">
           <label
             class="text-primary flex items-center gap-1.5 text-xs font-bold"
           >
             <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
-            <span
-              x-text="formData.type === 'transfer' ? 'Dompet Asal' : 'Dompet'"
-              >Dompet</span
-            >
+            <span>Akun Tujuan</span>
           </label>
+
           <button
             type="button"
-            @click="openWalletSheet('source')"
+            @click="openWalletSheet('target')"
             class="border-border bg-background text-foreground hover:border-blue-main flex w-full cursor-pointer items-center justify-between rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all active:scale-95"
           >
-            <span class="truncate font-bold" x-text="selectedWalletName"></span>
+            <span class="truncate font-bold" x-text="selectedToAccountName">
+              Pilih Akun Tujuan
+            </span>
+
             <ChevronRight class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
           </button>
         </div>
+      </template>
 
-        <!-- TRIGGER DOMPET TUJUAN -->
-        <template x-if="formData.type === 'transfer'">
-          <div class="space-y-1.5">
-            <label
-              class="text-primary flex items-center gap-1.5 text-xs font-bold"
+      <!-- CATEGORY -->
+      <template x-if="formData.type !== 'transfer'">
+        <div class="space-y-1.5">
+          <label
+            class="text-primary flex items-center gap-1.5 text-xs font-bold"
+          >
+            <Grid class="text-blue-main h-3.5 w-3.5 stroke-2" />
+            <span>Kategori</span>
+          </label>
+
+          <button
+            type="button"
+            @click="openCategoryModal()"
+            class="border-border bg-background text-foreground hover:border-blue-main flex w-full cursor-pointer items-center justify-between rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all active:scale-95"
+          >
+            <span class="truncate font-bold" x-text="selectedCategoryName">
+              Pilih Kategori
+            </span>
+
+            <ChevronRight class="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+          </button>
+
+          <template x-if="autoCategoryDetected">
+            <p class="text-blue-main px-1 text-[10px] font-semibold">
+              ✨ Kategori otomatis dipilih berdasarkan transaksi sebelumnya.
+            </p>
+          </template>
+        </div>
+      </template>
+
+      <!-- TRANSFER FEE -->
+      <template x-if="formData.type === 'transfer'">
+        <div class="space-y-1.5">
+          <label
+            class="text-primary flex items-center gap-1.5 text-xs font-bold"
+          >
+            <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
+            <span>Biaya Transfer (Opsional)</span>
+          </label>
+
+          <div class="relative">
+            <span
+              class="text-muted-foreground absolute top-1/2 left-4 -translate-y-1/2 text-xs font-bold"
             >
-              <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
-              <span>Dompet Tujuan</span>
-            </label>
-            <button
-              type="button"
-              @click="openWalletSheet('target')"
-              class="border-border bg-background text-foreground hover:border-blue-main flex w-full cursor-pointer items-center justify-between rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all active:scale-95"
-            >
-              <span class="truncate font-bold" x-text="selectedToWalletName"
-              ></span>
-              <ChevronRight
-                class="text-muted-foreground h-3.5 w-3.5 shrink-0"
-              />
-            </button>
+              Rp
+            </span>
+
+            <input
+              type="text"
+              inputmode="numeric"
+              :value="formattedFee"
+              @input="handleFeeInput($event)"
+              placeholder="0"
+              class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border py-3 pr-4 pl-10 text-xs font-semibold outline-none"
+            />
           </div>
-        </template>
+        </div>
+      </template>
 
-        <!-- TRIGGER KATEGORI -->
-        <template x-if="formData.type !== 'transfer'">
-          <div class="space-y-1.5">
-            <label
-              class="text-primary flex items-center gap-1.5 text-xs font-bold"
-            >
-              <Grid class="text-blue-main h-3.5 w-3.5 stroke-2" />
-              <span>Kategori</span>
-            </label>
-            <button
-              type="button"
-              @click="showCategoryModal = true"
-              class="border-border bg-background text-foreground hover:border-blue-main flex w-full cursor-pointer items-center justify-between rounded-2xl border px-3.5 py-3 text-xs font-semibold transition-all active:scale-95"
-            >
-              <span class="truncate font-bold" x-text="selectedCategoryName"
-              ></span>
-              <ChevronRight
-                class="text-muted-foreground h-3.5 w-3.5 shrink-0"
-              />
-            </button>
-          </div>
-        </template>
-      </div>
-
-      <!-- Catatan -->
+      <!-- DESCRIPTION -->
       <div class="space-y-1.5">
         <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
           <FileText class="text-blue-main h-3.5 w-3.5 stroke-2" />
           <span>Catatan (Opsional)</span>
         </label>
+
         <textarea
-          x-model="formData.notes"
+          x-model="formData.description"
           rows="2"
           placeholder="Tulis detail transaksi di sini..."
           class="border-border bg-background text-foreground placeholder-muted-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-medium transition-all outline-none"
@@ -362,7 +675,16 @@ const frequentTransactions = [
       </div>
     </div>
 
-    <!-- 5. TOMBOL AKSI -->
+    <!-- ERROR MESSAGE -->
+    <template x-if="errorMessage">
+      <div
+        class="border-destructive/20 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-xs font-semibold"
+        x-text="errorMessage"
+      >
+      </div>
+    </template>
+
+    <!-- 5. ACTION -->
     <div class="space-y-2 pt-1">
       <div class="grid grid-cols-2 gap-2.5">
         <a
@@ -374,16 +696,21 @@ const frequentTransactions = [
 
         <button
           type="button"
-          @click="window.location.href = '/history'"
-          class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+          @click="saveTransaction()"
+          :disabled="isSubmitting"
+          :class="isSubmitting ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'"
+          class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity"
         >
           <Check class="h-4 w-4 stroke-[2.5]" />
-          <span>Simpan Transaksi</span>
+
+          <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi'">
+            Simpan Transaksi
+          </span>
         </button>
       </div>
     </div>
 
-    <!-- BOTTOM SHEET MODAL: PILIH DOMPET -->
+    <!-- MODAL PILIH AKUN -->
     <template x-teleport="body">
       <div
         x-show="showWalletModal"
@@ -399,9 +726,11 @@ const frequentTransactions = [
           >
             <h3
               class="text-primary text-base font-extrabold"
-              x-text="walletSheetTarget === 'source' ? 'Pilih Dompet Asal' : 'Pilih Dompet Tujuan'"
+              x-text="walletSheetTarget === 'source' ? 'Pilih Akun' : 'Pilih Akun Tujuan'"
             >
+              Pilih Akun
             </h3>
+
             <button
               type="button"
               @click="showWalletModal = false"
@@ -413,11 +742,11 @@ const frequentTransactions = [
 
           <div class="no-scrollbar divide-border divide-y overflow-y-auto pt-2">
             <template
-              x-for="w in (walletSheetTarget === 'source' ? wallets : availableToWallets)"
-              :key="w.id"
+              x-for="account in (walletSheetTarget === 'source' ? activeAccounts : availableToAccounts)"
+              :key="account.id"
             >
               <div
-                @click="selectWallet(w.id)"
+                @click="selectAccount(account.id)"
                 class="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors"
               >
                 <div class="flex items-center gap-3.5">
@@ -426,15 +755,30 @@ const frequentTransactions = [
                   >
                     <Wallet class="h-5 w-5 stroke-2" />
                   </div>
-                  <span
-                    class="text-foreground text-xs font-bold"
-                    x-text="w.name"></span>
+
+                  <div class="min-w-0">
+                    <span
+                      class="text-foreground block truncate text-xs font-bold"
+                      x-text="account.name"
+                    >
+                      Akun
+                    </span>
+                  </div>
                 </div>
+
                 <template
-                  x-if="(walletSheetTarget === 'source' && formData.wallet_id === w.id) || (walletSheetTarget === 'target' && formData.to_wallet_id === w.id)"
+                  x-if="(walletSheetTarget === 'source' && formData.account_id === account.id) || (walletSheetTarget === 'target' && formData.to_account_id === account.id)"
                 >
                   <Check class="text-blue-main h-4 w-4 stroke-3" />
                 </template>
+              </div>
+            </template>
+
+            <template x-if="!activeAccounts.length">
+              <div
+                class="text-muted-foreground px-3 py-8 text-center text-xs font-medium"
+              >
+                Belum ada akun aktif.
               </div>
             </template>
           </div>
@@ -442,7 +786,7 @@ const frequentTransactions = [
       </div>
     </template>
 
-    <!-- BOTTOM SHEET MODAL: PILIH KATEGORI -->
+    <!-- MODAL PILIH KATEGORI -->
     <template x-teleport="body">
       <div
         x-show="showCategoryModal"
@@ -459,6 +803,7 @@ const frequentTransactions = [
             <h3 class="text-primary text-base font-extrabold">
               Pilih Kategori
             </h3>
+
             <button
               type="button"
               @click="showCategoryModal = false"
@@ -469,9 +814,9 @@ const frequentTransactions = [
           </div>
 
           <div class="no-scrollbar divide-border divide-y overflow-y-auto pt-2">
-            <template x-for="c in filteredCategories" :key="c.id">
+            <template x-for="category in filteredCategories" :key="category.id">
               <div
-                @click="formData.category_id = c.id; showCategoryModal = false"
+                @click="selectCategory(category.id)"
                 class="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors"
               >
                 <div class="flex items-center gap-3.5">
@@ -480,14 +825,26 @@ const frequentTransactions = [
                   >
                     <Grid class="h-5 w-5 stroke-2" />
                   </div>
+
                   <span
                     class="text-foreground text-xs font-bold"
-                    x-text="c.name"></span>
+                    x-text="category.name"
+                  >
+                    Kategori
+                  </span>
                 </div>
 
-                <template x-if="formData.category_id === c.id">
+                <template x-if="formData.category_id === category.id">
                   <Check class="text-blue-main h-4 w-4 stroke-3" />
                 </template>
+              </div>
+            </template>
+
+            <template x-if="!filteredCategories.length">
+              <div
+                class="text-muted-foreground px-3 py-8 text-center text-xs font-medium"
+              >
+                Belum ada kategori untuk tipe transaksi ini.
               </div>
             </template>
           </div>

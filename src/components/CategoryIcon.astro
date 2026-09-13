@@ -1,0 +1,162 @@
+---
+import {
+  Utensils,
+  Car,
+  ShoppingBag,
+  Briefcase,
+  Gift,
+  HeartPulse,
+  Gamepad2,
+  TrendingUp,
+  Receipt,
+  CircleEllipsis,
+  Wallet,
+  Zap,
+  Droplets,
+  Wifi,
+  Home,
+  Shirt,
+  Coffee,
+  Film,
+  Dumbbell,
+  Scissors,
+  GraduationCap,
+  Baby,
+  PawPrint,
+  Plane,
+  Fuel,
+  Wrench,
+  PiggyBank,
+  CreditCard,
+  Coins,
+  Building,
+  Tag,
+} from '@lucide/astro';
+
+interface Props {
+  icon?: string;
+  xIcon?: string; // Menerima nama variabel/ekspresi Alpine (misal: "cat.icon")
+  class?: string;
+}
+
+const { icon, xIcon, class: className = 'h-5 w-5 stroke-2' } = Astro.props;
+
+// Daftar semua nama ikon yang didukung
+const iconList = [
+  'utensils',
+  'car',
+  'shopping-bag',
+  'gamepad-2',
+  'heart-pulse',
+  'briefcase',
+  'gift',
+  'receipt',
+  'circle-ellipsis',
+  'trending-up',
+  'wallet',
+  'zap',
+  'droplets',
+  'wifi',
+  'home',
+  'shirt',
+  'coffee',
+  'film',
+  'dumbbell',
+  'scissors',
+  'graduation-cap',
+  'baby',
+  'paw-print',
+  'plane',
+  'fuel',
+  'wrench',
+  'piggy-bank',
+  'credit-card',
+  'coins',
+  'building',
+];
+---
+
+{/* MODE 1: Jika dipakai secara Statis di Astro (misal: icon="utensils") */}
+{
+  !xIcon && (
+    <>
+      {icon === 'utensils' && <Utensils class={className} />}
+      {icon === 'car' && <Car class={className} />}
+      {icon === 'shopping-bag' && <ShoppingBag class={className} />}
+      {icon === 'gamepad-2' && <Gamepad2 class={className} />}
+      {icon === 'heart-pulse' && <HeartPulse class={className} />}
+      {icon === 'briefcase' && <Briefcase class={className} />}
+      {icon === 'gift' && <Gift class={className} />}
+      {icon === 'receipt' && <Receipt class={className} />}
+      {icon === 'circle-ellipsis' && <CircleEllipsis class={className} />}
+      {icon === 'trending-up' && <TrendingUp class={className} />}
+      {icon === 'wallet' && <Wallet class={className} />}
+      {icon === 'zap' && <Zap class={className} />}
+      {icon === 'droplets' && <Droplets class={className} />}
+      {icon === 'wifi' && <Wifi class={className} />}
+      {icon === 'home' && <Home class={className} />}
+      {icon === 'shirt' && <Shirt class={className} />}
+      {icon === 'coffee' && <Coffee class={className} />}
+      {icon === 'film' && <Film class={className} />}
+      {icon === 'dumbbell' && <Dumbbell class={className} />}
+      {icon === 'scissors' && <Scissors class={className} />}
+      {icon === 'graduation-cap' && <GraduationCap class={className} />}
+      {icon === 'baby' && <Baby class={className} />}
+      {icon === 'paw-print' && <PawPrint class={className} />}
+      {icon === 'plane' && <Plane class={className} />}
+      {icon === 'fuel' && <Fuel class={className} />}
+      {icon === 'wrench' && <Wrench class={className} />}
+      {icon === 'piggy-bank' && <PiggyBank class={className} />}
+      {icon === 'credit-card' && <CreditCard class={className} />}
+      {icon === 'coins' && <Coins class={className} />}
+      {icon === 'building' && <Building class={className} />}
+      {!iconList.includes(icon || '') && <Tag class={className} />}
+    </>
+  )
+}
+
+{
+  /* MODE 2: Jika dipakai secara Reaktif di Alpine.js (misal: xIcon="cat.icon") */
+}
+{
+  xIcon && (
+    <span class="inline-flex items-center justify-center">
+      <Utensils x-show={`${xIcon} === 'utensils'`} class={className} />
+      <Car x-show={`${xIcon} === 'car'`} class={className} />
+      <ShoppingBag x-show={`${xIcon} === 'shopping-bag'`} class={className} />
+      <Gamepad2 x-show={`${xIcon} === 'gamepad-2'`} class={className} />
+      <HeartPulse x-show={`${xIcon} === 'heart-pulse'`} class={className} />
+      <Briefcase x-show={`${xIcon} === 'briefcase'`} class={className} />
+      <Gift x-show={`${xIcon} === 'gift'`} class={className} />
+      <Receipt x-show={`${xIcon} === 'receipt'`} class={className} />
+      <CircleEllipsis
+        x-show={`${xIcon} === 'circle-ellipsis'`}
+        class={className}
+      />
+      <TrendingUp x-show={`${xIcon} === 'trending-up'`} class={className} />
+      <Wallet x-show={`${xIcon} === 'wallet'`} class={className} />
+      <Zap x-show={`${xIcon} === 'zap'`} class={className} />
+      <Droplets x-show={`${xIcon} === 'droplets'`} class={className} />
+      <Wifi x-show={`${xIcon} === 'wifi'`} class={className} />
+      <Home x-show={`${xIcon} === 'home'`} class={className} />
+      <Shirt x-show={`${xIcon} === 'shirt'`} class={className} />
+      <Coffee x-show={`${xIcon} === 'coffee'`} class={className} />
+      <Film x-show={`${xIcon} === 'film'`} class={className} />
+      <Dumbbell x-show={`${xIcon} === 'dumbbell'`} class={className} />
+      <Scissors x-show={`${xIcon} === 'scissors'`} class={className} />
+      <GraduationCap
+        x-show={`${xIcon} === 'graduation-cap'`}
+        class={className}
+      />
+      <Baby x-show={`${xIcon} === 'baby'`} class={className} />
+      <PawPrint x-show={`${xIcon} === 'paw-print'`} class={className} />
+      <Plane x-show={`${xIcon} === 'plane'`} class={className} />
+      <Fuel x-show={`${xIcon} === 'fuel'`} class={className} />
+      <Wrench x-show={`${xIcon} === 'wrench'`} class={className} />
+      <PiggyBank x-show={`${xIcon} === 'piggy-bank'`} class={className} />
+      <CreditCard x-show={`${xIcon} === 'credit-card'`} class={className} />
+      <Coins x-show={`${xIcon} === 'coins'`} class={className} />
+      <Building x-show={`${xIcon} === 'building'`} class={className} />
+    </span>
+  )
+}
