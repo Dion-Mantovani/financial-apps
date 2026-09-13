@@ -4,16 +4,12 @@ import {
   Wallet,
   Plus,
   ArrowRightLeft,
-  LayoutGrid,
-  List,
   Landmark,
   CreditCard,
-  Building2,
   Coins,
   Star,
   Activity,
   ArrowLeft,
-  ChevronRight,
   Pencil,
   Trash2,
   X,
@@ -22,189 +18,233 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  TrendingUp,
-  TrendingDown,
 } from '@lucide/astro';
 ---
 
 <Layout title="Dompet Saya - Studion App">
-  <div x-data="walletApp()" class="space-y-4 pt-2 pb-10">
-    <!-- 1. HEADER -->
-    <div class="mt-6 flex items-center justify-between pb-1">
-      <a
-        href="/"
-        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-      >
-        <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
-      </a>
+  <div
+    x-data="{
+      isReordering: false,
+      openDetailModal: false,
+      openFormModal: false,
+      isEdit: false,
+      selectedWallet: {},
+      formData: {
+        id: null,
+        name: '',
+        type: 'bank',
+        icon: 'landmark',
+        color: '#0d3b66',
+        balance: 0
+      },
+      wallets: [
+        { id: 'w1', name: 'BCA', type: 'Bank', icon: 'landmark', color: '#0d3b66', balance: 12500000, txCount: 15 },
+        { id: 'w2', name: 'Gopay', type: 'E-Wallet', icon: 'credit-card', color: '#1d63b8', balance: 1450000, txCount: 8 },
+        { id: 'w3', name: 'Cash', type: 'Cash', icon: 'coins', color: '#3b82f6', balance: 300000, txCount: 4 }
+      ],
+      transactions: [1, 2, 3, 4, 5, 6, 7],
+      get totalBalance() {
+        const total = this.wallets.reduce((acc, w) => acc + w.balance, 0);
+        return 'Rp ' + total.toLocaleString('id-ID');
+      },
+      get topWallet() {
+        if (!this.wallets.length) return null;
+        return [...this.wallets].sort((a, b) => b.balance - a.balance)[0];
+      },
+      formatCurrency(val) {
+        return 'Rp ' + (val || 0).toLocaleString('id-ID');
+      },
+      getWalletTransactionCount(id) {
+        const w = this.wallets.find(x => x.id === id);
+        return w ? w.txCount : 0;
+      },
+      toggleReorderMode() {
+        this.isReordering = !this.isReordering;
+      },
+      moveWallet(index, direction) {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= this.wallets.length) return;
+        const temp = this.wallets[index];
+        this.wallets[index] = this.wallets[targetIndex];
+        this.wallets[targetIndex] = temp;
+      },
+      finishReorder() {
+        this.isReordering = false;
+      },
+      showDetail(wallet) {
+        this.selectedWallet = wallet;
+        this.openDetailModal = true;
+      },
+      openAddModal() {
+        this.isEdit = false;
+        this.formData = { id: null, name: '', type: 'bank', icon: 'landmark', color: '#0d3b66', balance: 0 };
+        this.openFormModal = true;
+      },
+      openEditFromDetail() {
+        this.isEdit = true;
+        this.formData = { ...this.selectedWallet };
+        this.openDetailModal = false;
+        this.openFormModal = true;
+      },
+      deleteWalletFromDetail() {
+        this.wallets = this.wallets.filter(w => w.id !== this.selectedWallet.id);
+        this.openDetailModal = false;
+      },
+      saveWallet() {
+        if (this.isEdit) {
+          const idx = this.wallets.findIndex(w => w.id === this.formData.id);
+          if (idx !== -1) {
+            this.wallets[idx] = { ...this.formData, balance: parseInt(this.formData.balance) || 0 };
+          }
+        } else {
+          this.wallets.push({
+            id: 'w' + (this.wallets.length + 1),
+            ...this.formData,
+            balance: parseInt(this.formData.balance) || 0,
+            txCount: 0
+          });
+        }
+        this.openFormModal = false;
+      }
+    }"
+    class="space-y-5 pt-2 pb-12"
+  >
+    <!-- 1. STICKY HEADER (Jarak & Style Disamakan dengan History Page) -->
+    <div
+      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
+    >
+      <div class="flex items-center justify-between">
+        <a
+          href="/"
+          class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
+        >
+          <ArrowLeft class="h-4.5 w-4.5 stroke-[2.5]" />
+        </a>
 
-      <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
-        Dompet Saya
-      </h1>
+        <h1 class="text-primary text-base font-extrabold tracking-tight">
+          Dompet Saya
+        </h1>
 
-      <div class="w-9"></div>
+        <div class="w-9.5"></div>
+      </div>
     </div>
 
-    <!-- 2. CARD UTAMA (TOTAL SALDO) -->
+    <!-- 2. CARD UTAMA (TOTAL SALDO & MICRO INFO SIMPEL) -->
     <div
-      class="relative overflow-hidden rounded-3xl border border-white/15 bg-linear-to-br from-blue-900/90 via-blue-950/95 to-slate-950 p-5 text-white shadow-2xl shadow-blue-950/40 backdrop-blur-xl"
+      class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
     >
-      <div class="relative z-10 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div
-            class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-inner backdrop-blur-md"
-          >
-            <Wallet class="h-4 w-4 stroke-2 text-blue-200" />
-          </div>
-          <span class="text-xs font-medium tracking-wide text-blue-200/80"
-            >Total Saldo</span
-          >
-        </div>
-
-        <!-- CONTROLS: REORDER & TOGGLE VIEW -->
-        <div class="flex items-center gap-1.5">
-          <!-- Tombol Aktivasi Reorder -->
-          <button
-            type="button"
-            @click="toggleReorderMode()"
-            :class="isReordering ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-white/10 text-blue-100 border-white/15 hover:bg-white/20'"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border shadow-xs backdrop-blur-md transition-all active:scale-95"
-            title="Atur Urutan Dompet"
-          >
-            <ArrowUpDown class="h-4 w-4 stroke-[2.5]" />
-          </button>
-
-          <!-- Tombol Toggle Mode Card / List -->
-          <button
-            type="button"
-            @click="toggleViewMode()"
-            :disabled="isReordering"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-blue-100 shadow-xs backdrop-blur-md transition-all hover:bg-white/20 active:scale-95 disabled:opacity-40"
-            :title="`Beralih ke mode ${viewMode === 'card' ? 'List' : 'Card'}`"
-          >
-            <LayoutGrid x-show="viewMode === 'list'" class="h-4 w-4 stroke-2" />
-            <List x-show="viewMode === 'card'" class="h-4 w-4 stroke-2" />
-          </button>
-        </div>
+      <!-- Watermark Lingkaran Halus -->
+      <div
+        class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
+      >
+      </div>
+      <div
+        class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"
+      >
       </div>
 
-      <div class="relative z-10 mt-3 mb-3">
+      <div class="relative z-10 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md"
+          >
+            <Wallet class="h-4 w-4 stroke-[2.2] text-white" />
+          </div>
+          <span class="text-xs font-semibold tracking-wide text-white/80"
+            >Total Saldo Dompet</span
+          >
+        </div>
+
+        <!-- REORDER TRIGGER -->
+        <button
+          type="button"
+          @click="toggleReorderMode()"
+          :class="isReordering ? 'bg-white text-primary' : 'bg-white/15 text-white hover:bg-white/25'"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full backdrop-blur-md transition-all active:scale-95"
+          title="Atur Urutan Dompet"
+        >
+          <ArrowUpDown class="h-4 w-4 stroke-[2.5]" />
+        </button>
+      </div>
+
+      <div class="relative z-10 mt-5 mb-4">
         <h2
-          x-text="loading ? 'Rp ...' : totalBalance"
-          class="text-3xl font-extrabold tracking-tight text-white drop-shadow-sm"
+          x-text="totalBalance"
+          class="text-3xl font-extrabold tracking-tight text-white drop-shadow-xs"
         >
           Rp 0
         </h2>
       </div>
 
+      <!-- Micro Info bawaan awal (Dikecilin & Rapi) -->
       <div
-        class="relative z-10 grid grid-cols-3 gap-2 border-t border-white/10 pt-3"
+        class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3"
       >
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 items-center gap-1.5">
           <div
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-400/20 bg-blue-500/20 text-blue-300"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
           >
-            <Wallet class="h-3.5 w-3.5 stroke-[2.2]" />
+            <Wallet class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
               x-text="wallets.length"
-              class="text-xs leading-tight font-extrabold text-white">0</span
+              class="text-[11px] leading-tight font-extrabold text-white"
+              >0</span
             >
-            <span class="truncate text-[9px] font-medium text-blue-200/60"
+            <span class="truncate text-[9px] font-medium text-white/70"
               >Dompet</span
             >
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 items-center gap-1.5">
           <div
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-500/20 text-amber-300"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
           >
-            <Star class="h-3.5 w-3.5 stroke-[2.2]" />
+            <Star class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
               x-text="topWallet ? topWallet.name : '-'"
-              class="truncate text-xs leading-tight font-extrabold text-white"
+              class="truncate text-[11px] leading-tight font-extrabold text-white"
               >-</span
             >
-            <span class="truncate text-[9px] font-medium text-blue-200/60"
+            <span class="truncate text-[9px] font-medium text-white/70"
               >Teratas</span
             >
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 items-center gap-1.5">
           <div
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-500/20 text-emerald-300"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
           >
-            <Activity class="h-3.5 w-3.5 stroke-[2.2]" />
+            <Activity class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
               x-text="transactions.length"
-              class="text-xs leading-tight font-extrabold text-white">0</span
+              class="text-[11px] leading-tight font-extrabold text-white"
+              >0</span
             >
-            <span class="truncate text-[9px] font-medium text-blue-200/60"
+            <span class="truncate text-[9px] font-medium text-white/70"
               >Transaksi</span
             >
           </div>
         </div>
       </div>
-
-      <!-- Grid Pattern Background -->
-      <div
-        class="pointer-events-none absolute right-0 bottom-0 h-full w-full overflow-hidden rounded-br-3xl opacity-25"
-      >
-        <svg
-          class="h-full w-full"
-          width="100%"
-          height="100%"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern
-              id="grid-pattern-card"
-              width="16"
-              height="16"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M 16 0 L 0 0 0 16"
-                fill="none"
-                stroke="rgba(255, 255, 255, 0.4)"
-                stroke-width="1.2"></path>
-            </pattern>
-            <radialGradient id="grid-fade-card" cx="100%" cy="100%" r="100%">
-              <stop offset="0%" stop-color="white" stop-opacity="1"></stop>
-              <stop offset="80%" stop-color="white" stop-opacity="0"></stop>
-            </radialGradient>
-            <mask id="grid-mask-card">
-              <rect width="100%" height="100%" fill="url(#grid-fade-card)"
-              ></rect>
-            </mask>
-          </defs>
-          <rect
-            width="100%"
-            height="100%"
-            fill="url(#grid-pattern-card)"
-            mask="url(#grid-mask-card)"></rect>
-        </svg>
-      </div>
     </div>
 
-    <!-- 3. ACTION HEADER / BARIS REORDER ACTIVE -->
-    <div class="flex items-center justify-between px-0.5">
-      <div class="flex items-center gap-1.5">
-        <span class="text-xs font-bold tracking-tight text-slate-800">
-          Daftar Dompet
-        </span>
+    <!-- 3. ACTION HEADER -->
+    <div class="flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <span class="text-primary text-sm font-bold"> Daftar Dompet </span>
         <template x-if="isReordering">
           <span
-            class="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-800"
+            class="bg-blue-soft text-blue-main rounded-full px-2.5 py-0.5 text-[9px] font-extrabold"
           >
-            Mode Reorder Aktif
+            Reorder Mode
           </span>
         </template>
       </div>
@@ -212,10 +252,10 @@ import {
       <template x-if="!isReordering">
         <a
           href="/transaction?type=transfer"
-          class="flex cursor-pointer items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-600 transition-all hover:bg-blue-100 active:scale-95"
+          class="bg-blue-soft text-blue-main hover:bg-blue-soft/80 flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95"
         >
           <ArrowRightLeft class="h-3.5 w-3.5 stroke-[2.5]" />
-          <span>Transfer Antar Dompet</span>
+          <span>Transfer</span>
         </a>
       </template>
 
@@ -223,165 +263,67 @@ import {
         <button
           type="button"
           @click="finishReorder()"
-          class="flex cursor-pointer items-center gap-1.5 rounded-full bg-slate-900 px-3.5 py-1 text-[11px] font-bold text-white shadow-xs transition-all hover:bg-slate-800 active:scale-95"
+          class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all hover:opacity-90 active:scale-95"
         >
-          <Check class="h-3.5 w-3.5 stroke-[3]" />
-          <span>Selesai Reorder</span>
+          <Check class="h-3.5 w-3.5 stroke-3" />
+          <span>Selesai</span>
         </button>
       </template>
     </div>
 
-    <!-- 4. LOADING STATE -->
-    <template x-if="loading">
-      <div class="py-12 text-center text-xs font-semibold text-slate-400">
-        Mengambil data dompet...
-      </div>
-    </template>
-
-    <!-- 5. MODE CARD -->
+    <!-- 4. DAFTAR DOMPET (EKSKLUSIF MODE LIST) -->
     <div
-      x-show="!loading && viewMode === 'card' && !isReordering"
-      class="space-y-3.5"
-    >
-      <template x-for="wallet in wallets" :key="wallet.id">
-        <div
-          :style="`background-color: ${wallet.color || '#1e3a8a'}`"
-          class="relative cursor-pointer overflow-hidden rounded-3xl border border-white/20 p-5 text-white shadow-md transition-all hover:shadow-xl active:scale-[0.99]"
-        >
-          <div
-            class="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-xl"
-          >
-          </div>
-
-          <div class="relative z-10 flex items-start justify-between">
-            <div class="flex flex-col">
-              <span
-                x-text="wallet.type"
-                class="text-[10px] font-bold tracking-widest text-white/60 uppercase"
-              ></span>
-              <h3
-                x-text="wallet.name"
-                class="text-sm font-extrabold tracking-tight text-white"
-              >
-              </h3>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <div
-                class="flex h-7 w-7 items-center justify-center rounded-xl border border-white/20 bg-white/10 backdrop-blur-md"
-              >
-                <template x-if="wallet.icon === 'landmark'"
-                  ><Landmark class="h-4 w-4 stroke-2" /></template
-                >
-                <template x-if="wallet.icon === 'building-2'"
-                  ><Building2 class="h-4 w-4 stroke-2" /></template
-                >
-                <template x-if="wallet.icon === 'credit-card'"
-                  ><CreditCard class="h-4 w-4 stroke-2" /></template
-                >
-                <template x-if="wallet.icon === 'coins'"
-                  ><Coins class="h-4 w-4 stroke-2" /></template
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="relative z-10 mt-5 mb-2 flex items-end justify-between">
-            <div
-              class="flex h-6 w-8 items-center justify-center rounded-md border border-amber-300/40 bg-linear-to-r from-amber-300 via-amber-200 to-amber-400 shadow-inner"
-            >
-              <div class="h-3 w-4 border-y border-amber-600/30"></div>
-            </div>
-
-            <div class="flex flex-col items-end">
-              <span
-                class="text-[9px] font-medium tracking-wide text-white/60 uppercase"
-                >Saldo Saat Ini</span
-              >
-              <span
-                x-text="formatCurrency(getWalletBalance(wallet))"
-                class="text-xl font-black tracking-tight text-white sm:text-2xl"
-              ></span>
-            </div>
-          </div>
-
-          <div
-            @click="showDetail(wallet)"
-            class="relative z-10 mt-3 flex items-center justify-between border-t border-white/15 pt-2.5"
-          >
-            <span
-              x-text="`${getWalletTransactionCount(wallet.id)} Transaksi`"
-              class="text-[10px] font-semibold text-white/80"></span>
-            <div
-              class="flex items-center gap-1 text-[10px] font-bold text-white/90"
-            >
-              <span>Detail</span>
-              <ChevronRight class="h-3.5 w-3.5 stroke-[2.5]" />
-            </div>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- 6. MODE LIST (SERTA NAVIGASI PANAH REORDER) -->
-    <div
-      x-show="!loading && (viewMode === 'list' || isReordering)"
-      x-cloak
-      class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-sm"
+      class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
     >
       <template x-for="(wallet, index) in wallets" :key="wallet.id">
         <div
           @click="!isReordering && showDetail(wallet)"
-          class="flex items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl"
-          :class="isReordering ? 'bg-slate-50/50' : 'cursor-pointer hover:bg-slate-50/80'"
+          class="flex items-center justify-between p-4 transition-colors"
+          :class="isReordering ? 'bg-muted/30' : 'cursor-pointer hover:bg-muted/50'"
         >
-          <div class="flex min-w-0 items-center gap-3">
-            <!-- Navigasi Tombol Reorder -->
+          <div class="flex min-w-0 items-center gap-3.5">
             <template x-if="isReordering">
-              <div class="flex flex-col gap-0.5 pr-1">
+              <div class="flex flex-col gap-1 pr-1">
                 <button
                   type="button"
                   @click.stop="moveWallet(index, 'up')"
                   :disabled="index === 0"
-                  class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-blue-50 hover:text-blue-600 disabled:opacity-20"
+                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
                 >
-                  <ArrowUp class="h-3 w-3 stroke-[3]" />
+                  <ArrowUp class="h-3 w-3 stroke-3" />
                 </button>
                 <button
                   type="button"
                   @click.stop="moveWallet(index, 'down')"
                   :disabled="index === wallets.length - 1"
-                  class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-blue-50 hover:text-blue-600 disabled:opacity-20"
+                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
                 >
-                  <ArrowDown class="h-3 w-3 stroke-[3]" />
+                  <ArrowDown class="h-3 w-3 stroke-3" />
                 </button>
               </div>
             </template>
 
+            <!-- Monochromatic Icon Box -->
             <div
-              :style="`background-color: ${wallet.color}20; color: ${wallet.color}`"
-              class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border border-slate-100"
+              class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
             >
               <template x-if="wallet.icon === 'landmark'"
-                ><Landmark class="h-4.5 w-4.5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'building-2'"
-                ><Building2 class="h-4.5 w-4.5 stroke-2" /></template
+                ><Landmark class="h-5 w-5 stroke-2" /></template
               >
               <template x-if="wallet.icon === 'credit-card'"
-                ><CreditCard class="h-4.5 w-4.5 stroke-2" /></template
+                ><CreditCard class="h-5 w-5 stroke-2" /></template
               >
               <template x-if="wallet.icon === 'coins'"
-                ><Coins class="h-4.5 w-4.5 stroke-2" /></template
+                ><Coins class="h-5 w-5 stroke-2" /></template
               >
             </div>
 
             <div class="flex min-w-0 flex-col">
               <span
                 x-text="wallet.name"
-                class="truncate text-xs font-bold text-slate-800"></span>
+                class="text-foreground truncate text-xs font-bold"></span>
               <div
-                class="flex items-center gap-1 text-[10px] font-medium text-slate-400"
+                class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium"
               >
                 <span class="capitalize" x-text="wallet.type"></span>
                 <span>•</span>
@@ -394,69 +336,69 @@ import {
 
           <div class="flex shrink-0 flex-col items-end">
             <span
-              x-text="formatCurrency(getWalletBalance(wallet))"
-              class="text-xs font-extrabold text-slate-900"></span>
+              x-text="formatCurrency(wallet.balance)"
+              class="text-foreground text-xs font-extrabold"></span>
           </div>
         </div>
       </template>
     </div>
 
-    <!-- 7. TOMBOL TAMBAH DOMPET -->
+    <!-- 5. TOMBOL TAMBAH DOMPET -->
     <div x-show="!isReordering" class="pt-1">
       <button
         type="button"
         @click="openAddModal()"
-        class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/40 py-3.5 text-blue-600 shadow-2xs transition-all hover:border-blue-500 hover:bg-blue-100/60 active:scale-95"
+        class="border-blue-main/40 bg-blue-soft/30 text-blue-main hover:border-blue-main hover:bg-blue-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed py-3.5 shadow-xs transition-all active:scale-95"
       >
         <Plus class="h-4 w-4 stroke-[2.5]" />
         <span class="text-xs font-bold">Tambah Dompet Baru</span>
       </button>
     </div>
 
-    <!-- 8. MODAL DETAIL DOMPET (ENGAGED STATS & PILLS FILTER) -->
+    <!-- 6. MODAL DETAIL DOMPET -->
     <template x-teleport="body">
       <div
         x-show="openDetailModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
       >
         <div
           @click.away="openDetailModal = false"
-          class="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border shadow-2xl transition-transform sm:rounded-4xl"
         >
-          <div
-            :style="`background-color: ${selectedWallet.color || '#2563eb'}`"
-            class="relative p-5 text-white"
-          >
-            <div class="flex items-center justify-between">
+          <div class="bg-card-blue-dark relative p-6 text-white">
+            <!-- Watermark Lingkaran -->
+            <div
+              class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
+            >
+            </div>
+
+            <div class="relative z-10 flex items-center justify-between">
               <span
                 x-text="selectedWallet.type"
-                class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase backdrop-blur-md"
+                class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
               ></span>
               <button
                 type="button"
                 @click="openDetailModal = false"
-                class="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
               >
                 <X class="h-4 w-4 stroke-[2.5]" />
               </button>
             </div>
 
-            <div class="mt-4 flex items-center gap-3">
+            <div class="relative z-10 mt-5 flex items-center gap-3.5">
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md"
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
               >
                 <template x-if="selectedWallet.icon === 'landmark'"
-                  ><Landmark class="h-6 w-6 stroke-2 text-white" /></template
-                >
-                <template x-if="selectedWallet.icon === 'building-2'"
-                  ><Building2 class="h-6 w-6 stroke-2 text-white" /></template
+                  ><Landmark class="h-6 w-6 stroke-2" /></template
                 >
                 <template x-if="selectedWallet.icon === 'credit-card'"
-                  ><CreditCard class="h-6 w-6 stroke-2 text-white" /></template
+                  ><CreditCard class="h-6 w-6 stroke-2" /></template
                 >
                 <template x-if="selectedWallet.icon === 'coins'"
-                  ><Coins class="h-6 w-6 stroke-2 text-white" /></template
+                  ><Coins class="h-6 w-6 stroke-2" /></template
                 >
               </div>
 
@@ -473,110 +415,37 @@ import {
             </div>
           </div>
 
-          <div class="space-y-4 p-5">
-            <!-- Saldo Utama -->
+          <div class="space-y-4 p-6">
             <div
-              class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 text-center"
+              class="border-border bg-background rounded-2xl border p-4 text-center"
             >
               <span
-                class="text-[10px] font-bold tracking-wider text-slate-400 uppercase"
+                class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+                >Saldo Real-Time</span
               >
-                Saldo Real-Time
-              </span>
               <p
-                x-text="formatCurrency(getWalletBalance(selectedWallet))"
-                class="mt-0.5 text-2xl font-black tracking-tight text-slate-900"
+                x-text="formatCurrency(selectedWallet.balance)"
+                class="text-primary mt-0.5 text-2xl font-black tracking-tight"
               >
               </p>
             </div>
 
-            <!-- STATISTIK RINGKAS DENGAN PILLS FILTER -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-slate-500 uppercase"
-                  >Ringkasan Arus Kas</span
-                >
-
-                <!-- 3 Pills Filter Periode -->
-                <div
-                  class="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5"
-                >
-                  <button
-                    type="button"
-                    @click="detailStatsPeriod = '1w'"
-                    :class="detailStatsPeriod === '1w' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
-                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
-                    >1 Mgg</button
-                  >
-                  <button
-                    type="button"
-                    @click="detailStatsPeriod = '1m'"
-                    :class="detailStatsPeriod === '1m' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
-                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
-                    >1 Bln</button
-                  >
-                  <button
-                    type="button"
-                    @click="detailStatsPeriod = 'all'"
-                    :class="detailStatsPeriod === 'all' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 font-medium'"
-                    class="cursor-pointer rounded-lg px-2 py-0.5 text-[9px] transition-all"
-                    >Lifetime</button
-                  >
-                </div>
-              </div>
-
-              <!-- Mini Cards Pemasukan vs Pengeluaran -->
-              <div class="grid grid-cols-2 gap-2">
-                <div
-                  class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-2.5"
-                >
-                  <div class="flex items-center gap-1 text-emerald-600">
-                    <TrendingUp class="h-3.5 w-3.5 stroke-[2.5]" />
-                    <span class="text-[9px] font-bold uppercase">Pemasukan</span
-                    >
-                  </div>
-                  <p
-                    x-text="formatCurrency(getWalletDetailStats(selectedWallet.id).income)"
-                    class="mt-1 text-xs font-black text-emerald-700"
-                  >
-                  </p>
-                </div>
-
-                <div
-                  class="rounded-2xl border border-rose-100 bg-rose-50/40 p-2.5"
-                >
-                  <div class="flex items-center gap-1 text-rose-600">
-                    <TrendingDown class="h-3.5 w-3.5 stroke-[2.5]" />
-                    <span class="text-[9px] font-bold uppercase"
-                      >Pengeluaran</span
-                    >
-                  </div>
-                  <p
-                    x-text="formatCurrency(getWalletDetailStats(selectedWallet.id).expense)"
-                    class="mt-1 text-xs font-black text-rose-700"
-                  >
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tombol Aksi Modal Detail -->
-            <div class="flex items-center gap-2 border-t border-slate-100 pt-1">
+            <div class="flex items-center gap-2 pt-1">
               <button
                 type="button"
                 @click="deleteWalletFromDetail()"
-                class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-red-200 bg-red-50/80 py-3 text-xs font-bold text-red-600 transition-all hover:bg-red-100 active:scale-95"
+                class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
               >
-                <Trash2 class="h-3.5 w-3.5 stroke-[2.5]" />
+                <Trash2 class="h-4 w-4 stroke-2" />
                 <span>Hapus</span>
               </button>
 
               <button
                 type="button"
                 @click="openEditFromDetail()"
-                class="flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-linear-to-r from-blue-600 to-blue-700 py-3 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition-all hover:from-blue-700 hover:to-blue-800 active:scale-95"
+                class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
               >
-                <Pencil class="h-3.5 w-3.5 stroke-[2.5]" />
+                <Pencil class="h-4 w-4 stroke-2" />
                 <span>Edit Dompet</span>
               </button>
             </div>
@@ -585,136 +454,97 @@ import {
       </div>
     </template>
 
-    <!-- 9. MODAL FORM TAMBAH/EDIT DOMPET -->
+    <!-- 7. MODAL FORM TAMBAH/EDIT DOMPET -->
     <template x-teleport="body">
       <div
         x-show="openFormModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
       >
         <div
           @click.away="openFormModal = false"
-          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
             <div class="flex items-center gap-2">
               <div
-                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
               >
                 <Sparkles class="h-4 w-4 stroke-2" />
               </div>
               <h3
                 x-text="isEdit ? 'Edit Dompet' : 'Tambah Dompet Baru'"
-                class="text-sm font-extrabold text-slate-900"
+                class="text-primary text-base font-extrabold"
               >
               </h3>
             </div>
             <button
               type="button"
               @click="openFormModal = false"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
 
-          <form @submit.prevent="saveWallet()" class="mt-4 space-y-3.5">
-            <div>
+          <form @submit.prevent="saveWallet()" class="mt-4 space-y-4">
+            <div class="space-y-1.5">
               <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
                 >Nama Dompet</label
               >
               <input
                 type="text"
                 x-model="formData.name"
-                placeholder="misal: BCA Utama, Cash, Gopay"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                placeholder="misal: BCA, Cash, Gopay"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
                 required
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="space-y-1.5">
                 <label
-                  class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
                   >Tipe Dompet</label
                 >
                 <select
                   x-model="formData.type"
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
                 >
                   <option value="bank">Bank</option>
                   <option value="cash">Cash</option>
                   <option value="e-wallet">E-Wallet</option>
-                  <option value="paylater">Paylater / Tagihan</option>
                 </select>
               </div>
-
-              <div>
+              <div class="space-y-1.5">
                 <label
-                  class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
                   >Ikon</label
                 >
                 <select
                   x-model="formData.icon"
-                  class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
                 >
-                  <option value="landmark">Bank (Landmark)</option>
-                  <option value="building-2">Gedung / Lembaga</option>
-                  <option value="credit-card">Kartu / E-Wallet</option>
-                  <option value="coins">Koin / Cash</option>
+                  <option value="landmark">Bank</option>
+                  <option value="credit-card">E-Wallet</option>
+                  <option value="coins">Cash</option>
                 </select>
               </div>
             </div>
 
-            <div>
+            <div class="space-y-1.5">
               <label
-                class="mb-1.5 block text-[10px] font-bold text-slate-500 uppercase"
-                >Pilih Warna Tema</label
-              >
-              <div class="grid grid-cols-5 gap-2">
-                <template
-                  x-for="c in [
-                    { name: 'Blue', hex: '#2563eb' },
-                    { name: 'Cyan', hex: '#0891b2' },
-                    { name: 'Emerald', hex: '#059669' },
-                    { name: 'Amber', hex: '#d97706' },
-                    { name: 'Rose', hex: '#e11d48' },
-                    { name: 'Violet', hex: '#7c3aed' },
-                    { name: 'Indigo', hex: '#4f46e5' },
-                    { name: 'Slate', hex: '#334155' },
-                    { name: 'Teal', hex: '#0d9488' },
-                    { name: 'Orange', hex: '#ea580c' }
-                  ]"
-                  :key="c.hex"
-                >
-                  <button
-                    type="button"
-                    @click="formData.color = c.hex"
-                    :style="`background-color: ${c.hex}`"
-                    class="flex h-7 w-full cursor-pointer items-center justify-center rounded-xl border-2 transition-all active:scale-95"
-                    :class="formData.color === c.hex ? 'border-slate-900 scale-105 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'"
-                  >
-                    <template x-if="formData.color === c.hex">
-                      <Check class="h-3.5 w-3.5 stroke-[3] text-white" />
-                    </template>
-                  </button>
-                </template>
-              </div>
-            </div>
-
-            <div>
-              <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
-                >Saldo Awal / Nominal (Rp)</label
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >Saldo Awal (Rp)</label
               >
               <input
                 type="number"
                 x-model="formData.balance"
                 placeholder="0"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
               />
             </div>
 
@@ -722,12 +552,12 @@ import {
               <button
                 type="button"
                 @click="openFormModal = false"
-                class="w-1/3 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95"
+                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
               >
               <button
                 type="submit"
-                class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95"
+                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
                 >Simpan Dompet</button
               >
             </div>
@@ -737,14 +567,3 @@ import {
     </template>
   </div>
 </Layout>
-
-<!-- SCRIPT ALPINE CLIENT-SIDE -->
-<script>
-  import { walletController } from '../controllers/wallet.controller';
-
-  declare const Alpine: any;
-
-  document.addEventListener('alpine:init', () => {
-    Alpine.data('walletApp', walletController);
-  });
-</script>

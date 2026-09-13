@@ -34,14 +34,18 @@ const { title = 'Studion App', hideBottomNav = false } = Astro.props;
 
     <!-- Favicon untuk Browser biasa -->
     <link rel="icon" type="image/png" href="/icon.png" />
+
+    <script>
+      import '../script/alpine.js';
+    </script>
   </head>
   <!-- Body sebagai latar belakang desktop -->
   <body
-    class="flex h-screen w-screen items-center justify-center overflow-hidden bg-slate-900/5 p-0 sm:p-6"
+    class="flex h-screen w-screen items-center justify-center overflow-hidden bg-slate-100/70 p-0 sm:p-6"
   >
     <!-- Frame HP Desktop: Fixed Height & Contain Screen Scroll -->
     <div
-      class="relative flex h-full w-full flex-col overflow-hidden border-0 bg-slate-50 sm:h-190 sm:max-w-97.5 sm:rounded-[40px] sm:border sm:border-slate-300 sm:shadow-2xl sm:shadow-blue-950/20"
+      class="relative flex h-full w-full flex-col overflow-hidden border-0 bg-slate-50 sm:h-190 sm:max-w-97.5 sm:rounded-[40px] sm:border sm:border-slate-200 sm:shadow-2xl sm:shadow-blue-950/5"
     >
       <!-- Main Content Container (Ini yang Melakukan Scroll Internal) -->
       <main

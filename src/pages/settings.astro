@@ -8,300 +8,474 @@ import {
   Bell,
   Download,
   Upload,
-  Trash2,
   ChevronRight,
   ShieldAlert,
   X,
-  Check,
-  Settings as SettingsIcon,
+  LogOut,
+  ShieldCheck,
+  RotateCcw,
+  CheckCircle2,
+  Database,
+  UserX,
+  MessageSquarePlus,
+  Send,
 } from '@lucide/astro';
 ---
 
 <Layout title="Pengaturan - Studion App">
   <div
-    x-data="{ activeModal: null, darkMode: false, notif: true }"
-    class="space-y-4 pt-2 pb-10"
+    x-data="{ activeModal: null, darkMode: false, notif: true, feedbackText: '' }"
+    class="space-y-6 pt-2 pb-12"
   >
-    <!-- 1. HEADER (PRESISI DENGAN REFERENSI WALLET) -->
-    <div class="mt-6 flex items-center justify-between pb-1">
-      <a
-        href="/"
-        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-      >
-        <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
-      </a>
+    <!-- 1. STICKY HEADER -->
+    <div
+      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
+    >
+      <div class="flex items-center justify-between">
+        <a
+          href="/"
+          class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
+        >
+          <ArrowLeft class="h-4.5 w-4.5 stroke-[2.5]" />
+        </a>
 
-      <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
-        Pengaturan
-      </h1>
+        <h1 class="text-primary text-base font-extrabold tracking-tight">
+          Pengaturan
+        </h1>
 
-      <div class="w-9"></div>
+        <div class="w-9.5"></div>
+      </div>
     </div>
 
     <!-- 2. MAIN MENU LIST CONTAINER -->
-    <div class="space-y-3">
+    <div class="space-y-5">
       <!-- GROUP 1: AKUN & KEAMANAN -->
-      <div
-        class="rounded-3xl border border-slate-200/70 bg-white p-2 shadow-sm"
-      >
-        <p
-          class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
-        >
-          Akun & Keamanan
-        </p>
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Profil</p>
 
-        <div class="divide-y divide-slate-100">
+        <div
+          class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
+        >
           <!-- Edit Profil -->
           <button
             @click="activeModal = 'profile'"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50/80 active:scale-[0.99]"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600"
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
-                <User class="h-4.5 w-4.5 stroke-[2.2]" />
+                <User class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">Edit Profil</p>
-                <p class="text-[10px] text-slate-400">Nama lengkap dan email</p>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Edit Profil</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Nama lengkap dan email
+                </p>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
           <!-- Ubah Password -->
           <button
             @click="activeModal = 'password'"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50/80 active:scale-[0.99]"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600"
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
-                <Lock class="h-4.5 w-4.5 stroke-[2.2]" />
+                <Lock class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">Ubah Password</p>
-                <p class="text-[10px] text-slate-400">
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Ubah Password</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
                   Pembaruan kata sandi akun
                 </p>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <!-- GROUP 2: PREFERENSI -->
-      <div
-        class="rounded-3xl border border-slate-200/70 bg-white p-2 shadow-sm"
-      >
-        <p
-          class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
-        >
-          Preferensi
-        </p>
+      <!-- GROUP 2: PREFERENSI TAMPILAN -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Tampilan</p>
 
-        <div class="divide-y divide-slate-100">
-          <!-- Dark Mode Toggle -->
-          <div class="flex items-center justify-between px-3 py-3">
-            <div class="flex items-center gap-3">
+        <div
+          class="border-border bg-card shadow-soft rounded-[28px] border p-4"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-600"
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
-                <Moon class="h-4.5 w-4.5 stroke-[2.2]" />
+                <Moon class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">Mode Gelap</p>
-                <p class="text-[10px] text-slate-400">Tampilan hemat energi</p>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Mode Gelap</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Tampilan hemat energi
+                </p>
               </div>
             </div>
             <button
               @click="darkMode = !darkMode"
               type="button"
-              :class="darkMode ? 'bg-blue-600' : 'bg-slate-200'"
-              class="relative inline-flex h-5.5 w-10 shrink-0 cursor-pointer rounded-full transition-colors duration-200"
+              :class="darkMode ? 'bg-primary' : 'bg-muted'"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200"
             >
               <span
-                :class="darkMode ? 'translate-x-4.5' : 'translate-x-0.5'"
-                class="pointer-events-none inline-block h-4.5 w-4.5 transform self-center rounded-full bg-white shadow-xs transition duration-200"
-              ></span>
-            </button>
-          </div>
-
-          <!-- Notifikasi Toggle -->
-          <div class="flex items-center justify-between px-3 py-3">
-            <div class="flex items-center gap-3">
-              <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-600"
-              >
-                <Bell class="h-4.5 w-4.5 stroke-[2.2]" />
-              </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">
-                  Pengingat Transaksi
-                </p>
-                <p class="text-[10px] text-slate-400">Notifikasi harian</p>
-              </div>
-            </div>
-            <button
-              @click="notif = !notif"
-              type="button"
-              :class="notif ? 'bg-blue-600' : 'bg-slate-200'"
-              class="relative inline-flex h-5.5 w-10 shrink-0 cursor-pointer rounded-full transition-colors duration-200"
-            >
-              <span
-                :class="notif ? 'translate-x-4.5' : 'translate-x-0.5'"
-                class="pointer-events-none inline-block h-4.5 w-4.5 transform self-center rounded-full bg-white shadow-xs transition duration-200"
+                :class="darkMode ? 'translate-x-5' : 'translate-x-0'"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition duration-200"
               ></span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- GROUP 3: DATA & ZONA BAHAYA -->
-      <div
-        class="rounded-3xl border border-slate-200/70 bg-white p-2 shadow-sm"
-      >
-        <p
-          class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase"
-        >
-          Data & Pemeliharaan
-        </p>
+      <!-- GROUP 3: NOTIFIKASI -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Notifikasi</p>
 
-        <div class="divide-y divide-slate-100">
+        <div
+          class="border-border bg-card shadow-soft rounded-[28px] border p-4"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+              >
+                <Bell class="h-5 w-5 stroke-2" />
+              </div>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">
+                  Pengingat Transaksi
+                </p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Notifikasi harian pengeluaran
+                </p>
+              </div>
+            </div>
+            <button
+              @click="notif = !notif"
+              type="button"
+              :class="notif ? 'bg-primary' : 'bg-muted'"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200"
+            >
+              <span
+                :class="notif ? 'translate-x-5' : 'translate-x-0'"
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition duration-200"
+              ></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GROUP 4: DATA & CADANGAN -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Data & Cadangan</p>
+
+        <div
+          class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
+        >
           <!-- Export Data -->
           <button
             @click="activeModal = 'export'"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50/80 active:scale-[0.99]"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600"
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
-                <Download class="h-4.5 w-4.5 stroke-[2.2]" />
+                <Download class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">
                   Export Semua Data
                 </p>
-                <p class="text-[10px] text-slate-400">Unduh berkas CSV/Excel</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Unduh berkas CSV/Excel
+                </p>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
           <!-- Import Data -->
           <button
             @click="activeModal = 'import'"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50/80 active:scale-[0.99]"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-100 bg-cyan-50 text-cyan-600"
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
-                <Upload class="h-4.5 w-4.5 stroke-[2.2]" />
+                <Upload class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-slate-800">Import Data</p>
-                <p class="text-[10px] text-slate-400">Unggah berkas cadangan</p>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Import Data</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Unggah berkas cadangan
+                </p>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <!-- GROUP 5: INFO PRIVASI -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Privasi</p>
+
+        <div
+          class="border-border bg-card shadow-soft space-y-3 rounded-[28px] border p-4"
+        >
+          <div class="flex items-start gap-3">
+            <div
+              class="bg-blue-soft text-blue-main mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+            >
+              <ShieldCheck class="h-3.5 w-3.5 stroke-[2.5]" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-foreground text-xs font-bold"
+                >Enkripsi Lokal</span
+              >
+              <span class="text-muted-foreground text-[10px] font-medium"
+                >Data transaksi disimpan aman hanya di dalam perangkat kamu.</span
+              >
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div
+              class="bg-blue-soft text-blue-main mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+            >
+              <CheckCircle2 class="h-3.5 w-3.5 stroke-[2.5]" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-foreground text-xs font-bold"
+                >Bebas Pelacakan</span
+              >
+              <span class="text-muted-foreground text-[10px] font-medium"
+                >Tidak ada pelacakan pihak ketiga maupun data finansial yang
+                dijual.</span
+              >
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div
+              class="bg-blue-soft text-blue-main mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+            >
+              <Database class="h-3.5 w-3.5 stroke-[2.5]" />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-foreground text-xs font-bold"
+                >Kendali Penuh</span
+              >
+              <span class="text-muted-foreground text-[10px] font-medium"
+                >Kamu punya hak penuh untuk mengunduh atau menghapus data kapan
+                saja.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GROUP 6: LAINNYA -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Lainnya</p>
+
+        <div
+          class="border-border bg-card shadow-soft overflow-hidden rounded-[28px] border"
+        >
+          <button
+            @click="activeModal = 'feedback'"
+            type="button"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
+          >
+            <div class="flex items-center gap-3.5">
+              <div
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+              >
+                <MessageSquarePlus class="h-5 w-5 stroke-2" />
+              </div>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Kirim Masukan</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Saran atau masukan untuk pengembangan app
+                </p>
+              </div>
+            </div>
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <!-- GROUP 7: SESI & MANAJEMEN AKUN -->
+      <div class="space-y-2">
+        <p class="text-primary px-1 text-xs font-bold">Sesi Akun</p>
+
+        <div
+          class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
+        >
+          <!-- Info Masuk Sebagai -->
+          <div class="bg-muted/30 p-4">
+            <p class="text-muted-foreground text-[10px] font-bold uppercase">
+              Masuk Sebagai
+            </p>
+            <p class="text-foreground mt-0.5 text-xs font-extrabold">
+              dion@example.com
+            </p>
+          </div>
+
+          <!-- Keluar Sesi -->
+          <button
+            @click="activeModal = 'logout'"
+            type="button"
+            class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
+          >
+            <div class="flex items-center gap-3.5">
+              <div
+                class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+              >
+                <LogOut class="h-5 w-5 stroke-2" />
+              </div>
+              <div class="flex flex-col">
+                <p class="text-foreground text-xs font-bold">Keluar Akun</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Akhiri sesi di perangkat ini
+                </p>
+              </div>
+            </div>
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
-          <!-- Reset Data -->
+          <!-- Reset Semua Data -->
           <button
             @click="activeModal = 'reset'"
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-3 text-left transition hover:bg-rose-50/40 active:scale-[0.99]"
+            class="flex w-full cursor-pointer items-center justify-between p-4 text-left transition hover:bg-rose-50/40 active:scale-[0.99]"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3.5">
               <div
-                class="flex h-9 w-9 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600"
               >
-                <Trash2 class="h-4.5 w-4.5 stroke-[2.2]" />
+                <RotateCcw class="h-5 w-5 stroke-2" />
               </div>
-              <div>
-                <p class="text-xs font-bold text-rose-600">
-                  Hapus Seluruh Data
-                </p>
-                <p class="text-[10px] text-slate-400">
-                  Reset permanen database
+              <div class="flex flex-col">
+                <p class="text-xs font-bold text-rose-600">Reset Semua Data</p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Kosongkan seluruh data tanpa hapus akun
                 </p>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
+          </button>
+
+          <!-- Hapus Akun -->
+          <button
+            @click="activeModal = 'deleteAccount'"
+            type="button"
+            class="flex w-full cursor-pointer items-center justify-between p-4 text-left transition hover:bg-rose-50/40 active:scale-[0.99]"
+          >
+            <div class="flex items-center gap-3.5">
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600"
+              >
+                <UserX class="h-5 w-5 stroke-2" />
+              </div>
+              <div class="flex flex-col">
+                <p class="text-xs font-bold text-rose-600">
+                  Hapus Akun Permanen
+                </p>
+                <p class="text-muted-foreground text-[10px] font-medium">
+                  Hapus profil dan seluruh data aplikasi
+                </p>
+              </div>
+            </div>
+            <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ========================================== -->
+    <!-- 3. FOOTER MINIMALIS -->
+    <div class="space-y-1 pt-6 pb-2 text-center">
+      <p class="text-primary text-xs font-extrabold tracking-tight">
+        Studion App
+      </p>
+      <p class="text-muted-foreground text-[10px] font-medium">
+        Versi 1.0.0 • Dibuat dengan presisi
+      </p>
+    </div>
+
     <!-- MODAL CONTAINERS (ALPINE TELEPORT STYLE) -->
-    <!-- ========================================== -->
     <template x-teleport="body">
       <div
         x-show="activeModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
       >
         <!-- 1. MODAL EDIT PROFIL -->
         <div
           x-show="activeModal === 'profile'"
           @click.away="activeModal = null"
-          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
-            <h3 class="text-sm font-extrabold text-slate-900">Edit Profil</h3>
+            <h3 class="text-primary text-base font-extrabold">Edit Profil</h3>
             <button
               @click="activeModal = null"
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
-          <form class="mt-4 space-y-3.5" @submit.prevent="activeModal = null">
-            <div>
+          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+            <div class="space-y-1.5">
               <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
                 >Nama Lengkap</label
               >
               <input
                 type="text"
                 value="Muhamad Dion Mantovani"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
               />
             </div>
-            <div>
+            <div class="space-y-1.5">
               <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
                 >Email</label
               >
               <input
                 type="email"
                 value="dion@example.com"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
               />
             </div>
             <div class="flex items-center gap-2 pt-2">
               <button
                 @click="activeModal = null"
                 type="button"
-                class="w-1/3 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
               >
               <button
                 type="submit"
-                class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700"
+                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
                 >Simpan Profil</button
               >
             </div>
@@ -312,53 +486,53 @@ import {
         <div
           x-show="activeModal === 'password'"
           @click.away="activeModal = null"
-          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
-            <h3 class="text-sm font-extrabold text-slate-900">Ubah Password</h3>
+            <h3 class="text-primary text-base font-extrabold">Ubah Password</h3>
             <button
               @click="activeModal = null"
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
-          <form class="mt-4 space-y-3.5" @submit.prevent="activeModal = null">
-            <div>
+          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+            <div class="space-y-1.5">
               <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
                 >Password Saat Ini</label
               >
               <input
                 type="password"
                 placeholder="••••••••"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
               />
             </div>
-            <div>
+            <div class="space-y-1.5">
               <label
-                class="mb-1 block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
                 >Password Baru</label
               >
               <input
                 type="password"
                 placeholder="••••••••"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2.5 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
               />
             </div>
             <div class="flex items-center gap-2 pt-2">
               <button
                 @click="activeModal = null"
                 type="button"
-                class="w-1/3 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
               >
               <button
                 type="submit"
-                class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700"
+                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
                 >Update Password</button
               >
             </div>
@@ -369,32 +543,32 @@ import {
         <div
           x-show="activeModal === 'export'"
           @click.away="activeModal = null"
-          class="w-full max-w-sm space-y-4 rounded-3xl bg-white p-5 text-center shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600"
+            class="bg-blue-soft text-primary mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
           >
-            <Download class="h-6 w-6 stroke-[2.2]" />
+            <Download class="h-6 w-6 stroke-2" />
           </div>
-          <div>
-            <h3 class="text-sm font-extrabold text-slate-900">
+          <div class="mt-3">
+            <h3 class="text-primary text-base font-extrabold">
               Export Transaksi
             </h3>
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="text-muted-foreground mt-1 text-xs">
               Unduh seluruh riwayat data transaksi kamu dalam format CSV.
             </p>
           </div>
-          <div class="flex gap-2 pt-1">
+          <div class="flex gap-2.5 pt-4">
             <button
               @click="activeModal = null"
               type="button"
-              class="w-1/2 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
               @click="activeModal = null"
               type="button"
-              class="w-1/2 cursor-pointer rounded-2xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700"
+              class="bg-primary text-primary-foreground shadow-soft w-1/2 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
               >Download CSV</button
             >
           </div>
@@ -404,74 +578,192 @@ import {
         <div
           x-show="activeModal === 'import'"
           @click.away="activeModal = null"
-          class="w-full max-w-sm space-y-4 rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
-            <h3 class="text-sm font-extrabold text-slate-900">
+            <h3 class="text-primary text-base font-extrabold">
               Import File Data
             </h3>
             <button
               @click="activeModal = null"
               type="button"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
           <div
-            class="space-y-1.5 rounded-2xl border-2 border-dashed border-slate-200 p-5 text-center"
+            class="border-border mt-4 space-y-2 rounded-2xl border-2 border-dashed p-6 text-center"
           >
-            <Upload class="mx-auto h-7 w-7 text-slate-400" />
-            <p class="text-xs font-bold text-slate-800">
+            <Upload class="text-muted-foreground mx-auto h-8 w-8" />
+            <p class="text-foreground text-xs font-bold">
               Pilih Berkas CSV / JSON
             </p>
-            <p class="text-[10px] text-slate-400">
+            <p class="text-muted-foreground text-[10px] font-medium">
               Batas maksimal ukuran file 5MB
             </p>
           </div>
           <button
             @click="activeModal = null"
             type="button"
-            class="w-full cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700"
+            class="bg-primary text-primary-foreground shadow-soft mt-4 w-full cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
           >
             Unggah Berkas
           </button>
         </div>
 
-        <!-- 5. MODAL RESET DATA (DANGER ZONE) -->
+        <!-- 5. MODAL KIRIM MASUKAN -->
         <div
-          x-show="activeModal === 'reset'"
+          x-show="activeModal === 'feedback'"
           @click.away="activeModal = null"
-          class="w-full max-w-sm space-y-4 rounded-3xl bg-white p-5 text-center shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
-            <ShieldAlert class="h-6 w-6 stroke-[2.2]" />
-          </div>
-          <div>
-            <h3 class="text-sm font-extrabold text-slate-900">
-              Hapus Seluruh Data?
-            </h3>
-            <p class="mt-1 text-xs text-slate-500">
-              Tindakan ini permanen. Semua data transaksi kamu akan dihapus
-              bersih dari database.
-            </p>
-          </div>
-          <div class="flex gap-2 pt-1">
+            <h3 class="text-primary text-base font-extrabold">Kirim Masukan</h3>
             <button
               @click="activeModal = null"
               type="button"
-              class="w-1/2 cursor-pointer rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+            <div class="space-y-1.5">
+              <label
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >Pesan / Saran</label
+              >
+              <textarea
+                x-model="feedbackText"
+                rows="4"
+                placeholder="Tulis kritik, saran, atau keluhan kamu di sini..."
+                class="border-border bg-background text-foreground focus:border-blue-main placeholder-muted-foreground w-full rounded-2xl border px-4 py-3 text-xs font-medium outline-none"
+                required></textarea>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                @click="activeModal = null"
+                type="button"
+                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+                >Batal</button
+              >
+              <button
+                type="submit"
+                class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
+              >
+                <Send class="h-4 w-4 stroke-2" />
+                <span>Kirim</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 6. MODAL KELUAR SESI -->
+        <div
+          x-show="activeModal === 'logout'"
+          @click.away="activeModal = null"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div
+            class="bg-blue-soft text-primary mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
+          >
+            <LogOut class="h-6 w-6 stroke-2" />
+          </div>
+          <div class="mt-3">
+            <h3 class="text-primary text-base font-extrabold">Keluar Akun?</h3>
+            <p class="text-muted-foreground mt-1 text-xs">
+              Kamu harus masuk kembali untuk mengakses data aplikasi.
+            </p>
+          </div>
+          <div class="flex gap-2.5 pt-4">
+            <button
+              @click="activeModal = null"
+              type="button"
+              class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
               @click="activeModal = null"
               type="button"
-              class="w-1/2 cursor-pointer rounded-2xl bg-rose-600 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-600/20 hover:bg-rose-700"
-              >Ya, Hapus Data</button
+              class="bg-primary text-primary-foreground shadow-soft w-1/2 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
+              >Ya, Keluar</button
+            >
+          </div>
+        </div>
+
+        <!-- 7. MODAL RESET SEMUA DATA -->
+        <div
+          x-show="activeModal === 'reset'"
+          @click.away="activeModal = null"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div
+            class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600"
+          >
+            <RotateCcw class="h-6 w-6 stroke-2" />
+          </div>
+          <div class="mt-3">
+            <h3 class="text-primary text-base font-extrabold">
+              Reset Semua Data?
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs">
+              Semua transaksi & dompet akan dikosongkan. Akun kamu akan tetap
+              aktif.
+            </p>
+          </div>
+          <div class="flex gap-2.5 pt-4">
+            <button
+              @click="activeModal = null"
+              type="button"
+              class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+              >Batal</button
+            >
+            <button
+              @click="activeModal = null"
+              type="button"
+              class="shadow-soft w-1/2 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white transition-colors hover:bg-rose-700 active:scale-95"
+              >Ya, Reset Data</button
+            >
+          </div>
+        </div>
+
+        <!-- 8. MODAL HAPUS AKUN PERMANEN -->
+        <div
+          x-show="activeModal === 'deleteAccount'"
+          @click.away="activeModal = null"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div
+            class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600"
+          >
+            <ShieldAlert class="h-6 w-6 stroke-2" />
+          </div>
+          <div class="mt-3">
+            <h3 class="text-primary text-base font-extrabold">
+              Hapus Akun Permanen?
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs">
+              Tindakan ini tidak dapat dibatalkan. Profil dan seluruh data akan
+              dihapus selamanya.
+            </p>
+          </div>
+          <div class="flex gap-2.5 pt-4">
+            <button
+              @click="activeModal = null"
+              type="button"
+              class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+              >Batal</button
+            >
+            <button
+              @click="activeModal = null"
+              type="button"
+              class="shadow-soft w-1/2 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white transition-colors hover:bg-rose-700 active:scale-95"
+              >Hapus Akun</button
             >
           </div>
         </div>

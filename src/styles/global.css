@@ -4,19 +4,25 @@
   --font-sans:
     'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* Tema Biru Clean & Modern ala FinTech App */
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  /* --- Base Palette (Soft & Dominan Putih) --- */
+  --color-background: #f8fafc; /* Slate 50 - Off-white soft background */
+  --color-foreground: #0f172a; /* Slate 900 - Teks utama */
+  --color-card: #ffffff; /* Pure White - Surface Card */
+  --color-card-foreground: #0f172a; /* Teks di dalam Card */
 
-  /* Primary Biru Elegan */
-  --color-primary: #2563eb;
-  --color-primary-foreground: #ffffff;
+  /* --- Monochromatic Blue System --- */
+  --color-primary: #0d3b66; /* Deep Navy - Teks utama, Header, & Active state */
+  --color-primary-foreground: #ffffff; /* Teks di atas warna primary */
 
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
+  --color-blue-dark: #1d63b8; /* Aksen Card 1 (Sholat) */
+  --color-blue-main: #3b82f6; /* Aksen Card 2 / Button Check (Rawatib) */
+  --color-blue-light: #60a5fa; /* Aksen Card 3 (Dhuha) */
+  --color-blue-soft: #eff6ff; /* Tint background / Highlight halus */
+
+  /* --- Neutrals & Borders --- */
+  --color-muted: #f1f5f9; /* Slate 100 */
+  --color-muted-foreground: #64748b; /* Slate 500 - Subtitle / Icon non-aktif */
+  --color-border: #e2e8f0; /* Slate 200 - Border halus */
 }
 
 @layer base {
@@ -40,5 +46,25 @@
 
   [x-cloak] {
     display: none !important;
+  }
+}
+
+@layer utilities {
+  /* Soft Shadow kustom bernuansa biru halus */
+  .shadow-soft {
+    box-shadow: 0 10px 30px -5px rgba(13, 59, 102, 0.05);
+  }
+
+  /* Background Gradient khusus Card Monokromatik */
+  .bg-card-blue-dark {
+    background: linear-gradient(135deg, #0d3b66, #1d63b8);
+  }
+
+  .bg-card-blue-main {
+    background: linear-gradient(135deg, #1d63b8, #3b82f6);
+  }
+
+  .bg-card-blue-light {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
   }
 }

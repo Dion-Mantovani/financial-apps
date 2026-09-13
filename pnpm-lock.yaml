@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@alpinejs/collapse':
+        specifier: ^3.17.2
+        version: 3.17.2
       '@astrojs/alpinejs':
         specifier: ^1.0.0
         version: 1.0.0(@types/alpinejs@3.13.11)(alpinejs@3.16.3)
@@ -32,6 +35,9 @@ importers:
       astro:
         specifier: ^7.2.7
         version: 7.2.7(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@vercel/functions@3.9.5)(jiti@2.7.0)(yaml@2.9.0)
+      idb:
+        specifier: ^8.0.3
+        version: 8.0.3
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -47,6 +53,9 @@ importers:
         version: 0.8.1(prettier-plugin-astro@0.14.1)(prettier@3.9.6)
 
 packages:
+
+  '@alpinejs/collapse@3.17.2':
+    resolution: {integrity: sha512-OugjrAUGXkg8Msmitgf3rXFyoSYXchN00LPQYC2zDjaTcuRaVXXseBZcCU7DZ7b6cyZzCvYbIYngbaaEzvEfuw==}
 
   '@astrojs/alpinejs@1.0.0':
     resolution: {integrity: sha512-xmLFD8MBunXCG39nS3dmINQfdhqlDNbHAYyw8n6jfLGL/AFeyYOtz6p1EtXX8NEbGLHk7mUOHoaC3j1WudUYoQ==}
@@ -1303,6 +1312,9 @@ packages:
     resolution: {integrity: sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA==}
     engines: {node: '>=20.0.0'}
 
+  idb@8.0.3:
+    resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
+
   iron-webcrypto@1.2.1:
     resolution: {integrity: sha512-feOM6FaSr6rEABp/eDfVseKyTMDt+KGpeB35SkVn9Tyn0CqvVsY3EwI0v5i8nMHyJnzCIQf7nsy3p41TPkJZhg==}
 
@@ -2100,6 +2112,8 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@alpinejs/collapse@3.17.2': {}
 
   '@astrojs/alpinejs@1.0.0(@types/alpinejs@3.13.11)(alpinejs@3.16.3)':
     dependencies:
@@ -3258,6 +3272,8 @@ snapshots:
   human-signals@2.1.0: {}
 
   iceberg-js@0.8.1: {}
+
+  idb@8.0.3: {}
 
   iron-webcrypto@1.2.1: {}
 

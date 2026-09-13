@@ -2,100 +2,388 @@
 import Layout from '../layouts/Layout.astro';
 import {
   ArrowLeft,
-  Grid,
   Plus,
-  ShoppingBag,
+  Sparkles,
+  X,
+  Pencil,
+  Trash2,
   Utensils,
   Car,
-  Zap,
+  ShoppingBag,
+  Briefcase,
+  Gift,
   HeartPulse,
-  GraduationCap,
-  MoreHorizontal,
+  Gamepad2,
+  TrendingUp,
+  TrendingDown,
+  ChevronRight,
 } from '@lucide/astro';
 ---
 
-<Layout title="Kategori - Studion App">
-  <div class="space-y-4 pt-2 pb-10">
-    <!-- HEADER -->
-    <div class="mt-6 flex items-center justify-between pb-1">
-      <a
-        href="/"
-        class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-      >
-        <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
-      </a>
-      <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
-        Kategori Transaksi
-      </h1>
-      <div class="w-9"></div>
-    </div>
-
-    <!-- LIST KATEGORI -->
+<Layout title="Manajemen Kategori - Studion App">
+  <div
+    x-data="{
+      activeTab: 'expense',
+      openFormModal: false,
+      openDetailModal: false,
+      isEdit: false,
+      selectedCategory: { id: '', name: '', type: 'expense', icon: 'utensils' },
+      formData: {
+        id: null,
+        name: '',
+        type: 'expense',
+        icon: 'utensils'
+      },
+      categories: [
+        { id: 'c1', name: 'Makanan & Minuman', type: 'expense', icon: 'utensils' },
+        { id: 'c2', name: 'Transportasi', type: 'expense', icon: 'car' },
+        { id: 'c3', name: 'Belanja', type: 'expense', icon: 'shopping-bag' },
+        { id: 'c4', name: 'Hiburan & Hobi', type: 'expense', icon: 'gamepad-2' },
+        { id: 'c5', name: 'Kesehatan', type: 'expense', icon: 'heart-pulse' },
+        { id: 'c6', name: 'Gaji Bulanan', type: 'income', icon: 'briefcase' },
+        { id: 'c7', name: 'Bonus & Hadiah', type: 'income', icon: 'gift' }
+      ],
+      showDetail(cat) {
+        this.selectedCategory = { ...cat };
+        this.openDetailModal = true;
+      },
+      openAddModal() {
+        this.isEdit = false;
+        this.formData = { id: null, name: '', type: this.activeTab, icon: 'utensils' };
+        this.openFormModal = true;
+      },
+      openEditFromDetail() {
+        this.isEdit = true;
+        this.formData = { ...this.selectedCategory };
+        this.openDetailModal = false;
+        this.openFormModal = true;
+      },
+      deleteCategoryFromDetail() {
+        this.categories = this.categories.filter(c => c.id !== this.selectedCategory.id);
+        this.openDetailModal = false;
+      },
+      saveCategory() {
+        if (this.isEdit) {
+          const idx = this.categories.findIndex(c => c.id === this.formData.id);
+          if (idx !== -1) {
+            this.categories[idx] = { ...this.categories[idx], ...this.formData };
+          }
+        } else {
+          this.categories.push({
+            id: 'c' + Date.now(),
+            ...this.formData
+          });
+        }
+        this.openFormModal = false;
+      }
+    }"
+    class="space-y-5 pt-2 pb-12"
+  >
+    <!-- 1. STICKY HEADER -->
     <div
-      class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white p-2 shadow-sm"
+      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
     >
-      <div class="flex items-center justify-between p-3">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"
-          >
-            <Utensils class="h-4.5 w-4.5 stroke-2" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-slate-800">Makanan & Minuman</p>
-            <p class="text-[10px] text-slate-400">Pengeluaran harian</p>
-          </div>
-        </div>
-        <span
-          class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600"
-          >Pengeluaran</span
+      <div class="flex items-center justify-between">
+        <a
+          href="/"
+          class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
         >
-      </div>
+          <ArrowLeft class="h-4.5 w-4.5 stroke-[2.5]" />
+        </a>
 
-      <div class="flex items-center justify-between p-3">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"
-          >
-            <Car class="h-4.5 w-4.5 stroke-2" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-slate-800">Transportasi</p>
-            <p class="text-[10px] text-slate-400">Bensin, tol, parkir</p>
-          </div>
-        </div>
-        <span
-          class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600"
-          >Pengeluaran</span
-        >
-      </div>
+        <h1 class="text-primary text-base font-extrabold tracking-tight">
+          Kategori Transaksi
+        </h1>
 
-      <div class="flex items-center justify-between p-3">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"
-          >
-            <ShoppingBag class="h-4.5 w-4.5 stroke-2" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-slate-800">Belanja & Kebutuhan</p>
-            <p class="text-[10px] text-slate-400">Bulanan, pakaian</p>
-          </div>
-        </div>
-        <span
-          class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600"
-          >Pengeluaran</span
-        >
+        <div class="w-9.5"></div>
       </div>
     </div>
 
-    <!-- TOMBOL TAMBAH -->
-    <button
-      type="button"
-      class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/40 py-3.5 text-blue-600 shadow-2xs transition-all hover:bg-blue-100/60 active:scale-95"
+    <!-- 2. TAB SELECTOR -->
+    <div
+      class="border-border bg-card grid grid-cols-2 gap-2 rounded-2xl border p-1 shadow-xs"
     >
-      <Plus class="h-4 w-4 stroke-[2.5]" />
-      <span class="text-xs font-bold">Tambah Kategori Baru</span>
-    </button>
+      <button
+        type="button"
+        @click="activeTab = 'expense'"
+        :class="activeTab === 'expense' ? 'bg-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'"
+        class="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all"
+      >
+        <TrendingDown class="h-3.5 w-3.5 stroke-[2.5]" />
+        <span>Pengeluaran</span>
+      </button>
+
+      <button
+        type="button"
+        @click="activeTab = 'income'"
+        :class="activeTab === 'income' ? 'bg-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'"
+        class="flex cursor-pointer items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all"
+      >
+        <TrendingUp class="h-3.5 w-3.5 stroke-[2.5]" />
+        <span>Pemasukan</span>
+      </button>
+    </div>
+
+    <!-- 3. ACTION HEADER -->
+    <div class="flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <span
+          class="text-primary text-sm font-bold"
+          x-text="activeTab === 'expense' ? 'Daftar Pengeluaran' : 'Daftar Pemasukan'"
+        ></span>
+      </div>
+
+      <button
+        type="button"
+        @click="openAddModal()"
+        class="bg-blue-soft text-blue-main hover:bg-blue-soft/80 flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95"
+      >
+        <Plus class="h-3.5 w-3.5 stroke-[2.5]" />
+        <span>Kategori Baru</span>
+      </button>
+    </div>
+
+    <!-- 4. DAFTAR KATEGORI LIST (Bersih Tanpa Nominal) -->
+    <div
+      class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
+    >
+      <template x-for="cat in categories" :key="cat.id">
+        <div
+          x-show="cat.type === activeTab"
+          @click="showDetail(cat)"
+          class="hover:bg-muted/50 flex cursor-pointer items-center justify-between p-4 transition-colors"
+        >
+          <div class="flex min-w-0 items-center gap-3.5">
+            <div
+              class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+            >
+              <template x-if="cat.icon === 'utensils'"
+                ><Utensils class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'car'"
+                ><Car class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'shopping-bag'"
+                ><ShoppingBag class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'gamepad-2'"
+                ><Gamepad2 class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'heart-pulse'"
+                ><HeartPulse class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'briefcase'"
+                ><Briefcase class="h-5 w-5 stroke-2" /></template
+              >
+              <template x-if="cat.icon === 'gift'"
+                ><Gift class="h-5 w-5 stroke-2" /></template
+              >
+            </div>
+
+            <span
+              x-text="cat.name"
+              class="text-foreground truncate text-xs font-bold"></span>
+          </div>
+
+          <ChevronRight class="text-muted-foreground h-4 w-4 stroke-[2.5]" />
+        </div>
+      </template>
+    </div>
+
+    <!-- 5. MODAL DETAIL KATEGORI -->
+    <template x-teleport="body">
+      <div
+        x-show="openDetailModal"
+        x-cloak
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="openDetailModal = false"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div class="bg-card-blue-dark relative p-6 text-white">
+            <div
+              class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
+            >
+            </div>
+
+            <div class="relative z-10 flex items-center justify-between">
+              <span
+                x-text="selectedCategory.type === 'expense' ? 'Kategori Pengeluaran' : 'Kategori Pemasukan'"
+                class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
+              ></span>
+              <button
+                type="button"
+                @click="openDetailModal = false"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white"
+              >
+                <X class="h-4 w-4 stroke-[2.5]" />
+              </button>
+            </div>
+
+            <div class="relative z-10 mt-5 flex items-center gap-3.5">
+              <div
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
+              >
+                <template x-if="selectedCategory.icon === 'utensils'"
+                  ><Utensils class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'car'"
+                  ><Car class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'shopping-bag'"
+                  ><ShoppingBag class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'gamepad-2'"
+                  ><Gamepad2 class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'heart-pulse'"
+                  ><HeartPulse class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'briefcase'"
+                  ><Briefcase class="h-6 w-6 stroke-2" /></template
+                >
+                <template x-if="selectedCategory.icon === 'gift'"
+                  ><Gift class="h-6 w-6 stroke-2" /></template
+                >
+              </div>
+
+              <div class="flex min-w-0 flex-col">
+                <h2
+                  x-text="selectedCategory.name"
+                  class="truncate text-lg font-black tracking-tight text-white"
+                >
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="deleteCategoryFromDetail()"
+                class="flex w-1/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50/80 py-3.5 text-xs font-bold text-rose-600 transition-colors active:scale-95"
+              >
+                <Trash2 class="h-4 w-4 stroke-2" />
+                <span>Hapus</span>
+              </button>
+
+              <button
+                type="button"
+                @click="openEditFromDetail()"
+                class="bg-primary text-primary-foreground shadow-soft flex w-2/3 cursor-pointer items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+              >
+                <Pencil class="h-4 w-4 stroke-2" />
+                <span>Edit Kategori</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 6. MODAL FORM TAMBAH / EDIT KATEGORI -->
+    <template x-teleport="body">
+      <div
+        x-show="openFormModal"
+        x-cloak
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="openFormModal = false"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div
+            class="border-border flex items-center justify-between border-b pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
+              >
+                <Sparkles class="h-4 w-4 stroke-2" />
+              </div>
+              <h3
+                x-text="isEdit ? 'Edit Kategori' : 'Tambah Kategori Baru'"
+                class="text-primary text-base font-extrabold"
+              >
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="openFormModal = false"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <form @submit.prevent="saveCategory()" class="mt-4 space-y-4">
+            <div class="space-y-1.5">
+              <label
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >Nama Kategori</label
+              >
+              <input
+                type="text"
+                x-model="formData.name"
+                placeholder="misal: Makanan & Minuman, Bonus"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+                required
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="space-y-1.5">
+                <label
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
+                  >Tipe</label
+                >
+                <select
+                  x-model="formData.type"
+                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
+                >
+                  <option value="expense">Pengeluaran</option>
+                  <option value="income">Pemasukan</option>
+                </select>
+              </div>
+
+              <div class="space-y-1.5">
+                <label
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
+                  >Ikon</label
+                >
+                <select
+                  x-model="formData.icon"
+                  class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-3.5 py-3 text-xs font-semibold outline-none"
+                >
+                  <option value="utensils">Makanan</option>
+                  <option value="car">Transportasi</option>
+                  <option value="shopping-bag">Belanja</option>
+                  <option value="gamepad-2">Hiburan</option>
+                  <option value="heart-pulse">Kesehatan</option>
+                  <option value="briefcase">Pekerjaan</option>
+                  <option value="gift">Hadiah</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                @click="openFormModal = false"
+                class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+                >Batal</button
+              >
+              <button
+                type="submit"
+                class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
+                >Simpan Kategori</button
+              >
+            </div>
+          </form>
+        </div>
+      </div>
+    </template>
   </div>
 </Layout>

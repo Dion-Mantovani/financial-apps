@@ -12,29 +12,13 @@ import {
   Calendar,
   Download,
   Filter,
-  RotateCcw,
   FileSpreadsheet,
   FileJson,
   Copy,
   Check,
-  // IKON KATEGORI SESUAI DB SUPABASE
   Utensils,
   Car,
-  ShoppingBag,
-  Receipt,
-  Gamepad2,
-  HeartPulse,
-  GraduationCap,
-  MoreHorizontal,
   Briefcase,
-  Gift,
-  TrendingUp,
-  Wallet,
-  Smartphone,
-  PiggyBank,
-  LineChart,
-  CreditCard,
-  Tag,
 } from '@lucide/astro';
 
 const quickFilterTypes = [
@@ -46,69 +30,104 @@ const quickFilterTypes = [
 ---
 
 <Layout title="Riwayat Transaksi - Studion App">
-  <div x-data="historyApp()" class="space-y-4 pt-2 pb-10">
-    <!-- STICKY HEADER -->
+  <div
+    x-data=`{
+      showSearchInput: false,
+      searchQuery: '',
+      selectedMonth: '2026-09',
+      activeTab: 'all',
+      openFilterModal: false,
+      openExportModal: false,
+      filterWalletId: '',
+      filterCategoryId: '',
+      copiedJson: false,
+      wallets: [
+        { id: 'w1', name: 'BCA Utama' },
+        { id: 'w2', name: 'Gopay' },
+        { id: 'w3', name: 'Dompet Cash' }
+      ],
+      categories: [
+        { id: 'c1', name: 'Makanan & Minuman' },
+        { id: 'c2', name: 'Transportasi' },
+        { id: 'c3', name: 'Pekerjaan' }
+      ],
+      groupedTransactions: [
+        {
+          dateGroup: 'Hari Ini, 12 Sep 2026',
+          count: 2,
+          totalAmount: -75000,
+          items: [
+            { id: 1, notes: 'Kopi Kenangan', category: 'Makanan & Minuman', wallet: 'BCA Utama', amount: 'Rp 25.000', type: 'expense', icon: 'utensils' },
+            { id: 2, notes: 'Bensin Pertamax', category: 'Transportasi', wallet: 'Gopay', amount: 'Rp 50.000', type: 'expense', icon: 'car' }
+          ]
+        },
+        {
+          dateGroup: 'Kemarin, 11 Sep 2026',
+          count: 1,
+          totalAmount: 8500000,
+          items: [
+            { id: 3, notes: 'Gaji Bulanan', category: 'Pekerjaan', wallet: 'BCA Utama', amount: 'Rp 8.500.000', type: 'income', icon: 'briefcase' }
+          ]
+        }
+      ],
+      copyJSON() {
+        this.copiedJson = true;
+        setTimeout(() => { this.copiedJson = false; }, 2000);
+      }
+    }`
+    class="space-y-5 pt-2 pb-12"
+  >
+    <!-- STICKY HEADER (Glassmorphism Soft White) -->
     <div
-      class="sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b border-slate-200/60 bg-slate-50/95 px-5 pt-8 pb-2 shadow-xs backdrop-blur-md"
+      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
     >
-      <!-- Isi header (TopBar, Search, MonthPicker, & Quick Filters) tetap sama -->
       <div class="flex items-center justify-between">
         <a
           href="/"
-          class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-slate-200/80 bg-white text-slate-700 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
+          class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
         >
-          <ArrowLeft class="h-4 w-4 stroke-[2.5]" />
+          <ArrowLeft class="h-4.5 w-4.5 stroke-[2.5]" />
         </a>
 
-        <h1 class="text-sm font-extrabold tracking-tight text-slate-900">
+        <h1 class="text-primary text-base font-extrabold tracking-tight">
           Riwayat Transaksi
         </h1>
 
-        <div class="w-9"></div>
+        <div class="w-9.5"></div>
       </div>
 
       <!-- SEARCH & CONTROLS -->
       <div class="flex items-center justify-between gap-2">
-        <!-- 1. FILTER BULAN (NATIVE MONTH PICKER) -->
+        <!-- 1. FILTER BULAN -->
         <div x-show="!showSearchInput" class="flex items-center">
-          <div class="relative">
-            <button
-              type="button"
-              @click="openMonthPicker()"
-              class="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-2xs transition-all hover:border-blue-400 active:scale-95"
+          <button
+            type="button"
+            class="border-border bg-card hover:border-blue-main/40 flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 shadow-xs transition-all active:scale-95"
+          >
+            <Calendar class="text-blue-main h-3.5 w-3.5 stroke-2" />
+            <span class="text-foreground text-xs font-bold">September 2026</span
             >
-              <Calendar class="h-3.5 w-3.5 stroke-2 text-blue-600" />
-              <span
-                x-text="formattedSelectedMonth"
-                class="text-xs font-bold text-slate-800"></span>
-              <ChevronDown class="h-3.5 w-3.5 stroke-[2.5] text-slate-400" />
-            </button>
-
-            <input
-              x-ref="monthInput"
-              type="month"
-              x-model="selectedMonth"
-              class="pointer-events-none absolute bottom-0 left-0 h-0 w-0 opacity-0"
+            <ChevronDown
+              class="text-muted-foreground h-3.5 w-3.5 stroke-[2.5]"
             />
-          </div>
+          </button>
         </div>
 
-        <!-- INPUT SEARCH GLOBAL IN-PAGE -->
+        <!-- INPUT SEARCH GLOBAL -->
         <div x-show="showSearchInput" x-cloak class="relative flex-1">
           <Search
-            class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 stroke-2 text-slate-400"
+            class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 stroke-2"
           />
           <input
-            x-ref="searchInput"
             type="text"
             x-model="searchQuery"
             placeholder="Cari transaksi, kategori, dompet..."
-            class="w-full rounded-2xl border border-slate-200/80 bg-white py-2 pr-8 pl-9 text-xs font-medium text-slate-800 shadow-2xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+            class="border-border bg-card text-foreground focus:border-blue-main w-full rounded-2xl border py-2 pr-8 pl-9 text-xs font-semibold shadow-xs outline-none"
           />
           <button
             type="button"
-            @click="toggleSearch()"
-            class="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
+            @click="showSearchInput = false"
+            class="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer"
           >
             <X class="h-4 w-4 stroke-2" />
           </button>
@@ -116,45 +135,33 @@ const quickFilterTypes = [
 
         <!-- 3 TOMBOL AKSI: SEARCH | FILTER | EXPORT -->
         <div class="flex shrink-0 items-center gap-1.5">
-          <!-- Tombol Search -->
           <button
             type="button"
-            @click="toggleSearch()"
-            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-            title="Cari Transaksi"
+            @click="showSearchInput = !showSearchInput"
+            class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
           >
             <Search class="h-4 w-4 stroke-2" />
           </button>
 
-          <!-- Tombol Advance Filter -->
           <button
             type="button"
             @click="openFilterModal = true"
-            :class="hasActiveAdvanceFilter ? 'bg-blue-50 border-blue-300 text-blue-600' : 'bg-white border-slate-200/80 text-slate-600'"
-            class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-            title="Filter Transaksi"
+            class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
           >
             <SlidersHorizontal class="h-4 w-4 stroke-2" />
-            <template x-if="hasActiveAdvanceFilter">
-              <span
-                class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600"
-              ></span>
-            </template>
           </button>
 
-          <!-- Tombol Export -->
           <button
             type="button"
             @click="openExportModal = true"
-            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition-all hover:border-blue-400 hover:bg-slate-50 active:scale-95"
-            title="Export Data"
+            class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
           >
             <Download class="h-4 w-4 stroke-2" />
           </button>
         </div>
       </div>
 
-      <!-- QUICK FILTER PILLS (TYPE TRANSAKSI) -->
+      <!-- QUICK FILTER PILLS (Monochromatic Blue State) -->
       <div class="no-scrollbar flex items-center gap-2 overflow-x-auto pt-1">
         {
           quickFilterTypes.map((tab) => (
@@ -162,7 +169,7 @@ const quickFilterTypes = [
               type="button"
               x-on:click={`activeTab = '${tab.id}'`}
               class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all active:scale-95"
-              x-bind:class={`activeTab === '${tab.id}' ? 'bg-blue-600 text-white border-blue-600 shadow-xs shadow-blue-500/20' : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-50'`}
+              x-bind:class={`activeTab === '${tab.id}' ? 'bg-primary text-primary-foreground border-primary shadow-soft' : 'bg-card text-muted-foreground border-border hover:bg-muted'`}
             >
               {tab.icon && <tab.icon class="h-3.5 w-3.5 stroke-[2.5]" />}
               <span>{tab.label}</span>
@@ -173,174 +180,70 @@ const quickFilterTypes = [
     </div>
 
     <!-- LIST TRANSAKSI DINAMIS -->
-    <template x-if="loading">
-      <div class="py-12 text-center text-xs font-semibold text-slate-400">
-        Mengambil riwayat transaksi...
-      </div>
-    </template>
-
-    <template x-if="!loading && groupedTransactions.length === 0">
-      <div
-        class="space-y-2 py-12 text-center text-xs font-semibold text-slate-400"
-      >
-        <p>Tidak ada riwayat transaksi yang cocok.</p>
-        <template x-if="hasActiveAdvanceFilter || searchQuery">
-          <button
-            type="button"
-            @click="resetAdvanceFilters()"
-            class="inline-flex cursor-pointer items-center gap-1 font-bold text-blue-600 hover:underline"
-          >
-            <RotateCcw class="h-3 w-3 stroke-[2.5]" />
-            <span>Reset Advance Filter</span>
-          </button>
-        </template>
-      </div>
-    </template>
-
-    <div
-      x-show="!loading && groupedTransactions.length > 0"
-      class="space-y-4 pt-1"
-    >
+    <div class="space-y-5 pt-1">
       <template x-for="group in groupedTransactions" :key="group.dateGroup">
-        <div class="space-y-2">
+        <div class="space-y-2.5">
           <div class="flex items-center justify-between px-1">
-            <!-- Tanggal di Kiri -->
             <span
               x-text="group.dateGroup"
-              class="text-xs font-bold tracking-tight text-slate-800"></span>
+              class="text-primary text-xs font-bold tracking-tight"></span>
 
-            <!-- Ringkasan Kanan (Sangat clean & halus) -->
             <div
-              class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400"
+              class="text-muted-foreground flex items-center gap-1.5 text-[10px] font-semibold"
             >
               <span x-text="`${group.count} transaksi`"></span>
               <span>•</span>
               <span
-                x-text="formatCurrency(group.totalAmount)"
-                :class="group.totalAmount >= 0 ? 'text-slate-600' : 'text-slate-500'"
-                class="font-bold"></span>
+                x-text="group.totalAmount >= 0 ? `+Rp ${group.totalAmount.toLocaleString('id-ID')}` : `-Rp ${Math.abs(group.totalAmount).toLocaleString('id-ID')}`"
+                class="text-foreground font-bold"></span>
             </div>
           </div>
 
+          <!-- Group Card Wrapper Rounded 28px -->
           <div
-            class="divide-y divide-slate-100 rounded-3xl border border-slate-200/70 bg-white shadow-2xs"
+            class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
           >
             <template x-for="item in group.items" :key="item.id">
               <div
-                @click="goToEditPage(item.id)"
-                class="flex cursor-pointer items-center justify-between p-3.5 transition-colors first:rounded-t-3xl last:rounded-b-3xl hover:bg-slate-50/80"
+                class="hover:bg-muted/50 flex cursor-pointer items-center justify-between p-4 transition-colors"
               >
-                <div class="flex min-w-0 items-center gap-3">
-                  <!-- CONTAINER IKON KATEGORI DINAMIS -->
+                <div class="flex min-w-0 items-center gap-3.5">
+                  <!-- Icon Circle Monokromik -->
                   <div
-                    :class=`{
-    'text-rose-600 bg-rose-50 border-rose-100': item.type === 'expense',
-    'text-emerald-600 bg-emerald-50 border-emerald-100': item.type === 'income',
-    'text-blue-600 bg-blue-50 border-blue-100': item.type === 'transfer'
-  }`
-                    class="flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-2xl border"
+                    class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
                   >
-                    <template x-if="item.categories?.icon === 'utensils'"
-                      ><Utensils class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'car'"
-                      ><Car class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'shopping-bag'"
-                      ><ShoppingBag class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'receipt'"
-                      ><Receipt class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'gamepad-2'"
-                      ><Gamepad2 class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'heart-pulse'"
-                      ><HeartPulse class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'graduation-cap'"
-                      ><GraduationCap class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'more-horizontal'"
-                      ><MoreHorizontal class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-
-                    <template x-if="item.categories?.icon === 'briefcase'"
-                      ><Briefcase class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'gift'"
-                      ><Gift class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'trending-up'"
-                      ><TrendingUp class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'rotate-ccw'"
-                      ><RotateCcw class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'wallet'"
-                      ><Wallet class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-
-                    <template
-                      x-if="item.categories?.icon === 'arrow-right-left'"
-                      ><ArrowRightLeft class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'smartphone'"
-                      ><Smartphone class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'piggy-bank'"
-                      ><PiggyBank class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'line-chart'"
-                      ><LineChart class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-                    <template x-if="item.categories?.icon === 'credit-card'"
-                      ><CreditCard class="h-4.5 w-4.5 stroke-2" /></template
-                    >
-
-                    <!-- Fallback -->
-                    <template
-                      x-if="!['utensils','car','shopping-bag','receipt','gamepad-2','heart-pulse','graduation-cap','more-horizontal','briefcase','gift','trending-up','rotate-ccw','wallet','arrow-right-left','smartphone','piggy-bank','line-chart','credit-card'].includes(item.categories?.icon)"
-                    >
-                      <Tag class="h-4.5 w-4.5 stroke-2" />
+                    <template x-if="item.icon === 'utensils'">
+                      <Utensils class="h-5 w-5 stroke-2" />
+                    </template>
+                    <template x-if="item.icon === 'car'">
+                      <Car class="h-5 w-5 stroke-2" />
+                    </template>
+                    <template x-if="item.icon === 'briefcase'">
+                      <Briefcase class="h-5 w-5 stroke-2" />
                     </template>
                   </div>
 
                   <div class="flex min-w-0 flex-col">
                     <span
-                      x-text="item.notes || 'Transaksi'"
-                      class="truncate text-xs font-bold text-slate-800"></span>
-
-                    <span class="text-[10px] font-medium text-slate-400">
-                      <span x-text="item.categories?.name || 'Umum'"></span> •
-
-                      <template x-if="item.type === 'transfer'">
-                        <span class="font-semibold text-slate-500">
-                          <span x-text="item.wallets?.name || 'Dompet'"></span>
-                          <span class="font-bold text-blue-500"> → </span>
-                          <span x-text="item.to_wallets?.name || 'Dompet'"
-                          ></span>
-                        </span>
-                      </template>
-
-                      <template x-if="item.type !== 'transfer'">
-                        <span
-                          x-text="item.wallets?.name || 'Dompet'"
-                          class="font-semibold text-slate-500"></span>
-                      </template>
+                      x-text="item.notes"
+                      class="text-foreground truncate text-xs font-bold"></span>
+                    <span class="text-muted-foreground text-[10px] font-medium">
+                      <span x-text="item.category"></span> •
+                      <span
+                        x-text="item.wallet"
+                        class="text-foreground/80 font-semibold"></span>
                     </span>
                   </div>
                 </div>
 
                 <div class="flex shrink-0 items-center gap-1 pl-2">
                   <span
-                    x-text="formatCurrency(item.amount, item.type)"
+                    x-text="item.amount"
                     :class=`{
-                      'text-emerald-600': item.type === 'income',
-                      'text-blue-600': item.type === 'transfer',
-                      'text-slate-800': item.type === 'expense'
+                      'text-blue-main': item.type === 'income',
+                      'text-foreground': item.type === 'expense'
                     }`
-                    class="text-xs font-bold"></span>
+                    class="text-xs font-extrabold"></span>
                 </div>
               </div>
             </template>
@@ -349,91 +252,52 @@ const quickFilterTypes = [
       </template>
     </div>
 
-    <!-- ADVANCE FILTER MODAL -->
+    <!-- ADVANCE FILTER MODAL (Soft Rounded Style) -->
     <template x-teleport="body">
       <div
         x-show="openFilterModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
       >
         <div
           @click.away="openFilterModal = false"
-          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
             <div class="flex items-center gap-2">
               <div
-                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
               >
                 <Filter class="h-4 w-4 stroke-2" />
               </div>
-              <h3 class="text-sm font-extrabold text-slate-900">
+              <h3 class="text-primary text-base font-extrabold">
                 Advance Filter
               </h3>
             </div>
             <button
               type="button"
               @click="openFilterModal = false"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
 
           <div class="mt-4 space-y-4">
-            <div class="space-y-1">
+            <div class="space-y-2">
               <label
-                class="block text-[10px] font-bold text-slate-500 uppercase"
+                class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >Pilih Dompet</label
               >
-                Custom Rentang Tanggal
-              </label>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <span class="text-[9px] font-semibold text-slate-400"
-                    >Dari:</span
-                  >
-                  <input
-                    type="date"
-                    x-model="filterDateFrom"
-                    class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <span class="text-[9px] font-semibold text-slate-400"
-                    >Sampai:</span
-                  >
-                  <input
-                    type="date"
-                    x-model="filterDateTo"
-                    class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 p-2 text-xs font-semibold text-slate-800 outline-none focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-1.5">
-              <label
-                class="block text-[10px] font-bold text-slate-500 uppercase"
-              >
-                Pilih Dompet
-              </label>
-              <div class="no-scrollbar flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  @click="filterWalletId = ''"
-                  :class="filterWalletId === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
-                  class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                >
-                  Semua Dompet
-                </button>
+              <div class="no-scrollbar flex flex-wrap gap-2">
                 <template x-for="w in wallets" :key="w.id">
                   <button
                     type="button"
                     @click="filterWalletId = w.id"
-                    :class="filterWalletId === w.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
-                    class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+                    :class="filterWalletId === w.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
+                    class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
                   >
                     <span x-text="w.name"></span>
                   </button>
@@ -441,51 +305,13 @@ const quickFilterTypes = [
               </div>
             </div>
 
-            <div class="space-y-1.5">
-              <label
-                class="block text-[10px] font-bold text-slate-500 uppercase"
-              >
-                Pilih Kategori
-              </label>
-              <div
-                class="no-scrollbar flex max-h-36 flex-wrap gap-1.5 overflow-y-auto pr-1"
-              >
-                <button
-                  type="button"
-                  @click="filterCategoryId = ''"
-                  :class="filterCategoryId === '' ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-900 border-slate-200 hover:bg-slate-100'"
-                  class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                >
-                  Semua Kategori
-                </button>
-                <template x-for="c in categories" :key="c.id">
-                  <button
-                    type="button"
-                    @click="filterCategoryId = c.id"
-                    :class="filterCategoryId === c.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
-                    class="cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                  >
-                    <span x-text="c.name"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 border-t border-slate-100 pt-2">
-              <button
-                type="button"
-                @click="resetAdvanceFilters()"
-                class="flex w-1/3 cursor-pointer items-center justify-center gap-1 rounded-2xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95"
-              >
-                <RotateCcw class="h-3.5 w-3.5 stroke-2" />
-                <span>Reset</span>
-              </button>
+            <div class="pt-2">
               <button
                 type="button"
                 @click="openFilterModal = false"
-                class="w-2/3 cursor-pointer rounded-2xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 active:scale-95"
+                class="bg-primary text-primary-foreground shadow-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
               >
-                Terapkan Filter
+                <span>Terapkan Filter</span>
               </button>
             </div>
           </div>
@@ -493,67 +319,65 @@ const quickFilterTypes = [
       </div>
     </template>
 
-    <!-- MODAL EXPORT TRANSAKSI (CSV & JSON SALIN/DOWNLOAD) -->
+    <!-- MODAL EXPORT TRANSAKSI -->
     <template x-teleport="body">
       <div
         x-show="openExportModal"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
       >
         <div
           @click.away="openExportModal = false"
-          class="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl transition-all"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="flex items-center justify-between border-b border-slate-100 pb-3"
+            class="border-border flex items-center justify-between border-b pb-3"
           >
             <div class="flex items-center gap-2">
               <div
-                class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
               >
                 <Download class="h-4 w-4 stroke-2" />
               </div>
-              <h3 class="text-sm font-extrabold text-slate-900">
+              <h3 class="text-primary text-base font-extrabold">
                 Export Transaksi
               </h3>
             </div>
             <button
               type="button"
               @click="openExportModal = false"
-              class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
 
           <div class="mt-4 space-y-4">
-            <p class="text-xs font-medium text-slate-500">
-              Mengeksport <span
-                class="font-bold text-slate-800"
-                x-text="filteredTransactions.length"></span> transaksi yang saat ini
-              tampil sesuai filter/pencarian.
-            </p>
-
-            <!-- 1. OPSI EXPORT CSV -->
+            <!-- CSV Option -->
             <div
-              class="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5"
+              class="border-border bg-background space-y-2 rounded-2xl border p-4"
             >
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <FileSpreadsheet class="h-5 w-5 stroke-2 text-emerald-600" />
+                <div class="flex items-center gap-3">
+                  <div
+                    class="bg-blue-soft text-blue-main flex h-9 w-9 items-center justify-center rounded-xl"
+                  >
+                    <FileSpreadsheet class="h-5 w-5 stroke-2" />
+                  </div>
                   <div>
-                    <span class="block text-xs font-bold text-slate-800"
+                    <span class="text-foreground block text-xs font-bold"
                       >Format CSV</span
                     >
-                    <span class="block text-[9px] font-semibold text-slate-400"
-                      >Cocok untuk Excel & Sheets</span
+                    <span
+                      class="text-muted-foreground block text-[10px] font-semibold"
+                      >Excel & Sheets</span
                     >
                   </div>
                 </div>
                 <button
                   type="button"
-                  @click="exportCSV()"
-                  class="flex cursor-pointer items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+                  @click="openExportModal = false"
+                  class="bg-primary text-primary-foreground flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
                 >
                   <Download class="h-3.5 w-3.5 stroke-2" />
                   <span>Download</span>
@@ -561,18 +385,23 @@ const quickFilterTypes = [
               </div>
             </div>
 
-            <!-- 2. OPSI EXPORT JSON (DOWNLOAD / COPY) -->
+            <!-- JSON Option -->
             <div
-              class="space-y-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5"
+              class="border-border bg-background space-y-3 rounded-2xl border p-4"
             >
-              <div class="flex items-center gap-2">
-                <FileJson class="h-5 w-5 stroke-2 text-blue-600" />
+              <div class="flex items-center gap-3">
+                <div
+                  class="bg-blue-soft text-blue-main flex h-9 w-9 items-center justify-center rounded-xl"
+                >
+                  <FileJson class="h-5 w-5 stroke-2" />
+                </div>
                 <div>
-                  <span class="block text-xs font-bold text-slate-800"
+                  <span class="text-foreground block text-xs font-bold"
                     >Format JSON</span
                   >
-                  <span class="block text-[9px] font-semibold text-slate-400"
-                    >Struktur data mentah</span
+                  <span
+                    class="text-muted-foreground block text-[10px] font-semibold"
+                    >Data mentah</span
                   >
                 </div>
               </div>
@@ -581,7 +410,7 @@ const quickFilterTypes = [
                 <button
                   type="button"
                   @click="copyJSON()"
-                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2 text-xs font-bold text-blue-600 transition-all hover:bg-blue-100 active:scale-95"
+                  class="border-blue-main/30 bg-blue-soft text-blue-main flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-bold transition-all active:scale-95"
                 >
                   <template x-if="!copiedJson">
                     <div class="flex items-center gap-1">
@@ -590,7 +419,7 @@ const quickFilterTypes = [
                     </div>
                   </template>
                   <template x-if="copiedJson">
-                    <div class="flex items-center gap-1 text-emerald-600">
+                    <div class="text-primary flex items-center gap-1">
                       <Check class="h-3.5 w-3.5 stroke-3" />
                       <span>Tersalin!</span>
                     </div>
@@ -599,8 +428,8 @@ const quickFilterTypes = [
 
                 <button
                   type="button"
-                  @click="downloadJSON()"
-                  class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-blue-600 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-blue-700 active:scale-95"
+                  @click="openExportModal = false"
+                  class="bg-primary text-primary-foreground flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
                 >
                   <Download class="h-3.5 w-3.5 stroke-2" />
                   <span>Download</span>
@@ -613,14 +442,3 @@ const quickFilterTypes = [
     </template>
   </div>
 </Layout>
-
-<!-- SCRIPT ALPINE CLIENT-SIDE -->
-<script>
-  import { historyController } from '../controllers/history.controller';
-
-  declare const Alpine: any;
-
-  document.addEventListener('alpine:init', () => {
-    Alpine.data('historyApp', historyController);
-  });
-</script>
