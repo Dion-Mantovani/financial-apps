@@ -140,11 +140,61 @@ export default () => ({
     );
 
     for (const tx of affectedTxs) {
-      tx.category_id = newCategoryId;
-      tx.updated_at = new Date().toISOString();
-      await saveTransactionLocal(tx);
+      const updatedTx = {
+        ...tx,
+        category_id: newCategoryId,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update state Alpine
+      const index = this.transactions.findIndex((item) => item.id === tx.id);
+
+      if (index !== -1) {
+        this.transactions[index] = updatedTx;
+      }
+
+      // Simpan plain object ke IndexedDB
+      await saveTransactionLocal(updatedTx);
+
+      // Sync ke Supabase
       try {
-        await updateTransactionRemote(tx.id, { category_id: newCategoryId });
+        await updateTransactionRemote(tx.id, {
+          category_id: newCategoryId,
+          updated_at: updatedTx.updated_at,
+        });
+      } catch (err) {
+        console.warn('⚠️ Sync Reassign Category gagal:', err.message);
+      }
+    }
+  },
+  async reassignCategory(oldCategoryId, newCategoryId) {
+    const affectedTxs = this.transactions.filter(
+      (tx) => tx.category_id === oldCategoryId
+    );
+
+    for (const tx of affectedTxs) {
+      const updatedTx = {
+        ...tx,
+        category_id: newCategoryId,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update state Alpine
+      const index = this.transactions.findIndex((item) => item.id === tx.id);
+
+      if (index !== -1) {
+        this.transactions[index] = updatedTx;
+      }
+
+      // Simpan plain object ke IndexedDB
+      await saveTransactionLocal(updatedTx);
+
+      // Sync ke Supabase
+      try {
+        await updateTransactionRemote(tx.id, {
+          category_id: newCategoryId,
+          updated_at: updatedTx.updated_at,
+        });
       } catch (err) {
         console.warn('⚠️ Sync Reassign Category gagal:', err.message);
       }

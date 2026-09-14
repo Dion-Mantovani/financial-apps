@@ -17,14 +17,14 @@ export const createCategoryRemote = async (categoryData) => {
 };
 
 export const updateCategoryRemote = async (id, categoryData) => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('categories')
     .update(categoryData)
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
+
   if (error) throw error;
-  return data;
+
+  return true;
 };
 
 export const deleteCategoryRemote = async (id) => {
