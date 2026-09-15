@@ -39,9 +39,14 @@ import {
   },
 
   isReordering: false,
+  walletOrder: [],
+  originalWalletOrder: [],
   openDetailModal: false,
   openFormModal: false,
   openCorrectionModal: false,
+  openDeleteWarningModal: false,
+openDeleteConfirmModal: false,
+deleteConfirmName: '',
   isEdit: false,
   openIconPicker: false,
   selectedWallet: {},
@@ -51,6 +56,8 @@ import {
     icon: 'landmark',
     initial_balance: 0
   },
+  formattedBalance: '',
+rawBalance: 0,
   newCorrectionBalance: 0,
 
       // Semua ikon dompet yang tersedia
@@ -65,18 +72,59 @@ import {
         { id: 'briefcase', name: 'Gaji / Bisnis' },
       ],
 
-      async init() {
-        if (this.accStore && !this.accStore.accounts?.length) {
-          await this.accStore.init();
-        }
-        if (this.txStore && !this.txStore.transactions?.length) {
-          await this.txStore.init();
-        }
-      },
+     async init() {
+  if (this.accStore && !this.accStore.accounts?.length) {
+    await this.accStore.init();
+  }
+
+  if (this.txStore && !this.txStore.transactions?.length) {
+    await this.txStore.init();
+  }
+
+  const savedOrder = JSON.parse(
+    localStorage.getItem('wallet_order') || '[]'
+  );
+
+  if (savedOrder.length) {
+    this.walletOrder = savedOrder;
+  }
+},
+
+handleBalanceInput(event) {
+  const value = event.target.value.replace(/[^0-9]/g, '');
+
+  this.rawBalance = value ? parseInt(value, 10) : 0;
+
+  this.formattedBalance = this.rawBalance
+    ? this.rawBalance.toLocaleString('id-ID')
+    : '';
+},
 
       get wallets() {
-        return this.accStore?.accounts || [];
-      },
+  const accounts = this.accStore?.accounts || [];
+
+  if (!accounts.length) return [];
+
+  if (!this.walletOrder.length) {
+    return accounts;
+  }
+
+  const orderMap = new Map(
+    this.walletOrder.map((id, index) => [id, index])
+  );
+
+  return [...accounts].sort((a, b) => {
+    const indexA = orderMap.has(a.id)
+      ? orderMap.get(a.id)
+      : Number.MAX_SAFE_INTEGER;
+
+    const indexB = orderMap.has(b.id)
+      ? orderMap.get(b.id)
+      : Number.MAX_SAFE_INTEGER;
+
+    return indexA - indexB;
+  });
+},
 
       get totalBalance() {
         if (!this.accStore || typeof this.accStore.getTotalAssets !== 'function') return 'Rp 0';
@@ -121,112 +169,271 @@ import {
       },
 
       toggleReorderMode() {
-        this.isReordering = !this.isReordering;
-      },
+  if (!this.isReordering) {
+    this.originalWalletOrder = this.wallets.map(
+      (wallet) => wallet.id
+    );
 
-      async moveWallet(index, direction) {
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        if (targetIndex < 0 || targetIndex >= this.wallets.length) return;
-        
-        const updatedList = [...this.wallets];
-        const temp = updatedList[index];
-        updatedList[index] = updatedList[targetIndex];
-        updatedList[targetIndex] = temp;
-        
-        await this.accStore.reorderAccounts(updatedList.map(a => a.id));
-      },
+    this.walletOrder = [...this.originalWalletOrder];
+    this.isReordering = true;
+    return;
+  }
 
-      finishReorder() {
-        this.isReordering = false;
-      },
+  this.finishReorder();
+},
+
+      moveWallet(index, direction) {
+  const targetIndex =
+    direction === 'up' ? index - 1 : index + 1;
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >= this.wallets.length
+  ) {
+    return;
+  }
+
+  const newOrder = this.wallets.map(
+    (wallet) => wallet.id
+  );
+
+  [newOrder[index], newOrder[targetIndex]] = [
+    newOrder[targetIndex],
+    newOrder[index],
+  ];
+
+  this.walletOrder = newOrder;
+},
+
+     finishReorder() {
+  const currentOrder = this.wallets.map(
+    (wallet) => wallet.id
+  );
+
+  const hasChanged =
+    JSON.stringify(currentOrder) !==
+    JSON.stringify(this.originalWalletOrder);
+
+  if (hasChanged) {
+    localStorage.setItem(
+      'wallet_order',
+      JSON.stringify(currentOrder)
+    );
+  }
+
+  this.originalWalletOrder = [];
+  this.isReordering = false;
+},
 
       showDetail(wallet) {
         this.selectedWallet = wallet;
         this.openDetailModal = true;
       },
 
-      openAddModal() {
-        this.isEdit = false;
-        this.formData = { id: null, name: '', icon: 'landmark', initial_balance: 0 };
-        this.openIconPicker = false;
-        this.openFormModal = true;
-      },
+     openAddModal() {
+  this.isEdit = false;
+
+  this.formData = {
+    id: null,
+    name: '',
+    icon: 'landmark',
+    initial_balance: 0
+  };
+
+  this.rawBalance = 0;
+  this.formattedBalance = '';
+
+  this.openFormModal = true;
+
+  this.$nextTick(() => {
+    this.$refs.accountNameInput?.focus();
+  });
+},
 
       openEditFromDetail() {
         this.isEdit = true;
-        this.formData = { 
-          id: this.selectedWallet.id,
-          name: this.selectedWallet.name,
-          icon: this.selectedWallet.icon,
-          initial_balance: this.selectedWallet.initial_balance
-        };
-        this.openDetailModal = false;
-        this.openIconPicker = false;
-        this.openFormModal = true;
+
+  const currentBalance = this.getWalletCurrentBalance(
+    this.selectedWallet.id
+  );
+
+  this.formData = {
+    id: this.selectedWallet.id,
+    name: this.selectedWallet.name,
+    icon: this.selectedWallet.icon,
+  };
+
+  this.rawBalance = currentBalance;
+
+  this.formattedBalance = currentBalance
+    ? currentBalance.toLocaleString('id-ID')
+    : '';
+
+  this.openDetailModal = false;
+  this.openFormModal = true;
       },
 
+      getWalletCurrentBalance(walletId) {
+  const wallet = this.accStore.accounts.find(
+    (account) => account.id === walletId
+  );
+
+  if (!wallet) return 0;
+
+  let balance = Number(wallet.initial_balance) || 0;
+
+  this.txStore.transactions.forEach((tx) => {
+    const amount = Number(tx.amount) || 0;
+    const fee = Number(tx.fee) || 0;
+
+    if (tx.type === 'income' && tx.account_id === walletId) {
+      balance += amount;
+    }
+
+    if (tx.type === 'expense' && tx.account_id === walletId) {
+      balance -= amount;
+    }
+
+    if (tx.type === 'transfer') {
+      if (tx.account_id === walletId) {
+        balance -= amount + fee;
+      }
+
+      if (tx.to_account_id === walletId) {
+        balance += amount;
+      }
+    }
+  });
+
+  return balance;
+},
+      
       async deleteWalletFromDetail() {
-        const txCount = this.getWalletTransactionCount(this.selectedWallet.id);
-        if (txCount > 0) {
-          if (!confirm(`Akun ini memiliki ${txCount} transaksi. Yakin ingin menghapus beserta seluruh riwayat transaksinya?`)) {
-            return;
-          }
-        }
-        await this.accStore.deleteAccount(this.selectedWallet.id, this.txStore);
-        this.openDetailModal = false;
-      },
+  const txCount = this.getWalletTransactionCount(
+    this.selectedWallet.id
+  );
+
+  // Tidak punya transaksi → langsung hapus
+  if (txCount === 0) {
+    await this.accStore.deleteAccount(
+      this.selectedWallet.id,
+      this.txStore
+    );
+
+    this.openDetailModal = false;
+    return;
+  }
+
+  // Punya transaksi → warning pertama
+  this.openDeleteWarningModal = true;
+},
+
+proceedDeleteConfirmation() {
+  this.openDeleteWarningModal = false;
+  this.deleteConfirmName = '';
+  this.openDeleteConfirmModal = true;
+
+  this.$nextTick(() => {
+    this.$refs.deleteConfirmInput?.focus();
+  });
+},
+
+async confirmDeleteWallet() {
+  if (
+    this.deleteConfirmName.trim() !==
+    this.selectedWallet.name
+  ) {
+    return;
+  }
+
+  await this.accStore.deleteAccount(
+    this.selectedWallet.id,
+    this.txStore
+  );
+
+  this.openDeleteConfirmModal = false;
+  this.openDetailModal = false;
+  this.deleteConfirmName = '';
+},
 
       async saveWallet() {
-    if (!this.formData.name.trim()) return;
-    const targetBalance = Number(this.formData.initial_balance) || 0;
+  if (!this.formData.name.trim()) return;
 
-    // Pastikan accStore sudah siap sebelum memanggil method
-    if (!this.accStore) {
-      console.error('accountStore belum terinisialisasi!');
+  const targetBalance = this.rawBalance;
+
+  if (!this.accStore) {
+    console.error('accountStore belum terinisialisasi!');
+    return;
+  }
+
+  if (this.isEdit) {
+   const txCount = this.getWalletTransactionCount(this.formData.id);
+const currentBalance = this.getWalletCurrentBalance(
+  this.formData.id
+);
+
+    if (txCount > 0 && targetBalance !== currentBalance) {
+      this.newCorrectionBalance = targetBalance;
+      this.openFormModal = false;
+      this.openCorrectionModal = true;
       return;
     }
 
-    if (this.isEdit) {
-      const txCount = this.getWalletTransactionCount(this.formData.id);
-      const currentInitial = this.selectedWallet.initial_balance;
+    await this.accStore.updateAccount(this.formData.id, {
+      name: this.formData.name.trim(),
+      icon: this.formData.icon,
+      initial_balance: targetBalance
+    });
+  } else {
+    await this.accStore.addAccount({
+      name: this.formData.name.trim(),
+      icon: this.formData.icon,
+      initial_balance: targetBalance
+    });
 
-      if (txCount > 0 && targetBalance !== currentInitial) {
-        this.newCorrectionBalance = targetBalance;
-        this.openFormModal = false;
-        this.openCorrectionModal = true;
-        return;
-      }
+    // Account baru selalu masuk paling atas di UI
+    const newWallet = this.accStore.accounts[0];
 
-      await this.accStore.updateAccount(this.formData.id, {
-        name: this.formData.name.trim(),
-        icon: this.formData.icon,
-        initial_balance: targetBalance
-      });
-    } else {
-      await this.accStore.addAccount({
-        name: this.formData.name.trim(),
-        icon: this.formData.icon,
-        initial_balance: targetBalance
-      });
+    this.walletOrder = [
+      newWallet.id,
+      ...this.walletOrder.filter((id) => id !== newWallet.id),
+    ];
+
+    // Simpan urutan terbaru
+    localStorage.setItem(
+      'wallet_order',
+      JSON.stringify(this.walletOrder)
+    );
+  }
+
+  this.openFormModal = false;
+},
+
+     async confirmCorrection() {
+  const account = this.accStore.accounts.find(
+    (acc) => acc.id === this.formData.id
+  );
+
+  if (!account) return;
+
+  await this.accStore.updateAccount(this.formData.id, {
+    name: this.formData.name.trim(),
+    icon: this.formData.icon
+  });
+
+  await this.accStore.correctBalance(
+    account,
+    this.newCorrectionBalance,
+    this.txStore.transactions || [],
+    this.txStore
+  );
+
+  this.openCorrectionModal = false;
+},
     }
-    this.openFormModal = false;
-  },
-
-      async confirmCorrection() {
-        await this.accStore.updateAccount(this.formData.id, {
-          name: this.formData.name.trim(),
-          icon: this.formData.icon
-        });
-
-        await this.accStore.correctBalance(
-          this.formData.id,
-          this.newCorrectionBalance,
-          this.txStore
-        );
-
-        this.openCorrectionModal = false;
-      }
-    }"
+      
+    
+    "
     class="space-y-5 pt-2 pb-12"
   >
     <!-- 1. STICKY HEADER -->
@@ -411,27 +618,6 @@ import {
           :class="isReordering ? 'bg-muted/30' : 'cursor-pointer hover:bg-muted/50'"
         >
           <div class="flex min-w-0 items-center gap-3.5">
-            <template x-if="isReordering">
-              <div class="flex flex-col gap-1 pr-1">
-                <button
-                  type="button"
-                  @click.stop="moveWallet(index, 'up')"
-                  :disabled="index === 0"
-                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
-                >
-                  <ArrowUp class="h-3 w-3 stroke-3" />
-                </button>
-                <button
-                  type="button"
-                  @click.stop="moveWallet(index, 'down')"
-                  :disabled="index === wallets.length - 1"
-                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
-                >
-                  <ArrowDown class="h-3 w-3 stroke-3" />
-                </button>
-              </div>
-            </template>
-
             <!-- Dynamic Icon Box -->
             <div
               class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -476,10 +662,32 @@ import {
             </div>
           </div>
 
-          <div class="flex shrink-0 flex-col items-end">
+          <div class="flex shrink-0 items-center gap-2">
             <span
               x-text="formatCurrency(getAccountRealBalance(wallet.id))"
               class="text-foreground text-xs font-extrabold"></span>
+
+            <template x-if="isReordering">
+              <div class="flex flex-col gap-1 pr-1">
+                <button
+                  type="button"
+                  @click.stop="moveWallet(index, 'up')"
+                  :disabled="index === 0"
+                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
+                >
+                  <ArrowUp class="h-3 w-3 stroke-3" />
+                </button>
+
+                <button
+                  type="button"
+                  @click.stop="moveWallet(index, 'down')"
+                  :disabled="index === wallets.length - 1"
+                  class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
+                >
+                  <ArrowDown class="h-3 w-3 stroke-3" />
+                </button>
+              </div>
+            </template>
           </div>
         </div>
       </template>
@@ -608,6 +816,147 @@ import {
       </div>
     </div>
 
+    <!-- MODAL WARNING DELETE -->
+    <div
+      x-show="openDeleteWarningModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 -bottom-10 z-[60] flex items-end justify-center backdrop-blur-xs sm:items-center"
+    >
+      <div
+        @click.away="openDeleteWarningModal = false"
+        class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
+          >
+            <AlertTriangle class="h-5 w-5 stroke-2" />
+          </div>
+
+          <div class="min-w-0">
+            <h3 class="text-foreground text-sm font-extrabold">
+              Hapus Dompet?
+            </h3>
+
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+              Dompet
+              <strong class="text-foreground" x-text="selectedWallet.name"
+              ></strong>
+              memiliki
+              <strong
+                class="text-foreground"
+                x-text="getWalletTransactionCount(selectedWallet.id)"></strong>
+              transaksi.
+            </p>
+
+            <p class="text-muted-foreground mt-2 text-xs leading-relaxed">
+              Jika dilanjutkan, seluruh transaksi yang terkait dengan dompet ini
+              juga akan dihapus dan
+              <strong class="text-rose-600">
+                data yang sudah dihapus tidak dapat dipulihkan.
+              </strong>
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center gap-2">
+          <button
+            type="button"
+            @click="openDeleteWarningModal = false"
+            class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+          >
+            Batal
+          </button>
+
+          <button
+            type="button"
+            @click="proceedDeleteConfirmation()"
+            class="w-2/3 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white transition-opacity hover:bg-rose-500 active:scale-95"
+          >
+            Lanjut Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FINAL DELETE CONFIRMATION -->
+    <div
+      x-show="openDeleteConfirmModal"
+      x-cloak
+      class="bg-primary/20 fixed inset-0 -bottom-10 z-[70] flex items-end justify-center backdrop-blur-xs sm:items-center"
+    >
+      <div
+        @click.away="openDeleteConfirmModal = false"
+        class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
+          >
+            <Trash2 class="h-5 w-5 stroke-2" />
+          </div>
+
+          <div>
+            <h3 class="text-foreground text-sm font-extrabold">
+              Konfirmasi Penghapusan
+            </h3>
+
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+              Tindakan ini akan menghapus dompet beserta seluruh transaksi yang
+              terkait secara permanen.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <p class="text-muted-foreground text-xs leading-relaxed">
+            Untuk memastikan lu benar-benar sadar dengan tindakan ini, ketik
+            nama dompet berikut:
+          </p>
+
+          <p
+            class="text-foreground bg-muted mt-2 rounded-xl px-3 py-2 text-center text-sm font-black"
+            x-text="selectedWallet.name"
+          >
+          </p>
+
+          <input
+            type="text"
+            x-ref="deleteConfirmInput"
+            x-model="deleteConfirmName"
+            placeholder="Ketik nama dompet"
+            class="border-border bg-background text-foreground mt-3 w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none focus:border-rose-500"
+            autocomplete="off"
+            @keydown.enter="confirmDeleteWallet()"
+          />
+        </div>
+
+        <div class="mt-6 flex items-center gap-2">
+          <button
+            type="button"
+            @click="openDeleteConfirmModal = false; deleteConfirmName = ''"
+            class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
+          >
+            Batal
+          </button>
+
+          <button
+            type="button"
+            @click="confirmDeleteWallet()"
+            :disabled="deleteConfirmName.trim() !== selectedWallet.name"
+            :class=`
+          deleteConfirmName.trim() === selectedWallet.name
+            ? 'bg-rose-600 hover:bg-rose-500 cursor-pointer'
+            : 'bg-rose-200 text-muted-foreground cursor-not-allowed'
+        `
+            class="w-2/3 rounded-2xl py-3.5 text-xs font-bold text-white transition-all active:scale-95 disabled:active:scale-100"
+          >
+            Hapus Permanen
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 7. MODAL KOREKSI SALDO -->
     <div
       x-show="openCorrectionModal"
@@ -703,6 +1052,7 @@ import {
             >
             <input
               type="text"
+              x-ref="accountNameInput"
               x-model="formData.name"
               placeholder="misal: BCA, Cash, Gopay"
               class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
@@ -710,100 +1060,59 @@ import {
             />
           </div>
 
-          <!-- IKON DOMPET (VISUAL DROPDOWN GRID - TANPA FILTER TIPE) -->
-          <div class="space-y-1.5">
-            <label
-              class="text-muted-foreground block text-[10px] font-bold uppercase"
-              >Ikon Dompet</label
-            >
-
-            <button
-              type="button"
-              @click="openIconPicker = !openIconPicker"
-              class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all"
-            >
-              <div class="flex items-center gap-3">
-                <div
-                  class="bg-blue-soft text-primary flex h-7 w-7 items-center justify-center rounded-xl"
-                >
-                  <template x-if="formData.icon === 'landmark'"
-                    ><Landmark class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'building'"
-                    ><Building class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'credit-card'"
-                    ><CreditCard class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'coins'"
-                    ><Coins class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'wallet'"
-                    ><Wallet class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'piggy-bank'"
-                    ><PiggyBank class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'qr-code'"
-                    ><QrCode class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'briefcase'"
-                    ><Briefcase class="h-4 w-4 stroke-2" /></template
-                  >
-                </div>
-                <span
-                  class="text-xs font-semibold"
-                  x-text="availableIcons.find(i => i.id === formData.icon)?.name || 'Pilih Icon'"
-                ></span>
-              </div>
-
-              <ChevronDown
-                class="text-muted-foreground h-4 w-4 transition-transform"
-                :class="openIconPicker ? 'rotate-180' : ''"
-              />
-            </button>
+          <!-- IKON DOMPET -->
+          <div class="space-y-2">
+            <label class="text-foreground text-xs font-bold">
+              Icon Dompet
+            </label>
 
             <div
-              x-show="openIconPicker"
-              x-collapse
-              class="border-border bg-background no-scrollbar max-h-40 overflow-y-auto rounded-2xl border p-3"
+              class="border-border bg-muted/20 mt-3 overflow-y-auto rounded-2xl border p-3"
             >
-              <div class="grid grid-cols-4 gap-2">
-                <template x-for="item in availableIcons" :key="item.id">
+              <div class="grid grid-cols-6 gap-2">
+                <template x-for="icon in availableIcons" :key="icon.id">
                   <button
                     type="button"
-                    @click="formData.icon = item.id; openIconPicker = false"
-                    :class="formData.icon === item.id ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1' : 'bg-card text-muted-foreground hover:bg-muted hover:text-foreground'"
-                    class="flex cursor-pointer flex-col items-center justify-center rounded-xl p-2 transition-all"
+                    @click="formData.icon = icon.id"
+                    :class=`
+          formData.icon === icon.id
+             ? 'bg-blue-soft text-blue border-blue'
+          : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
+                    `
+                    class="flex h-11 w-11 items-center justify-center rounded-xl border transition-colors"
+                    :title="icon.name"
                   >
-                    <template x-if="item.id === 'landmark'"
-                      ><Landmark class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'building'"
-                      ><Building class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'credit-card'"
-                      ><CreditCard class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'coins'"
-                      ><Coins class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'wallet'"
-                      ><Wallet class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'piggy-bank'"
-                      ><PiggyBank class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'qr-code'"
-                      ><QrCode class="h-5 w-5 stroke-2" /></template
-                    >
-                    <template x-if="item.id === 'briefcase'"
-                      ><Briefcase class="h-5 w-5 stroke-2" /></template
-                    >
+                    <template x-if="icon.id === 'landmark'">
+                      <Landmark :size="18" />
+                    </template>
 
-                    <span
-                      class="mt-1 max-w-full truncate text-[9px] font-semibold"
-                      x-text="item.name"></span>
+                    <template x-if="icon.id === 'building'">
+                      <Building :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'credit-card'">
+                      <CreditCard :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'coins'">
+                      <Coins :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'wallet'">
+                      <Wallet :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'piggy-bank'">
+                      <PiggyBank :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'qr-code'">
+                      <QrCode :size="18" />
+                    </template>
+
+                    <template x-if="icon.id === 'briefcase'">
+                      <Briefcase :size="18" />
+                    </template>
                   </button>
                 </template>
               </div>
@@ -817,8 +1126,10 @@ import {
               >Saldo Awal (Rp)</label
             >
             <input
-              type="number"
-              x-model="formData.initial_balance"
+              type="text"
+              inputmode="numeric"
+              :value="formattedBalance"
+              @input="handleBalanceInput($event)"
               placeholder="0"
               class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
             />

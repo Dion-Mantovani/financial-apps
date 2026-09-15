@@ -50,11 +50,28 @@ export default () => ({
       updated_at: new Date().toISOString(),
     };
 
-    // 1. Optimistic Update (UI + IndexedDB)
-    this.accounts.push(newAccount);
+    // 1. Optimistic Update
+    this.accounts.unshift(newAccount);
     await saveAccountLocal(newAccount);
 
-    // 2. Sync Remote (Background)
+    // 2. Update saved wallet order + UI order
+    const savedOrder = JSON.parse(localStorage.getItem('wallet_order') || '[]');
+
+    const newOrder = [
+      newAccount.id,
+      ...savedOrder.filter((id) => id !== newAccount.id),
+    ];
+
+    localStorage.setItem('wallet_order', JSON.stringify(newOrder));
+
+    // Pastikan UI langsung mengikuti order baru
+    const accountMap = new Map(
+      this.accounts.map((account) => [account.id, account])
+    );
+
+    this.accounts = newOrder.map((id) => accountMap.get(id)).filter(Boolean);
+
+    // 3. Sync Remote
     try {
       await createAccountRemote(newAccount);
     } catch (err) {

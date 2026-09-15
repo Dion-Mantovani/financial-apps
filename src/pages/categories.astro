@@ -266,7 +266,7 @@ import {
       </button>
     </div>
 
-    <!-- 4. DAFTAR KATEGORI LIST -->
+    <!-- 3. DAFTAR KATEGORI LIST -->
     <div class="grid grid-cols-2 gap-3">
       <template x-for="category in filteredCategories" :key="category.id">
         <button
@@ -407,6 +407,7 @@ import {
       </template>
     </div>
 
+    <!-- 4. TAMBAH KATEGORI BARU -->
     <button
       type="button"
       @click="openAddModal()"
@@ -742,125 +743,8 @@ import {
               >Pilih Ikon</label
             >
 
-            <!-- Trigger Dropdown -->
-            <!-- <button
-              type="button"
-              @click="openIconPicker = !openIconPicker"
-              class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all"
-            >
-              <div class="flex items-center gap-3">
-                <div
-                  class="bg-blue-soft text-primary flex h-7 w-7 items-center justify-center rounded-xl"
-                >
-                  <template x-if="formData.icon === 'utensils'"
-                    ><Utensils class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'car'"
-                    ><Car class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'shopping-bag'"
-                    ><ShoppingBag class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'gamepad-2'"
-                    ><Gamepad2 class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'heart-pulse'"
-                    ><HeartPulse class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'briefcase'"
-                    ><Briefcase class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'gift'"
-                    ><Gift class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'receipt'"
-                    ><Receipt class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'circle-ellipsis'"
-                    ><CircleEllipsis class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'trending-up'"
-                    ><TrendingUp class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'wallet'"
-                    ><Wallet class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'zap'"
-                    ><Zap class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'droplets'"
-                    ><Droplets class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'wifi'"
-                    ><Wifi class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'home'"
-                    ><Home class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'shirt'"
-                    ><Shirt class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'coffee'"
-                    ><Coffee class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'film'"
-                    ><Film class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'dumbbell'"
-                    ><Dumbbell class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'scissors'"
-                    ><Scissors class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'graduation-cap'"
-                    ><GraduationCap class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'baby'"
-                    ><Baby class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'paw-print'"
-                    ><PawPrint class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'plane'"
-                    ><Plane class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'fuel'"
-                    ><Fuel class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'wrench'"
-                    ><Wrench class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'piggy-bank'"
-                    ><PiggyBank class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'credit-card'"
-                    ><CreditCard class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'coins'"
-                    ><Coins class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'building'"
-                    ><Building class="h-4 w-4 stroke-2" /></template
-                  >
-                  <template x-if="formData.icon === 'tag'"
-                    ><Tag class="h-4 w-4 stroke-2" /></template
-                  >
-                </div>
-                <span
-                  class="text-xs font-semibold capitalize"
-                  x-text="availableIcons.find(i => i.id === formData.icon)?.name || 'Pilih Icon'"
-                ></span>
-              </div>
-
-              <ChevronDown
-                class="text-muted-foreground h-4 w-4 transition-transform"
-                :class="openIconPicker ? 'rotate-180' : ''"
-              />
-            </button> -->
-
             <!-- Expandable Icon Grid (Filtered for Active Type) -->
             <div
-              x-show="openIconPicker"
               class="border-border bg-muted/20 mt-3 h-40 overflow-y-auto rounded-2xl border p-3"
             >
               <div class="grid grid-cols-6 gap-2">

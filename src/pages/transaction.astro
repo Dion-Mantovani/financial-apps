@@ -102,26 +102,32 @@ const frequentTransactions = [
       },
 
       async init() {
-        this.errorMessage = '';
+  this.errorMessage = '';
 
-        if (!this.accStore.accounts.length) {
-          await this.accStore.init();
-        }
+  if (!this.accStore.accounts.length) {
+    await this.accStore.init();
+  }
 
-        if (!this.catStore.categories.length) {
-          await this.catStore.init();
-        }
+  if (!this.catStore.categories.length) {
+    await this.catStore.init();
+  }
 
-        if (!this.txStore.transactions.length) {
-          await this.txStore.init();
-        }
+  if (!this.txStore.transactions.length) {
+    await this.txStore.init();
+  }
 
-        if (!this.formData.account_id && this.accStore.activeAccounts.length) {
-          this.formData.account_id = this.accStore.activeAccounts[0].id;
-        }
+  const params = new URLSearchParams(window.location.search);
 
-        this.syncDefaultCategory();
-      },
+  if (params.get('type') === 'transfer') {
+    this.formData.type = 'transfer';
+  }
+
+  if (!this.formData.account_id && this.accStore.activeAccounts.length) {
+    this.formData.account_id = this.accStore.activeAccounts[0].id;
+  }
+
+  this.syncDefaultCategory();
+},
 
       get activeAccounts() {
         return this.accStore?.activeAccounts || [];
