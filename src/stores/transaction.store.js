@@ -24,20 +24,53 @@ export default () => ({
   },
 
   // Smart Category Suggestion based on description history
-  suggestCategory(descriptionText) {
+  suggestCategory(descriptionText, type = null) {
     if (!descriptionText || descriptionText.trim() === '') return null;
 
     const query = descriptionText.trim().toLowerCase();
 
-    // Cari transaksi sebelumnya yang memiliki deskripsi persis / serupa
-    const matchedTx = this.transactions.find(
-      (tx) =>
-        tx.category_id &&
-        tx.description &&
-        tx.description.toLowerCase().includes(query)
-    );
+    const candidates = this.transactions
+      .filter((tx) => {
+        if (!tx.category_id || !tx.description) return false;
+        if (tx.type === 'transfer') return false;
 
-    return matchedTx ? matchedTx.category_id : null;
+        // Kalau type dikirim, hanya cari dari type yang sama
+        if (type && tx.type !== type) return false;
+
+        return true;
+      })
+      .map((tx) => {
+        const description = tx.description.trim().toLowerCase();
+
+        let score = 0;
+
+        // Prioritas kecocokan
+        if (description === query) {
+          score = 3;
+        } else if (description.startsWith(query)) {
+          score = 2;
+        } else if (description.includes(query)) {
+          score = 1;
+        }
+
+        return {
+          tx,
+          score,
+          date: new Date(tx.transaction_date || tx.created_at || 0),
+        };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        // Match lebih kuat dulu
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        // Kalau sama kuat, transaksi terbaru
+        return b.date - a.date;
+      });
+
+    return candidates[0]?.tx.category_id || null;
   },
 
   async addTransaction(txData, categories = []) {
@@ -72,8 +105,19 @@ export default () => ({
     // 2. Sync Remote
     try {
       await createTransactionRemote(newTx);
+
+      return {
+        success: true,
+        transaction: newTx,
+      };
     } catch (err) {
       console.warn('⚠️ Sync Create Transaction gagal:', err.message);
+
+      return {
+        success: false,
+        transaction: newTx,
+        error: err,
+      };
     }
   },
 
