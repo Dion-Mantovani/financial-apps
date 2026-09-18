@@ -28,11 +28,17 @@ const quickFilterTypes = [
   { id: 'expense', label: 'Keluar', icon: ArrowUpRight },
   { id: 'income', label: 'Masuk', icon: ArrowDownLeft },
   { id: 'transfer', label: 'Transfer', icon: ArrowRightLeft },
+  { id: 'upcoming', label: 'Upcoming', icon: Calendar },
 ];
 ---
 
 <Layout title="Riwayat Transaksi - Studion App">
   <div
+    x-init="$watch('showSearchInput', (visible) => {
+  if (visible) {
+    $nextTick(() => $refs.searchInput?.focus())
+  }
+})"
     x-data="{
   accStore: Alpine.store('accountStore'),
   catStore: Alpine.store('categoryStore'),
@@ -58,6 +64,9 @@ showMonthPicker: false,
   filterWalletId: '',
   filterCategoryId: '',
 
+  filterDateFrom: '',
+  filterDateTo: '',
+
   copiedJson: false,
 
   async init() {
@@ -72,8 +81,11 @@ showMonthPicker: false,
     if (!this.txStore.transactions.length) {
       await this.txStore.init();
     }
+
+    
   },
 
+  
   /*
    * =========================
    * DATA DARI GLOBAL STORE
@@ -98,6 +110,41 @@ showMonthPicker: false,
    * =========================
    */
 
+   get dateFilterLabel() {
+    if (!this.filterDateFrom && !this.filterDateTo) {
+      return this.currentMonthLabel;
+    }
+
+    const formatDate = (date, showYear = false) => {
+      return new Date(`${date}T00:00:00`).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        ...(showYear ? { year: '2-digit' } : {}),
+      });
+    };
+
+    if (this.filterDateFrom && this.filterDateTo) {
+      const from = new Date(`${this.filterDateFrom}T00:00:00`);
+      const to = new Date(`${this.filterDateTo}T00:00:00`);
+
+      if (from.getFullYear() === to.getFullYear()) {
+        if (from.getMonth() === to.getMonth()) {
+          return `${formatDate(this.filterDateFrom)} - ${formatDate(this.filterDateTo)}`;
+        }
+
+        return `${formatDate(this.filterDateFrom)} - ${formatDate(this.filterDateTo)}`;
+      }
+
+      return `${formatDate(this.filterDateFrom, true)} - ${formatDate(this.filterDateTo, true)}`;
+    }
+
+    if (this.filterDateFrom) {
+      return `Dari ${formatDate(this.filterDateFrom, true)}`;
+    }
+
+    return `Sampai ${formatDate(this.filterDateTo, true)}`;
+  },
+   
   get currentMonthLabel() {
   const [year, month] = this.selectedMonth.split('-');
 
@@ -131,13 +178,42 @@ changeMonth(offset) {
    */
 
   get filteredTransactions() {
-    const query = this.searchQuery.trim().toLowerCase();
+  const query = this.searchQuery.trim().toLowerCase();
 
-    return this.transactions.filter((tx) => {
+  return this.transactions.filter((tx) => {
+    /*
+     * Filter Upcoming
+     */
+    if (this.activeTab === 'upcoming') {
+      const today = new Date();
+      const todayString = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, '0'),
+        String(today.getDate()).padStart(2, '0'),
+      ].join('-');
+
+      if (!tx.transaction_date || tx.transaction_date <= todayString) {
+        return false;
+      }
+    } else {
       /*
-       * Filter bulan
+       * Filter tanggal / bulan
        */
-      if (
+      if (this.filterDateFrom || this.filterDateTo) {
+        if (
+          this.filterDateFrom &&
+          tx.transaction_date < this.filterDateFrom
+        ) {
+          return false;
+        }
+
+        if (
+          this.filterDateTo &&
+          tx.transaction_date > this.filterDateTo
+        ) {
+          return false;
+        }
+      } else if (
         this.selectedMonth &&
         tx.transaction_date?.slice(0, 7) !== this.selectedMonth
       ) {
@@ -153,6 +229,7 @@ changeMonth(offset) {
       ) {
         return false;
       }
+    }
 
       /*
        * Filter wallet
@@ -320,6 +397,8 @@ changeMonth(offset) {
         groups[date].totalAmount += amount;
       } else if (tx.type === 'expense') {
         groups[date].totalAmount -= amount;
+      } else if (tx.type === 'transfer') {
+        groups[date].totalAmount -= Number(tx.fee || 0);
       }
 
       /*
@@ -371,6 +450,7 @@ changeMonth(offset) {
 
       groups[date].items.push({
         id: tx.id,
+        created_at: tx.created_at,
         icon,
         notes:
           tx.description ||
@@ -383,10 +463,18 @@ changeMonth(offset) {
 
         amount: amountLabel,
 
+        fee: tx.type === 'transfer' ? Number(tx.fee || 0).toLocaleString('id-ID') : null,
+
         type: tx.type,
       });
     });
 
+    Object.values(groups).forEach((group) => {
+  group.items.sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+});
+    
     return Object.values(groups).sort(
       (a, b) =>
         new Date(b.date) - new Date(a.date)
@@ -400,8 +488,12 @@ changeMonth(offset) {
    */
 
   clearFilters() {
+    this.filterDateFrom = '',
+    this.filterDateTo = '',
     this.filterWalletId = '';
     this.filterCategoryId = '';
+
+    this.openFilterModal = false;
   },
 
   /*
@@ -410,13 +502,7 @@ changeMonth(offset) {
    * =========================
    */
 
-  toggleSearch() {
-    this.showSearchInput = !this.showSearchInput;
-
-    if (!this.showSearchInput) {
-      this.searchQuery = '';
-    }
-  },
+  
 
   /*
    * =========================
@@ -536,7 +622,7 @@ changeMonth(offset) {
             <Calendar class="text-blue-main h-3.5 w-3.5 stroke-2" />
 
             <span
-              x-text="currentMonthLabel"
+              x-text="dateFilterLabel"
               class="text-foreground text-xs font-bold"></span>
 
             <ChevronDown
@@ -559,8 +645,10 @@ changeMonth(offset) {
             class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 stroke-2"
           />
           <input
+            x-ref="searchInput"
             x-model="searchQuery"
             x-show="showSearchInput"
+            x-cloak
             x-cloak
             type="text"
             placeholder="Cari transaksi, kategori, dompet..."
@@ -589,7 +677,15 @@ changeMonth(offset) {
             @click="openFilterModal = true"
             class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
           >
-            <SlidersHorizontal class="h-4 w-4 stroke-2" />
+            <div class="relative">
+              <SlidersHorizontal class="h-4 w-4 stroke-2" />
+
+              <span
+                x-show="filterDateFrom || filterDateTo || filterWalletId || filterCategoryId"
+                x-cloak
+                class="bg-primary absolute -top-1 -right-1 h-2 w-2 rounded-full"
+              ></span>
+            </div>
           </button>
 
           <button
@@ -709,267 +805,313 @@ changeMonth(offset) {
                   </div>
                 </div>
 
-                <div class="flex shrink-0 items-center gap-1 pl-2">
+                <div class="flex shrink-0 flex-col items-center gap-1 pl-2">
                   <span
                     x-text="item.amount"
                     :class="{ 'text-blue-main': item.type === 'income', 'text-foreground': item.type === 'expense', 'text-muted-foreground': item.type === 'transfer' }"
                     class="text-xs font-extrabold"></span>
+
+                  <template x-if="item.fee > 0">
+                    <span
+                      class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                    >
+                      Admin -Rp<span x-text="item.fee"></span>
+                    </span>
+                  </template>
                 </div>
               </button>
             </template>
           </div>
         </div>
       </template>
-    </div>
 
-    <!-- FILTER MODAL -->
-    <template x-teleport="body">
-      <div
-        x-show="openFilterModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs sm:items-center"
-      >
+      <!-- FILTER MODAL -->
+      <template x-teleport="body">
         <div
-          @click.away="openFilterModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl sm:rounded-4xl"
+          x-show="openFilterModal"
+          x-cloak
+          class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs sm:items-center"
         >
           <div
-            class="border-border flex items-center justify-between border-b pb-3"
+            @click.away="openFilterModal = false"
+            class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl sm:rounded-4xl"
           >
-            <div class="flex items-center gap-2">
-              <div
-                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
-              >
-                <Filter class="h-4 w-4 stroke-2" />
-              </div>
-
-              <h3 class="text-primary text-base font-extrabold">
-                Advance Filter
-              </h3>
-            </div>
-
-            <button
-              type="button"
-              @click="openFilterModal = false"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+            <div
+              class="border-border flex items-center justify-between border-b pb-3"
             >
-              <X class="h-4 w-4 stroke-[2.5]" />
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-4">
-            <div class="space-y-2">
-              <label
-                class="text-muted-foreground block text-[10px] font-bold uppercase"
-              >
-                Pilih Dompet
-              </label>
-
-              <div class="no-scrollbar flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  @click="filterWalletId = ''"
-                  :class="!filterWalletId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
-                  class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
+              <div class="flex items-center gap-2">
+                <div
+                  class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
                 >
-                  Semua
-                </button>
+                  <Filter class="h-4 w-4 stroke-2" />
+                </div>
 
-                <template x-for="w in wallets" :key="w.id">
-                  <button
-                    type="button"
-                    @click="filterWalletId = w.id"
-                    :class="filterWalletId === w.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
-                    class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
-                  >
-                    <span x-text="w.name"></span>
-                  </button>
-                </template>
+                <h3 class="text-primary text-base font-extrabold">
+                  Advance Filter
+                </h3>
               </div>
-            </div>
-
-            <div class="space-y-2 pt-2">
-              <label
-                class="text-muted-foreground block text-[10px] font-bold uppercase"
-              >
-                Pilih Kategori
-              </label>
-
-              <div class="no-scrollbar flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  @click="filterCategoryId = ''"
-                  :class="!filterCategoryId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
-                  class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
-                >
-                  Semua
-                </button>
-
-                <template x-for="category in categories" :key="category.id">
-                  <button
-                    type="button"
-                    @click="filterCategoryId = category.id"
-                    :class="filterCategoryId === category.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
-                    class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
-                  >
-                    <span x-text="category.name"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-2">
-              <button
-                type="button"
-                @click="clearFilters()"
-                class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-center rounded-2xl border py-3.5 text-xs font-bold transition-all active:scale-95"
-              >
-                Reset
-              </button>
 
               <button
                 type="button"
                 @click="openFilterModal = false"
-                class="bg-primary text-primary-foreground shadow-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+                class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
               >
-                Terapkan Filter
+                <X class="h-4 w-4 stroke-[2.5]" />
               </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+              <div class="space-y-2">
+                <label
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >
+                  Rentang Tanggal
+                </label>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      class="text-muted-foreground mb-1.5 block text-[10px] font-medium"
+                    >
+                      Dari
+                    </label>
+
+                    <input
+                      type="date"
+                      x-model="filterDateFrom"
+                      class="border-border bg-background text-foreground focus:border-primary focus:ring-primary/20 w-full rounded-2xl border px-3 py-2.5 text-xs outline-none focus:ring-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      class="text-muted-foreground mb-1.5 block text-[10px] font-medium"
+                    >
+                      Sampai
+                    </label>
+
+                    <input
+                      type="date"
+                      x-model="filterDateTo"
+                      class="border-border bg-background text-foreground focus:border-primary focus:ring-primary/20 w-full rounded-2xl border px-3 py-2.5 text-xs outline-none focus:ring-2"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >
+                  Pilih Dompet
+                </label>
+
+                <div class="no-scrollbar flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    @click="filterWalletId = ''"
+                    :class="!filterWalletId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
+                    class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
+                  >
+                    Semua
+                  </button>
+
+                  <template x-for="w in wallets" :key="w.id">
+                    <button
+                      type="button"
+                      @click="filterWalletId = w.id"
+                      :class="filterWalletId === w.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
+                      class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
+                    >
+                      <span x-text="w.name"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="space-y-2 pt-2">
+                <label
+                  class="text-muted-foreground block text-[10px] font-bold uppercase"
+                >
+                  Pilih Kategori
+                </label>
+
+                <div class="no-scrollbar flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    @click="filterCategoryId = ''"
+                    :class="!filterCategoryId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
+                    class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
+                  >
+                    Semua
+                  </button>
+
+                  <template x-for="category in categories" :key="category.id">
+                    <button
+                      type="button"
+                      @click="filterCategoryId = category.id"
+                      :class="filterCategoryId === category.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'"
+                      class="cursor-pointer rounded-2xl border px-3.5 py-2 text-xs font-bold transition-all"
+                    >
+                      <span x-text="category.name"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  type="button"
+                  @click="clearFilters()"
+                  class="border-border bg-background text-foreground flex w-full cursor-pointer items-center justify-center rounded-2xl border py-3.5 text-xs font-bold transition-all active:scale-95"
+                >
+                  Reset
+                </button>
+
+                <button
+                  type="button"
+                  @click="openFilterModal = false"
+                  class="bg-primary text-primary-foreground shadow-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity hover:opacity-90 active:scale-95"
+                >
+                  Terapkan Filter
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
 
-    <!-- EXPORT MODAL -->
-    <template x-teleport="body">
-      <div
-        x-show="openExportModal"
-        x-cloak
-        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs sm:items-center"
-      >
+      <!-- EXPORT MODAL -->
+      <template x-teleport="body">
         <div
-          @click.away="openExportModal = false"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl sm:rounded-4xl"
+          x-show="openExportModal"
+          x-cloak
+          class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs sm:items-center"
         >
           <div
-            class="border-border flex items-center justify-between border-b pb-3"
+            @click.away="openExportModal = false"
+            class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl sm:rounded-4xl"
           >
-            <div class="flex items-center gap-2">
-              <div
-                class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
-              >
-                <Download class="h-4 w-4 stroke-2" />
+            <div
+              class="border-border flex items-center justify-between border-b pb-3"
+            >
+              <div class="flex items-center gap-2">
+                <div
+                  class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
+                >
+                  <Download class="h-4 w-4 stroke-2" />
+                </div>
+
+                <h3 class="text-primary text-base font-extrabold">
+                  Export Transaksi
+                </h3>
               </div>
 
-              <h3 class="text-primary text-base font-extrabold">
-                Export Transaksi
-              </h3>
+              <button
+                type="button"
+                @click="openExportModal = false"
+                class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              >
+                <X class="h-4 w-4 stroke-[2.5]" />
+              </button>
             </div>
 
-            <button
-              type="button"
-              @click="openExportModal = false"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
-            >
-              <X class="h-4 w-4 stroke-[2.5]" />
-            </button>
-          </div>
+            <div class="mt-4 space-y-4">
+              <!-- CSV -->
+              <div
+                class="border-border bg-background space-y-2 rounded-2xl border p-4"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="bg-blue-soft text-blue-main flex h-9 w-9 items-center justify-center rounded-xl"
+                    >
+                      <FileSpreadsheet class="h-5 w-5 stroke-2" />
+                    </div>
 
-          <div class="mt-4 space-y-4">
-            <!-- CSV -->
-            <div
-              class="border-border bg-background space-y-2 rounded-2xl border p-4"
-            >
-              <div class="flex items-center justify-between">
+                    <div>
+                      <span class="text-foreground block text-xs font-bold">
+                        Format CSV
+                      </span>
+
+                      <span
+                        class="text-muted-foreground block text-[10px] font-semibold"
+                      >
+                        Excel & Sheets
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    @click="downloadCSV(); openExportModal = false"
+                    class="bg-primary text-primary-foreground flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
+                  >
+                    <Download class="h-3.5 w-3.5 stroke-2" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- JSON -->
+              <div
+                class="border-border bg-background space-y-3 rounded-2xl border p-4"
+              >
                 <div class="flex items-center gap-3">
                   <div
                     class="bg-blue-soft text-blue-main flex h-9 w-9 items-center justify-center rounded-xl"
                   >
-                    <FileSpreadsheet class="h-5 w-5 stroke-2" />
+                    <FileJson class="h-5 w-5 stroke-2" />
                   </div>
 
                   <div>
                     <span class="text-foreground block text-xs font-bold">
-                      Format CSV
+                      Format JSON
                     </span>
 
                     <span
                       class="text-muted-foreground block text-[10px] font-semibold"
                     >
-                      Excel & Sheets
+                      Data mentah
                     </span>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  @click="downloadCSV(); openExportModal = false"
-                  class="bg-primary text-primary-foreground flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
-                >
-                  <Download class="h-3.5 w-3.5 stroke-2" />
-                  <span>Download</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- JSON -->
-            <div
-              class="border-border bg-background space-y-3 rounded-2xl border p-4"
-            >
-              <div class="flex items-center gap-3">
-                <div
-                  class="bg-blue-soft text-blue-main flex h-9 w-9 items-center justify-center rounded-xl"
-                >
-                  <FileJson class="h-5 w-5 stroke-2" />
-                </div>
-
-                <div>
-                  <span class="text-foreground block text-xs font-bold">
-                    Format JSON
-                  </span>
-
-                  <span
-                    class="text-muted-foreground block text-[10px] font-semibold"
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    @click="copyJSON()"
+                    class="border-blue-main/30 bg-blue-soft text-blue-main flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-bold transition-all active:scale-95"
                   >
-                    Data mentah
-                  </span>
+                    <template x-if="!copiedJson">
+                      <div class="flex items-center gap-1">
+                        <Copy class="h-3.5 w-3.5 stroke-2" />
+                        <span>Salin JSON</span>
+                      </div>
+                    </template>
+
+                    <template x-if="copiedJson">
+                      <div class="text-primary flex items-center gap-1">
+                        <Check class="h-3.5 w-3.5 stroke-3" />
+                        <span>Tersalin!</span>
+                      </div>
+                    </template>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="downloadJSON(); openExportModal = false"
+                    class="bg-primary text-primary-foreground flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
+                  >
+                    <Download class="h-3.5 w-3.5 stroke-2" />
+                    <span>Download</span>
+                  </button>
                 </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  @click="copyJSON()"
-                  class="border-blue-main/30 bg-blue-soft text-blue-main flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-bold transition-all active:scale-95"
-                >
-                  <template x-if="!copiedJson">
-                    <div class="flex items-center gap-1">
-                      <Copy class="h-3.5 w-3.5 stroke-2" />
-                      <span>Salin JSON</span>
-                    </div>
-                  </template>
-
-                  <template x-if="copiedJson">
-                    <div class="text-primary flex items-center gap-1">
-                      <Check class="h-3.5 w-3.5 stroke-3" />
-                      <span>Tersalin!</span>
-                    </div>
-                  </template>
-                </button>
-
-                <button
-                  type="button"
-                  @click="downloadJSON(); openExportModal = false"
-                  class="bg-primary text-primary-foreground flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-xs transition-opacity hover:opacity-90 active:scale-95"
-                >
-                  <Download class="h-3.5 w-3.5 stroke-2" />
-                  <span>Download</span>
-                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
+    </div>
   </div>
 </Layout>

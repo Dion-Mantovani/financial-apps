@@ -111,7 +111,8 @@ export default () => ({
         transaction: newTx,
       };
     } catch (err) {
-      console.warn('⚠️ Sync Create Transaction gagal:', err.message);
+      console.error('❌ Sync Update Transaction gagal:', err);
+      throw err;
 
       return {
         success: false,

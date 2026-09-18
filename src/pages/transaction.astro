@@ -81,6 +81,7 @@ const transactionTypes = [
       txStore: Alpine.store('transactionStore'),
 
       isEditMode: false,
+      editingTransactionId: null,
       isSubmitting: false,
 
       showWalletModal: false,
@@ -118,46 +119,75 @@ const transactionTypes = [
       },
 
       async init() {
-  this.errorMessage = '';
+        this.errorMessage = '';
 
-  if (!this.accStore.accounts.length) {
-    await this.accStore.init();
-  }
+        if (!this.accStore.accounts.length) {
+          await this.accStore.init();
+        }
 
-  if (!this.catStore.categories.length) {
-    await this.catStore.init();
-  }
+        if (!this.catStore.categories.length) {
+          await this.catStore.init();
+        }
 
-  if (!this.txStore.transactions.length) {
-    await this.txStore.init();
-  }
+        if (!this.txStore.transactions.length) {
+          await this.txStore.init();
+        }
 
-  const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search);
+        const transactionId = params.get('id');
 
-  if (params.get('type') === 'transfer') {
-    this.formData.type = 'transfer';
-  }
+        if (transactionId) {
+          const transaction = this.txStore.transactions.find(
+            (tx) => tx.id === transactionId
+          );
 
-  if (!this.formData.account_id && this.accStore.activeAccounts.length) {
-    this.formData.account_id = this.accStore.activeAccounts[0].id;
-  }
+          if (transaction) {
+            this.editingTransactionId = transaction.id;
+            this.isEditMode = true;
 
-  this.syncDefaultCategory();
+            this.formData.type = transaction.type;
+            this.formData.transaction_date = transaction.transaction_date;
+            this.formData.account_id = transaction.account_id || '';
+            this.formData.to_account_id = transaction.to_account_id || '';
+            this.formData.category_id = transaction.category_id || '';
+            this.formData.description = transaction.description || '';
 
-  this.$nextTick(() => {
-  this.$refs.amountInput?.focus();
-});
-},
+            this.rawAmount = Number(transaction.amount || 0);
+            this.formattedAmount = this.rawAmount
+              ? this.rawAmount.toLocaleString('id-ID')
+              : '';
+
+            this.rawFee = Number(transaction.fee || 0);
+            this.formattedFee = this.rawFee
+              ? this.rawFee.toLocaleString('id-ID')
+              : '';
+          }
+        } else {
+          if (params.get('type') === 'transfer') {
+            this.formData.type = 'transfer';
+          }
+
+          if (!this.formData.account_id && this.accStore.activeAccounts.length) {
+            this.formData.account_id = this.accStore.activeAccounts[0].id;
+          }
+
+          this.syncDefaultCategory();
+        }
+
+        this.$nextTick(() => {
+          this.$refs.amountInput?.focus();
+        });
+      },
 
       showSuccessMessage(message) {
-  this.successMessage = message;
+        this.successMessage = message;
 
-  clearTimeout(this.successTimeout);
+        clearTimeout(this.successTimeout);
 
-  this.successTimeout = setTimeout(() => {
-    this.successMessage = '';
-  }, 3000);
-},
+        this.successTimeout = setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
 
       get frequentTransactions() {
         const transactions = this.txStore?.transactions || [];
@@ -492,11 +522,38 @@ const transactionTypes = [
         this.isSubmitting = true;
 
         try {
-          const result = await this.txStore.addTransaction({
-            ...this.formData,
-            amount: this.rawAmount,
-            fee: this.rawFee || null,
-          });
+          let result;
+
+          if (this.isEditMode) {
+            result = await this.txStore.updateTransaction(
+              this.editingTransactionId,
+              {
+                ...this.formData,
+                amount: this.rawAmount,
+                fee: this.rawFee || null,
+              },
+              this.catStore.categories
+            );
+          } else {
+            result = await this.txStore.addTransaction(
+              {
+                ...this.formData,
+                amount: this.rawAmount,
+                fee: this.rawFee || null,
+              },
+              this.catStore.categories
+            );
+          }
+
+          if (this.isEditMode) {
+            if (!result?.success) {
+              this.showSyncError();
+              return;
+            }
+
+            window.location.href = '/history';
+            return;
+          }
 
           if (!result?.success) {
             this.showSyncError();
@@ -537,6 +594,25 @@ const transactionTypes = [
           this.isSubmitting = false;
         }
       },
+
+      async deleteTransaction() {
+  if (!this.editingTransactionId) return;
+
+  const confirmed = window.confirm(
+    'Hapus transaksi ini? Data transaksi tidak dapat dipulihkan.'
+  );
+
+  if (!confirmed) return;
+
+  this.isSubmitting = true;
+
+  try {
+    await this.txStore.deleteTransaction(this.editingTransactionId);
+    window.location.href = '/history';
+  } finally {
+    this.isSubmitting = false;
+  }
+},
     }"
     class="space-y-6 pt-5 pb-12"
   >
@@ -867,30 +943,59 @@ const transactionTypes = [
 
     <!-- 5. ACTION -->
     <div class="space-y-2 pt-1">
-      <div class="grid grid-cols-2 gap-2.5">
-        <button
-          type="button"
-          @click="saveAndAddTransaction()"
-          :disabled="isSubmitting"
-          class="border-border text-muted-foreground hover:bg-muted flex cursor-pointer items-center justify-center gap-1.5 rounded-2xl border py-3.5 text-xs font-bold active:scale-95"
-        >
-          Simpan & Tambah
-        </button>
+      <template x-if="!isEditMode">
+        <div class="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            @click="saveAndAddTransaction()"
+            :disabled="isSubmitting"
+            class="border-border text-muted-foreground hover:bg-muted flex cursor-pointer items-center justify-center gap-1.5 rounded-2xl border py-3.5 text-xs font-bold active:scale-95"
+          >
+            Simpan & Tambah
+          </button>
 
-        <button
-          type="button"
-          @click="saveTransaction()"
-          :disabled="isSubmitting"
-          :class="isSubmitting ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'"
-          class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity"
-        >
-          <Check class="h-4 w-4 stroke-[2.5]" />
+          <button
+            type="button"
+            @click="saveTransaction()"
+            :disabled="isSubmitting"
+            :class="isSubmitting ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'"
+            class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity"
+          >
+            <Check class="h-4 w-4 stroke-[2.5]" />
 
-          <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi'">
-            Simpan Transaksi
-          </span>
-        </button>
-      </div>
+            <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi'">
+              Simpan Transaksi
+            </span>
+          </button>
+        </div>
+      </template>
+
+      <template x-if="isEditMode">
+        <div class="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            @click="deleteTransaction()"
+            :disabled="isSubmitting"
+            class="flex cursor-pointer items-center justify-center rounded-2xl border border-red-200 py-3.5 text-xs font-bold text-red-500 transition-colors hover:bg-red-50 active:scale-95"
+          >
+            Hapus Transaksi
+          </button>
+
+          <button
+            type="button"
+            @click="saveTransaction()"
+            :disabled="isSubmitting"
+            :class="isSubmitting ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'"
+            class="bg-primary text-primary-foreground shadow-soft flex cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-opacity"
+          >
+            <Check class="h-4 w-4 stroke-[2.5]" />
+
+            <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'">
+              Simpan Perubahan
+            </span>
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- MODAL PILIH AKUN -->
