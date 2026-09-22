@@ -31,7 +31,17 @@ export const appStore = {
     try {
       await initDB();
       await this.updatePendingCount();
-      await this.checkAutoSyncThreshold();
+
+      // Cek jika database lokal kosong (pertama kali buka di HP/device baru), tarik data awal dari Supabase
+      const accounts = await getAllRecords('accounts');
+      if (accounts.length === 0) {
+        console.log(
+          '[App Store] Local DB kosong, melakukan initial pull dari Supabase...'
+        );
+        await this.triggerSync();
+      } else {
+        await this.checkAutoSyncThreshold();
+      }
 
       // Memicu auto sync saat device kembali terhubung ke internet
       window.addEventListener('online', () => {
