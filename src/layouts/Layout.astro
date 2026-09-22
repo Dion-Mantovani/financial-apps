@@ -16,7 +16,7 @@ const { title = 'Studion App', hideBottomNav = false } = Astro.props;
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -45,7 +45,7 @@ const { title = 'Studion App', hideBottomNav = false } = Astro.props;
     >
       <!-- Main Content Container (Ini yang Melakukan Scroll Internal) -->
       <main
-        class={`no-scrollbar flex-1 overflow-y-auto space-y-4 px-5 ${
+        class={`no-scrollbar flex-1 overflow-y-auto space-y-4 px-5  ${
           hideBottomNav ? 'pb-6' : 'pb-24'
         }`}
       >

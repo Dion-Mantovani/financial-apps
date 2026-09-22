@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import {
   Wallet,
   Plus,
+  Building,
   ArrowRightLeft,
   Landmark,
   CreditCard,
@@ -14,473 +15,85 @@ import {
   Trash2,
   X,
   Sparkles,
-  Check,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
   AlertTriangle,
-  ChevronDown,
   PiggyBank,
   QrCode,
   Briefcase,
-  Building,
+  Check,
 } from '@lucide/astro';
 ---
 
 <Layout title="Dompet Saya - Studion App">
-  <div
-    x-data="{
-  // Gunakan getter agar selalu mengambil instance store yang valid dari Alpine
-  get accStore() {
-    return Alpine.store('accountStore');
-  },
-  get txStore() {
-    return Alpine.store('transactionStore');
-  },
-
-  isReordering: false,
-  walletOrder: [],
-  originalWalletOrder: [],
-  openDetailModal: false,
-  openFormModal: false,
-  openCorrectionModal: false,
-  openDeleteWarningModal: false,
-openDeleteConfirmModal: false,
-deleteConfirmName: '',
-  isEdit: false,
-  openIconPicker: false,
-  selectedWallet: {},
-  formData: {
-    id: null,
-    name: '',
-    icon: 'landmark',
-    initial_balance: 0
-  },
-  formattedBalance: '',
-rawBalance: 0,
-  newCorrectionBalance: 0,
-
-      // Semua ikon dompet yang tersedia
-      availableIcons: [
-        { id: 'landmark', name: 'Bank Utama' },
-        { id: 'building', name: 'Bank Cabang' },
-        { id: 'credit-card', name: 'Kartu Kredit' },
-        { id: 'coins', name: 'Tunai / Cash' },
-        { id: 'wallet', name: 'Dompet Fisik' },
-        { id: 'piggy-bank', name: 'Celengan' },
-        { id: 'qr-code', name: 'E-Wallet QR' },
-        { id: 'briefcase', name: 'Gaji / Bisnis' },
-      ],
-
-     async init() {
-  if (this.accStore && !this.accStore.accounts?.length) {
-    await this.accStore.init();
-  }
-
-  if (this.txStore && !this.txStore.transactions?.length) {
-    await this.txStore.init();
-  }
-
-  const savedOrder = JSON.parse(
-    localStorage.getItem('wallet_order') || '[]'
-  );
-
-  if (savedOrder.length) {
-    this.walletOrder = savedOrder;
-  }
-},
-
-handleBalanceInput(event) {
-  const value = event.target.value.replace(/[^0-9]/g, '');
-
-  this.rawBalance = value ? parseInt(value, 10) : 0;
-
-  this.formattedBalance = this.rawBalance
-    ? this.rawBalance.toLocaleString('id-ID')
-    : '';
-},
-
-      get wallets() {
-  const accounts = this.accStore?.accounts || [];
-
-  if (!accounts.length) return [];
-
-  if (!this.walletOrder.length) {
-    return accounts;
-  }
-
-  const orderMap = new Map(
-    this.walletOrder.map((id, index) => [id, index])
-  );
-
-  return [...accounts].sort((a, b) => {
-    const indexA = orderMap.has(a.id)
-      ? orderMap.get(a.id)
-      : Number.MAX_SAFE_INTEGER;
-
-    const indexB = orderMap.has(b.id)
-      ? orderMap.get(b.id)
-      : Number.MAX_SAFE_INTEGER;
-
-    return indexA - indexB;
-  });
-},
-
-      get totalBalance() {
-        if (!this.accStore || typeof this.accStore.getTotalAssets !== 'function') return 'Rp 0';
-        const total = this.accStore.getTotalAssets(this.txStore?.transactions || []);
-        return 'Rp ' + (total || 0).toLocaleString('id-ID');
-      },
-
-      get topWallet() {
-        if (!this.wallets.length) return null;
-        return [...this.wallets].map(w => ({
-          ...w,
-          realBalance: this.accStore.getBalance(w, this.txStore?.transactions || [])
-        })).sort((a, b) => b.realBalance - a.realBalance)[0];
-      },
-
-      formatCurrency(val) {
-        return 'Rp ' + (val || 0).toLocaleString('id-ID');
-      },
-
-      getAccountRealBalance(id) {
-  if (!this.accStore || typeof this.accStore.getBalance !== 'function') {
-    return 0;
-  }
-
-  const account = this.wallets.find((wallet) => wallet.id === id);
-
-  if (!account) {
-    return 0;
-  }
-
-  return this.accStore.getBalance(
-    account,
-    this.txStore?.transactions || []
-  );
-},
-
-      getWalletTransactionCount(id) {
-        if (!this.txStore?.transactions) return 0;
-        return this.txStore.transactions.filter(
-          tx => tx.account_id === id || tx.to_account_id === id
-        ).length;
-      },
-
-      toggleReorderMode() {
-  if (!this.isReordering) {
-    this.originalWalletOrder = this.wallets.map(
-      (wallet) => wallet.id
-    );
-
-    this.walletOrder = [...this.originalWalletOrder];
-    this.isReordering = true;
-    return;
-  }
-
-  this.finishReorder();
-},
-
-      moveWallet(index, direction) {
-  const targetIndex =
-    direction === 'up' ? index - 1 : index + 1;
-
-  if (
-    targetIndex < 0 ||
-    targetIndex >= this.wallets.length
-  ) {
-    return;
-  }
-
-  const newOrder = this.wallets.map(
-    (wallet) => wallet.id
-  );
-
-  [newOrder[index], newOrder[targetIndex]] = [
-    newOrder[targetIndex],
-    newOrder[index],
-  ];
-
-  this.walletOrder = newOrder;
-},
-
-     finishReorder() {
-  const currentOrder = this.wallets.map(
-    (wallet) => wallet.id
-  );
-
-  const hasChanged =
-    JSON.stringify(currentOrder) !==
-    JSON.stringify(this.originalWalletOrder);
-
-  if (hasChanged) {
-    localStorage.setItem(
-      'wallet_order',
-      JSON.stringify(currentOrder)
-    );
-  }
-
-  this.originalWalletOrder = [];
-  this.isReordering = false;
-},
-
-      showDetail(wallet) {
-        this.selectedWallet = wallet;
-        this.openDetailModal = true;
-      },
-
-     openAddModal() {
-  this.isEdit = false;
-
-  this.formData = {
-    id: null,
-    name: '',
-    icon: 'landmark',
-    initial_balance: 0
-  };
-
-  this.rawBalance = 0;
-  this.formattedBalance = '';
-
-  this.openFormModal = true;
-
-  this.$nextTick(() => {
-    this.$refs.accountNameInput?.focus();
-  });
-},
-
-      openEditFromDetail() {
-        this.isEdit = true;
-
-  const currentBalance = this.getWalletCurrentBalance(
-    this.selectedWallet.id
-  );
-
-  this.formData = {
-    id: this.selectedWallet.id,
-    name: this.selectedWallet.name,
-    icon: this.selectedWallet.icon,
-  };
-
-  this.rawBalance = currentBalance;
-
-  this.formattedBalance = currentBalance
-    ? currentBalance.toLocaleString('id-ID')
-    : '';
-
-  this.openDetailModal = false;
-  this.openFormModal = true;
-      },
-
-      getWalletCurrentBalance(walletId) {
-  const wallet = this.accStore.accounts.find(
-    (account) => account.id === walletId
-  );
-
-  if (!wallet) return 0;
-
-  let balance = Number(wallet.initial_balance) || 0;
-
-  this.txStore.transactions.forEach((tx) => {
-    const amount = Number(tx.amount) || 0;
-    const fee = Number(tx.fee) || 0;
-
-    if (tx.type === 'income' && tx.account_id === walletId) {
-      balance += amount;
-    }
-
-    if (tx.type === 'expense' && tx.account_id === walletId) {
-      balance -= amount;
-    }
-
-    if (tx.type === 'transfer') {
-      if (tx.account_id === walletId) {
-        balance -= amount + fee;
-      }
-
-      if (tx.to_account_id === walletId) {
-        balance += amount;
-      }
-    }
-  });
-
-  return balance;
-},
-      
-      async deleteWalletFromDetail() {
-  const txCount = this.getWalletTransactionCount(
-    this.selectedWallet.id
-  );
-
-  // Tidak punya transaksi → langsung hapus
-  if (txCount === 0) {
-    await this.accStore.deleteAccount(
-      this.selectedWallet.id,
-      this.txStore
-    );
-
-    this.openDetailModal = false;
-    return;
-  }
-
-  // Punya transaksi → warning pertama
-  this.openDeleteWarningModal = true;
-},
-
-proceedDeleteConfirmation() {
-  this.openDeleteWarningModal = false;
-  this.deleteConfirmName = '';
-  this.openDeleteConfirmModal = true;
-
-  this.$nextTick(() => {
-    this.$refs.deleteConfirmInput?.focus();
-  });
-},
-
-async confirmDeleteWallet() {
-  if (
-    this.deleteConfirmName.trim() !==
-    this.selectedWallet.name
-  ) {
-    return;
-  }
-
-  await this.accStore.deleteAccount(
-    this.selectedWallet.id,
-    this.txStore
-  );
-
-  this.openDeleteConfirmModal = false;
-  this.openDetailModal = false;
-  this.deleteConfirmName = '';
-},
-
-      async saveWallet() {
-  if (!this.formData.name.trim()) return;
-
-  const targetBalance = this.rawBalance;
-
-  if (!this.accStore) {
-    console.error('accountStore belum terinisialisasi!');
-    return;
-  }
-
-  if (this.isEdit) {
-   const txCount = this.getWalletTransactionCount(this.formData.id);
-const currentBalance = this.getWalletCurrentBalance(
-  this.formData.id
-);
-
-    if (txCount > 0 && targetBalance !== currentBalance) {
-      this.newCorrectionBalance = targetBalance;
-      this.openFormModal = false;
-      this.openCorrectionModal = true;
-      return;
-    }
-
-    await this.accStore.updateAccount(this.formData.id, {
-      name: this.formData.name.trim(),
-      icon: this.formData.icon,
-      initial_balance: targetBalance
-    });
-  } else {
-    await this.accStore.addAccount({
-      name: this.formData.name.trim(),
-      icon: this.formData.icon,
-      initial_balance: targetBalance
-    });
-
-    // Account baru selalu masuk paling atas di UI
-    const newWallet = this.accStore.accounts[0];
-
-    this.walletOrder = [
-      newWallet.id,
-      ...this.walletOrder.filter((id) => id !== newWallet.id),
-    ];
-
-    // Simpan urutan terbaru
-    localStorage.setItem(
-      'wallet_order',
-      JSON.stringify(this.walletOrder)
-    );
-  }
-
-  this.openFormModal = false;
-},
-
-     async confirmCorrection() {
-  const account = this.accStore.accounts.find(
-    (acc) => acc.id === this.formData.id
-  );
-
-  if (!account) return;
-
-  await this.accStore.updateAccount(this.formData.id, {
-    name: this.formData.name.trim(),
-    icon: this.formData.icon
-  });
-
-  await this.accStore.correctBalance(
-    account,
-    this.newCorrectionBalance,
-    this.txStore.transactions || [],
-    this.txStore
-  );
-
-  this.openCorrectionModal = false;
-},
-    }
-      
-    
-    "
-    class="space-y-5 pt-2 pb-12"
-  >
-    <!-- 1. STICKY HEADER -->
-    <div
-      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
-    >
+  <!--
+    ========================================================================
+    ACCOUNT MANAGEMENT CORE VIEW
+    ------------------------------------------------------------------------
+    Controller Alpine: `accountUI` (Inisialisasi via x-data)
+    Deskripsi: Halaman manajemen dompet/akun finansial pengguna.
+               Mendukung fitur CRUD dompet, reordering urutan tampilan,
+               rekap saldo real-time, dan proteksi hapus bertingkat.
+    ========================================================================
+  -->
+  <div x-data="accountUI" class="space-y-5 pt-2 pb-12">
+    <!-- 
+      ----------------------------------------------------------------------
+      SECTION 1: STICKY HEADER
+      ----------------------------------------------------------------------
+      Navigasi atas fixed/sticky dengan efek backdrop blur.
+      Berisi tombol kembali ke Dashboard dan Judul Halaman.
+    -->
+    <div class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md">
       <div class="flex items-center justify-between">
+        <!-- Tombol Kembali ke Dashboard Utama -->
         <a
           href="/"
           class="border-border bg-card text-muted-foreground hover:bg-muted flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
+          title="Kembali ke Dashboard"
         >
           <ArrowLeft class="h-4.5 w-4.5 stroke-[2.5]" />
         </a>
 
+        <!-- Judul Halaman -->
         <h1 class="text-primary text-base font-extrabold tracking-tight">
           Dompet Saya
         </h1>
 
+        <!-- Spacer seimbang untuk centering judul -->
         <div class="w-9.5"></div>
       </div>
     </div>
 
-    <!-- 2. CARD UTAMA (TOTAL SALDO & MICRO INFO) -->
-    <div
-      class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
-    >
-      <div
-        class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
-      >
-      </div>
-      <div
-        class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"
-      >
-      </div>
+    <!-- 
+      ----------------------------------------------------------------------
+      SECTION 2: CARD UTAMA (TOTAL SALDO & METRIK MIKRO)
+      ----------------------------------------------------------------------
+      Card gradien biru monokromatik penampung ringkasan statistik:
+      - Total akumulasi saldo dari seluruh dompet aktif
+      - Jumlah dompet terdaftar
+      - Nama dompet teratas (saldo terbesar)
+      - Total transaksi terkait
+      - Toggle Mode Reorder Urutan Dompet
+    -->
+    <div class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300">
+      <!-- Element Dekoratif Background Circle -->
+      <div class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"></div>
+      <div class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"></div>
 
+      <!-- Header Card & Button Toggle Reorder Mode -->
       <div class="relative z-10 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <div
-            class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md"
-          >
+          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md">
             <Wallet class="h-4 w-4 stroke-[2.2] text-white" />
           </div>
-          <span class="text-xs font-semibold tracking-wide text-white/80"
-            >Total Saldo Dompet</span
-          >
+          <span class="text-xs font-semibold tracking-wide text-white/80">
+            Total Saldo Dompet
+          </span>
         </div>
 
+        <!-- Tombol Aktifkan Mode Reorder -->
         <button
           type="button"
           @click="toggleReorderMode()"
@@ -492,6 +105,7 @@ const currentBalance = this.getWalletCurrentBalance(
         </button>
       </div>
 
+      <!-- Display Total Saldo Keseluruhan -->
       <div class="relative z-10 mt-5 mb-4">
         <h2
           x-text="totalBalance"
@@ -501,78 +115,83 @@ const currentBalance = this.getWalletCurrentBalance(
         </h2>
       </div>
 
-      <div
-        class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3"
-      >
+      <!-- Footer Micro Info (3 Kolom Ringkasan) -->
+      <div class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3">
+        <!-- Metric 1: Jumlah Dompet -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
-          >
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
             <Wallet class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
               x-text="wallets.length"
               class="text-[11px] leading-tight font-extrabold text-white"
-              >0</span
             >
-            <span class="truncate text-[9px] font-medium text-white/70"
-              >Dompet</span
-            >
+              0
+            </span>
+            <span class="truncate text-[9px] font-medium text-white/70">
+              Dompet
+            </span>
           </div>
         </div>
 
+        <!-- Metric 2: Dompet Teratas (Saldo Terbesar) -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
-          >
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
             <Star class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
               x-text="topWallet ? topWallet.name : '-'"
               class="truncate text-[11px] leading-tight font-extrabold text-white"
-              >-</span
             >
-            <span class="truncate text-[9px] font-medium text-white/70"
-              >Teratas</span
-            >
+              -
+            </span>
+            <span class="truncate text-[9px] font-medium text-white/70">
+              Teratas
+            </span>
           </div>
         </div>
 
+        <!-- Metric 3: Total Record Transaksi -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
-          >
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
             <Activity class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
             <span
-              x-text="txStore?.transactions?.length || 0"
+              x-text="$store.transaction.transactions?.length || 0"
               class="text-[11px] leading-tight font-extrabold text-white"
-              >0</span
             >
-            <span class="truncate text-[9px] font-medium text-white/70"
-              >Transaksi</span
-            >
+              0
+            </span>
+            <span class="truncate text-[9px] font-medium text-white/70">
+              Transaksi
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 3. ACTION HEADER -->
+    <!-- 
+      ----------------------------------------------------------------------
+      SECTION 3: ACTION HEADER BAR
+      ----------------------------------------------------------------------
+      Menampilkan sub-header "Daftar Dompet", indikator mode reorder,
+      serta CTA Shortcut Transfer antar dompet / Selesai Reorder.
+    -->
     <div class="flex items-center justify-between px-1">
       <div class="flex items-center gap-2">
         <span class="text-primary text-sm font-bold"> Daftar Dompet </span>
+        <!-- Badge Indikator Mode Reorder -->
         <template x-if="isReordering">
-          <span
-            class="bg-blue-soft text-blue-main rounded-full px-2.5 py-0.5 text-[9px] font-extrabold"
-          >
+          <span class="bg-blue-soft text-blue-main rounded-full px-2.5 py-0.5 text-[9px] font-extrabold">
             Reorder Mode
           </span>
         </template>
       </div>
 
+      <!-- Tombol Pintasan Transfer (Aktif saat Normal Mode) -->
       <template x-if="!isReordering">
         <a
           href="/transaction?type=transfer"
@@ -583,6 +202,7 @@ const currentBalance = this.getWalletCurrentBalance(
         </a>
       </template>
 
+      <!-- Tombol Selesai Reorder (Aktif saat Reorder Mode) -->
       <template x-if="isReordering">
         <button
           type="button"
@@ -595,78 +215,84 @@ const currentBalance = this.getWalletCurrentBalance(
       </template>
     </div>
 
-    <!-- 4. DAFTAR DOMPET -->
-    <div
-      class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
-    >
-      <template x-if="accStore?.isLoading">
+    <!-- 
+      ----------------------------------------------------------------------
+      SECTION 4: DAFTAR KARTU DOMPET (LIST GRID)
+      ----------------------------------------------------------------------
+      Daftar iterasi seluruh dompet pengguna dari `accountStore`[cite: 19].
+      Dilengkapi kontrol geser/naik-turun saat Reorder Mode aktif.
+    -->
+    <div class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border">
+      <!-- Loading State -->
+      <template x-if="$store.account.isLoading">
         <div class="text-muted-foreground p-4 text-center text-xs">
           Memuat dompet...
         </div>
       </template>
 
-      <template x-if="!accStore?.isLoading && wallets.length === 0">
+      <!-- Empty State -->
+      <template x-if="!$store.account.isLoading && wallets.length === 0">
         <div class="text-muted-foreground p-6 text-center text-xs">
           Belum ada dompet. Klik tombol di bawah untuk menambah.
         </div>
       </template>
 
+      <!-- Iterasi Item Dompet -->
       <template x-for="(wallet, index) in wallets" :key="wallet.id">
         <div
           @click="!isReordering && showDetail(wallet)"
           class="flex items-center justify-between p-4 transition-colors"
           :class="isReordering ? 'bg-muted/30' : 'cursor-pointer hover:bg-muted/50'"
         >
+          <!-- Info Kiri: Icon & Nama Dompet -->
           <div class="flex min-w-0 items-center gap-3.5">
-            <!-- Dynamic Icon Box -->
-            <div
-              class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-            >
-              <template x-if="wallet.icon === 'landmark'"
-                ><Landmark class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'building'"
-                ><Building class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'credit-card'"
-                ><CreditCard class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'coins'"
-                ><Coins class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'wallet'"
-                ><Wallet class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'piggy-bank'"
-                ><PiggyBank class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'qr-code'"
-                ><QrCode class="h-5 w-5 stroke-2" /></template
-              >
-              <template x-if="wallet.icon === 'briefcase'"
-                ><Briefcase class="h-5 w-5 stroke-2" /></template
-              >
+            <div class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
+              <!-- Render Icon Dinamis -->
+              <template x-if="wallet.icon === 'landmark'">
+                <Landmark class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'building'">
+                <Building class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'credit-card'">
+                <CreditCard class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'coins'">
+                <Coins class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'wallet'">
+                <Wallet class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'piggy-bank'">
+                <PiggyBank class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'qr-code'">
+                <QrCode class="h-5 w-5 stroke-2" />
+              </template>
+              <template x-if="wallet.icon === 'briefcase'">
+                <Briefcase class="h-5 w-5 stroke-2" />
+              </template>
             </div>
 
             <div class="flex min-w-0 flex-col">
               <span
                 x-text="wallet.name"
-                class="text-foreground truncate text-xs font-bold"></span>
-              <div
-                class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium"
-              >
-                <span
-                  x-text="`${getWalletTransactionCount(wallet.id)} transaksi`"
-                ></span>
+                class="text-foreground truncate text-xs font-bold"
+              ></span>
+              <div class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium">
+                <span x-text="`${getWalletTransactionCount(wallet.id)} transaksi`"></span>
               </div>
             </div>
           </div>
 
+          <!-- Info Kanan: Saldo Real-Time & Control Button Reorder -->
           <div class="flex shrink-0 items-center gap-2">
             <span
               x-text="formatCurrency(getAccountRealBalance(wallet.id))"
-              class="text-foreground text-xs font-extrabold"></span>
+              class="text-foreground text-xs font-extrabold"
+            ></span>
 
+            <!-- Control Reorder (Panah Naik / Turun) -->
             <template x-if="isReordering">
               <div class="flex flex-col gap-1 pr-1">
                 <button
@@ -674,6 +300,7 @@ const currentBalance = this.getWalletCurrentBalance(
                   @click.stop="moveWallet(index, 'up')"
                   :disabled="index === 0"
                   class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
+                  title="Pindah ke atas"
                 >
                   <ArrowUp class="h-3 w-3 stroke-3" />
                 </button>
@@ -683,6 +310,7 @@ const currentBalance = this.getWalletCurrentBalance(
                   @click.stop="moveWallet(index, 'down')"
                   :disabled="index === wallets.length - 1"
                   class="border-border bg-card text-foreground hover:bg-blue-soft flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border disabled:opacity-20"
+                  title="Pindah ke bawah"
                 >
                   <ArrowDown class="h-3 w-3 stroke-3" />
                 </button>
@@ -693,7 +321,12 @@ const currentBalance = this.getWalletCurrentBalance(
       </template>
     </div>
 
-    <!-- 5. TOMBOL TAMBAH DOMPET -->
+    <!-- 
+      ----------------------------------------------------------------------
+      SECTION 5: BUTTON TAMBAH DOMPET BARU
+      ----------------------------------------------------------------------
+      Dibatasi (hidden) jika Reorder Mode sedang aktif.
+    -->
     <div x-show="!isReordering" class="pt-1">
       <button
         type="button"
@@ -705,7 +338,14 @@ const currentBalance = this.getWalletCurrentBalance(
       </button>
     </div>
 
-    <!-- 6. MODAL DETAIL DOMPET -->
+    <!-- 
+      ========================================================================
+      SECTION 6: MODAL DETAIL DOMPET
+      ------------------------------------------------------------------------
+      Overlay modal untuk melihat rincian saldo real-time dompet terpilih,
+      serta opsi untuk memicu aksi Edit atau Hapus.
+      ========================================================================
+    -->
     <div
       x-show="openDetailModal"
       x-cloak
@@ -715,17 +355,14 @@ const currentBalance = this.getWalletCurrentBalance(
         @click.away="openDetailModal = false"
         class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-4xl border pb-16 shadow-2xl transition-transform sm:rounded-4xl"
       >
+        <!-- Modal Card Header -->
         <div class="bg-card-blue-dark relative p-6 text-white">
-          <div
-            class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
-          >
-          </div>
+          <div class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"></div>
 
           <div class="relative z-10 flex items-center justify-between">
-            <span
-              class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
-              >Detail Dompet</span
-            >
+            <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase">
+              Detail Dompet
+            </span>
             <button
               type="button"
               @click="openDetailModal = false"
@@ -736,61 +373,56 @@ const currentBalance = this.getWalletCurrentBalance(
           </div>
 
           <div class="relative z-10 mt-5 flex items-center gap-3.5">
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
-            >
-              <template x-if="selectedWallet.icon === 'landmark'"
-                ><Landmark class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'building'"
-                ><Building class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'credit-card'"
-                ><CreditCard class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'coins'"
-                ><Coins class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'wallet'"
-                ><Wallet class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'piggy-bank'"
-                ><PiggyBank class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'qr-code'"
-                ><QrCode class="h-6 w-6 stroke-2" /></template
-              >
-              <template x-if="selectedWallet.icon === 'briefcase'"
-                ><Briefcase class="h-6 w-6 stroke-2" /></template
-              >
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white">
+              <template x-if="selectedWallet.icon === 'landmark'">
+                <Landmark class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'building'">
+                <Building class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'credit-card'">
+                <CreditCard class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'coins'">
+                <Coins class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'wallet'">
+                <Wallet class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'piggy-bank'">
+                <PiggyBank class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'qr-code'">
+                <QrCode class="h-6 w-6 stroke-2" />
+              </template>
+              <template x-if="selectedWallet.icon === 'briefcase'">
+                <Briefcase class="h-6 w-6 stroke-2" />
+              </template>
             </div>
 
             <div class="flex min-w-0 flex-col">
               <h2
                 x-text="selectedWallet.name"
                 class="truncate text-lg font-black tracking-tight text-white"
-              >
-              </h2>
+              ></h2>
               <span
                 x-text="`${getWalletTransactionCount(selectedWallet.id)} Total Transaksi`"
-                class="text-[10px] text-white/70"></span>
+                class="text-[10px] text-white/70"
+              ></span>
             </div>
           </div>
         </div>
 
+        <!-- Modal Body & Action Buttons -->
         <div class="space-y-4 p-6">
-          <div
-            class="border-border bg-background rounded-2xl border p-4 text-center"
-          >
-            <span
-              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
-              >Saldo Real-Time</span
-            >
+          <div class="border-border bg-background rounded-2xl border p-4 text-center">
+            <span class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+              Saldo Real-Time
+            </span>
             <p
               x-text="formatCurrency(getAccountRealBalance(selectedWallet.id))"
               class="text-primary mt-0.5 text-2xl font-black tracking-tight"
-            >
-            </p>
+            ></p>
           </div>
 
           <div class="flex items-center gap-2 pt-1">
@@ -816,7 +448,14 @@ const currentBalance = this.getWalletCurrentBalance(
       </div>
     </div>
 
-    <!-- MODAL WARNING DELETE -->
+    <!-- 
+      ========================================================================
+      SECTION 6A: MODAL WARNING DELETE (TAHAP 1 PROTEKSI)
+      ------------------------------------------------------------------------
+      Peringatan awal jika dompet yang mau dihapus ternyata masih
+      memiliki keterkaitan data transaksi.
+      ========================================================================
+    -->
     <div
       x-show="openDeleteWarningModal"
       x-cloak
@@ -827,9 +466,7 @@ const currentBalance = this.getWalletCurrentBalance(
         class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
       >
         <div class="flex items-start gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
-          >
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
             <AlertTriangle class="h-5 w-5 stroke-2" />
           </div>
 
@@ -837,18 +474,19 @@ const currentBalance = this.getWalletCurrentBalance(
             <h3 class="text-foreground text-sm font-extrabold">
               Hapus Dompet?
             </h3>
-
             <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-              Dompet
-              <strong class="text-foreground" x-text="selectedWallet.name"
-              ></strong>
+              Dompet{' '}
+              <strong
+                class="text-foreground"
+                x-text="selectedWallet.name"
+              ></strong>{' '}
               memiliki
               <strong
                 class="text-foreground"
-                x-text="getWalletTransactionCount(selectedWallet.id)"></strong>
+                x-text="getWalletTransactionCount(selectedWallet.id)"
+              ></strong>{' '}
               transaksi.
             </p>
-
             <p class="text-muted-foreground mt-2 text-xs leading-relaxed">
               Jika dilanjutkan, seluruh transaksi yang terkait dengan dompet ini
               juga akan dihapus dan
@@ -867,7 +505,6 @@ const currentBalance = this.getWalletCurrentBalance(
           >
             Batal
           </button>
-
           <button
             type="button"
             @click="proceedDeleteConfirmation()"
@@ -879,7 +516,14 @@ const currentBalance = this.getWalletCurrentBalance(
       </div>
     </div>
 
-    <!-- MODAL FINAL DELETE CONFIRMATION -->
+    <!-- 
+      ========================================================================
+      SECTION 6B: MODAL FINAL CONFIRMATION DELETE (TAHAP 2 KETIK NAMA)
+      ------------------------------------------------------------------------
+      Konfirmasi tingkat tinggi yang mewajibkan pengguna mengetikkan nama
+      dompet secara akurat sebelum tombol Hapus Permanen diaktifkan.
+      ========================================================================
+    -->
     <div
       x-show="openDeleteConfirmModal"
       x-cloak
@@ -890,17 +534,13 @@ const currentBalance = this.getWalletCurrentBalance(
         class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
       >
         <div class="flex items-start gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
-          >
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
             <Trash2 class="h-5 w-5 stroke-2" />
           </div>
-
           <div>
             <h3 class="text-foreground text-sm font-extrabold">
               Konfirmasi Penghapusan
             </h3>
-
             <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
               Tindakan ini akan menghapus dompet beserta seluruh transaksi yang
               terkait secara permanen.
@@ -913,13 +553,10 @@ const currentBalance = this.getWalletCurrentBalance(
             Untuk memastikan lu benar-benar sadar dengan tindakan ini, ketik
             nama dompet berikut:
           </p>
-
           <p
             class="text-foreground bg-muted mt-2 rounded-xl px-3 py-2 text-center text-sm font-black"
             x-text="selectedWallet.name"
-          >
-          </p>
-
+          ></p>
           <input
             type="text"
             x-ref="deleteConfirmInput"
@@ -939,16 +576,11 @@ const currentBalance = this.getWalletCurrentBalance(
           >
             Batal
           </button>
-
           <button
             type="button"
             @click="confirmDeleteWallet()"
             :disabled="deleteConfirmName.trim() !== selectedWallet.name"
-            :class=`
-          deleteConfirmName.trim() === selectedWallet.name
-            ? 'bg-rose-600 hover:bg-rose-500 cursor-pointer'
-            : 'bg-rose-200 text-muted-foreground cursor-not-allowed'
-        `
+            :class="deleteConfirmName.trim() === selectedWallet.name ? 'bg-rose-600 hover:bg-rose-500 cursor-pointer' : 'bg-rose-200 text-muted-foreground cursor-not-allowed'"
             class="w-2/3 rounded-2xl py-3.5 text-xs font-bold text-white transition-all active:scale-95 disabled:active:scale-100"
           >
             Hapus Permanen
@@ -957,7 +589,14 @@ const currentBalance = this.getWalletCurrentBalance(
       </div>
     </div>
 
-    <!-- 7. MODAL KOREKSI SALDO -->
+    <!-- 
+      ========================================================================
+      SECTION 7: MODAL KOREKSI SALDO AKUN
+      ------------------------------------------------------------------------
+      Pemberitahuan bahwa pengubahan saldo pada akun yang sudah memiliki
+      transaksi akan otomatis membuat "Transaksi Koreksi Saldo".
+      ========================================================================
+    -->
     <div
       x-show="openCorrectionModal"
       x-cloak
@@ -968,9 +607,7 @@ const currentBalance = this.getWalletCurrentBalance(
         class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col space-y-4 rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
       >
         <div class="flex items-center gap-3 text-amber-600">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100"
-          >
+          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100">
             <AlertTriangle class="h-5 w-5 stroke-2" />
           </div>
           <div>
@@ -985,11 +622,14 @@ const currentBalance = this.getWalletCurrentBalance(
 
         <p class="text-muted-foreground text-xs leading-relaxed">
           Perubahan saldo awal tidak disarankan secara langsung karena ada
-          transaksi tercatat. Sistem akan membuat <strong
-            class="text-foreground">Transaksi Koreksi Saldo</strong
-          > otomatis agar total saldo dompet menjadi <strong
+          transaksi tercatat. Sistem akan membuat
+          <strong class="text-foreground">Transaksi Koreksi Saldo</strong>{' '}
+          otomatis agar total saldo dompet menjadi
+          <strong
             class="text-foreground"
-            x-text="formatCurrency(newCorrectionBalance)"></strong>.
+            x-text="formatCurrency(newCorrectionBalance)"
+          ></strong>
+          .
         </p>
 
         <div class="flex items-center gap-2 pt-2">
@@ -997,19 +637,28 @@ const currentBalance = this.getWalletCurrentBalance(
             type="button"
             @click="openCorrectionModal = false"
             class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
-            >Batal</button
           >
+            Batal
+          </button>
           <button
             type="button"
             @click="confirmCorrection()"
             class="shadow-soft w-2/3 cursor-pointer rounded-2xl bg-amber-600 py-3.5 text-xs font-bold text-white hover:bg-amber-500 active:scale-95"
-            >Buat Koreksi</button
           >
+            Buat Koreksi
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- 8. MODAL FORM TAMBAH/EDIT DOMPET -->
+    <!-- 
+      ========================================================================
+      SECTION 8: MODAL FORM (TAMBAH / EDIT DOMPET)
+      ------------------------------------------------------------------------
+      Formulir input nama dompet, pemilih ikon, dan penentuan saldo awal.
+      Mendukung 2 mode sekaligus: Tambah Baru & Edit Dompet.
+      ========================================================================
+    -->
     <div
       x-show="openFormModal"
       x-cloak
@@ -1019,20 +668,16 @@ const currentBalance = this.getWalletCurrentBalance(
         @click.away="openFormModal = false"
         class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
       >
-        <div
-          class="border-border flex items-center justify-between border-b pb-3"
-        >
+        <!-- Form Header -->
+        <div class="border-border flex items-center justify-between border-b pb-3">
           <div class="flex items-center gap-2">
-            <div
-              class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
-            >
+            <div class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl">
               <Sparkles class="h-4 w-4 stroke-2" />
             </div>
             <h3
               x-text="isEdit ? 'Edit Dompet' : 'Tambah Dompet Baru'"
               class="text-primary text-base font-extrabold"
-            >
-            </h3>
+            ></h3>
           </div>
           <button
             type="button"
@@ -1044,12 +689,11 @@ const currentBalance = this.getWalletCurrentBalance(
         </div>
 
         <form @submit.prevent="saveWallet()" class="mt-4 space-y-4">
-          <!-- NAMA DOMPET -->
+          <!-- Input Field: Nama Dompet -->
           <div class="space-y-1.5">
-            <label
-              class="text-muted-foreground block text-[10px] font-bold uppercase"
-              >Nama Dompet</label
-            >
+            <label class="text-muted-foreground block text-[10px] font-bold uppercase">
+              Nama Dompet
+            </label>
             <input
               type="text"
               x-ref="accountNameInput"
@@ -1060,56 +704,40 @@ const currentBalance = this.getWalletCurrentBalance(
             />
           </div>
 
-          <!-- IKON DOMPET -->
+          <!-- Selector Grid: Pilihan Ikon Dompet -->
           <div class="space-y-2">
-            <label class="text-foreground text-xs font-bold">
-              Icon Dompet
-            </label>
-
-            <div
-              class="border-border bg-muted/20 mt-3 overflow-y-auto rounded-2xl border p-3"
-            >
+            <label class="text-foreground text-xs font-bold">Icon Dompet</label>
+            <div class="border-border bg-muted/20 mt-3 overflow-y-auto rounded-2xl border p-3">
               <div class="grid grid-cols-6 gap-2">
                 <template x-for="icon in availableIcons" :key="icon.id">
                   <button
                     type="button"
                     @click="formData.icon = icon.id"
-                    :class=`
-          formData.icon === icon.id
-             ? 'bg-blue-soft text-blue border-blue'
-          : 'bg-card text-muted-foreground border-border hover:bg-muted/50'
-                    `
+                    :class="formData.icon === icon.id ? 'bg-blue-soft text-blue-main border-blue-main' : 'bg-card text-muted-foreground border-border hover:bg-muted/50'"
                     class="flex h-11 w-11 items-center justify-center rounded-xl border transition-colors"
                     :title="icon.name"
                   >
                     <template x-if="icon.id === 'landmark'">
                       <Landmark :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'building'">
                       <Building :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'credit-card'">
                       <CreditCard :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'coins'">
                       <Coins :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'wallet'">
                       <Wallet :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'piggy-bank'">
                       <PiggyBank :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'qr-code'">
                       <QrCode :size="18" />
                     </template>
-
                     <template x-if="icon.id === 'briefcase'">
                       <Briefcase :size="18" />
                     </template>
@@ -1119,12 +747,11 @@ const currentBalance = this.getWalletCurrentBalance(
             </div>
           </div>
 
-          <!-- SALDO AWAL -->
+          <!-- Input Field: Saldo Awal -->
           <div class="space-y-1.5">
-            <label
-              class="text-muted-foreground block text-[10px] font-bold uppercase"
-              >Saldo Awal (Rp)</label
-            >
+            <label class="text-muted-foreground block text-[10px] font-bold uppercase">
+              Saldo Awal (Rp)
+            </label>
             <input
               type="text"
               inputmode="numeric"
@@ -1135,21 +762,38 @@ const currentBalance = this.getWalletCurrentBalance(
             />
           </div>
 
+          <!-- Form Buttons -->
           <div class="flex items-center gap-2 pt-2">
             <button
               type="button"
               @click="openFormModal = false"
               class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
-              >Batal</button
             >
+              Batal
+            </button>
             <button
               type="submit"
               class="bg-primary text-primary-foreground shadow-soft w-2/3 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
-              >Simpan Dompet</button
             >
+              Simpan Dompet
+            </button>
           </div>
         </form>
       </div>
     </div>
   </div>
 </Layout>
+
+<!-- 
+  ========================================================================
+  SCRIPT BOOTSTRAPPER
+  ------------------------------------------------------------------------
+  Menghubungkan logika Alpine Component UI ke file deklarasi `accountUI`.
+  ========================================================================
+-->
+<script>
+  import Alpine from 'alpinejs';
+  import { accountUI } from '../features/account.ui.js';
+
+  Alpine.data('accountUI', accountUI);
+</script>

@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import {
-  Flame,
   Bell,
   Eye,
   EyeOff,
@@ -24,46 +23,38 @@ import {
   Utensils,
   Car,
   CreditCard,
+  Briefcase,
+  RefreshCw,
+  SlidersHorizontal,
+  Landmark,
+  Building,
+  PiggyBank,
+  Coins,
+  QrCode,
+  ShoppingBag,
+  Gamepad2,
+  HeartPulse,
+  Gift,
+  CircleEllipsis,
+  Droplets,
+  Wifi,
+  Home,
+  Shirt,
+  Coffee,
+  Film,
+  Dumbbell,
+  Scissors,
+  GraduationCap,
+  Baby,
+  PawPrint,
+  Plane,
+  Fuel,
+  Wrench,
 } from '@lucide/astro';
 ---
 
 <Layout title="Dashboard - Financial Tracker">
-  <div
-    x-data="{
-      hideBalance: false,
-      showDetails: false,
-      openModal: false,
-      isReorderingFeatures: false,
-      openCustomQuickModal: false,
-      showToast: false,
-      toastMessage: '',
-      allFeatures: [
-        { id: 'wallet', label: 'Dompet', icon: 'wallet', href: '/wallet' },
-        { id: 'categories', label: 'Kategori', icon: 'grid', href: '/categories' },
-        { id: 'goals', label: 'Impian', icon: 'target', href: '/goals' },
-        { id: 'debts', label: 'Utang', icon: 'receipt', href: '/debts' },
-        { id: 'subscriptions', label: 'Langganan', icon: 'repeat', href: '/subscriptions' },
-        { id: 'bills', label: 'Tagihan', icon: 'credit-card', href: '/bills' }
-      ],
-      frequentTransactions: [
-        { title: 'Kopi Kenangan', amount: 25000 },
-        { title: 'Bensin Pertamax', amount: 50000 },
-        { title: 'Makan Siang', amount: 35000 },
-        { title: 'Topup Gopay', amount: 100000 }
-      ],
-      recentTransactions: [
-        { id: 1, title: 'Kopi Kenangan', category: 'Makanan & Minuman', wallet: 'BCA Utama', amount: 'Rp 25.000', type: 'expense', icon: 'utensils' },
-        { id: 2, title: 'Gaji Bulanan', category: 'Pekerjaan', wallet: 'BCA Utama', amount: 'Rp 8.500.000', type: 'income', icon: 'wallet' },
-        { id: 3, title: 'Bensin Pertamax', category: 'Transportasi', wallet: 'Gopay', amount: 'Rp 50.000', type: 'expense', icon: 'car' }
-      ],
-      triggerToast(msg) {
-        this.toastMessage = msg;
-        this.showToast = true;
-        setTimeout(() => { this.showToast = false; }, 2500);
-      }
-    }"
-    class="space-y-6 pt-2 pb-16"
-  >
+  <div x-data="dashboardUI" class="space-y-6 pt-6 pb-16">
     <!-- 1. HEADER -->
     <div class="flex items-center justify-between pt-2">
       <div class="flex flex-col gap-0.5">
@@ -77,14 +68,29 @@ import {
         </span>
       </div>
 
-      <!-- Button Right (Streak & Notification) -->
+      <!-- Button Right (Sync & Notification) -->
       <div class="flex items-center gap-2">
+        <!-- Sync Button connected to Global Store -->
         <button
           type="button"
-          class="border-border bg-card text-muted-foreground hover:bg-muted relative flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
+          @click="sync()"
+          class="border-border bg-card text-muted-foreground relative flex h-9.5 w-9.5 items-center justify-center rounded-2xl border shadow-xs transition-all"
+          title="Sinkronisasi"
         >
-          <Flame class="h-4.5 w-4.5 stroke-2" />
+          <RefreshCw
+            class="h-4.5 w-4.5 stroke-2 transition-transform"
+            :class="$store.app.isSyncing ? 'animate-spin' : ''"
+          />
+
+          <!-- Pending indicator -->
+          <template x-if="$store.app.pendingCount > 0">
+            <span
+              class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-500"
+            ></span>
+          </template>
         </button>
+
+        <!-- Notification -->
         <button
           type="button"
           class="border-border bg-card text-muted-foreground hover:bg-muted relative flex h-9.5 w-9.5 cursor-pointer items-center justify-center rounded-2xl border shadow-xs transition-all active:scale-95"
@@ -101,7 +107,6 @@ import {
     <div
       class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
     >
-      <!-- Watermark Lingkaran Halus -->
       <div
         class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
       >
@@ -119,9 +124,9 @@ import {
           >
             <Wallet class="h-4 w-4 stroke-[2.2] text-white" />
           </div>
-          <span class="text-xs font-semibold tracking-wide text-white/80"
-            >Total Saldo</span
-          >
+          <span class="text-xs font-semibold tracking-wide text-white/80">
+            Total Saldo
+          </span>
         </div>
 
         <button
@@ -141,10 +146,9 @@ import {
       <!-- Nominal Total Saldo -->
       <div class="relative z-10 mt-5 mb-2">
         <h2
-          x-text="hideBalance ? 'Rp ••••••••' : 'Rp 14.250.000'"
+          x-text="hideBalance ? 'Rp ••••••••' : formatRupiah(totalBalance)"
           class="text-3xl font-extrabold tracking-tight text-white drop-shadow-xs"
         >
-          Rp 14.250.000
         </h2>
         <div class="flex items-center gap-2 pt-2">
           <div
@@ -153,9 +157,9 @@ import {
             <TrendingUp class="h-3 w-3 stroke-[2.5]" />
             <span>+12.5%</span>
           </div>
-          <span class="text-[10px] font-medium text-white/70"
-            >dari awal bulan</span
-          >
+          <span class="text-[10px] font-medium text-white/70">
+            dari awal bulan
+          </span>
         </div>
       </div>
 
@@ -167,9 +171,7 @@ import {
           class="flex w-fit cursor-pointer items-center gap-2 rounded-2xl bg-white/15 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/25 active:scale-95"
         >
           <Sparkles class="h-3.5 w-3.5 stroke-[2.2]" />
-          <span x-text="showDetails ? 'Tutup Detail' : 'Lihat Detail'"
-            >Lihat Detail</span
-          >
+          <span x-text="showDetails ? 'Tutup Detail' : 'Lihat Detail'"></span>
           <ChevronDown
             class="h-4 w-4 stroke-[2.5] transition-transform duration-300"
             :class="showDetails ? 'rotate-180' : ''"
@@ -177,7 +179,7 @@ import {
         </button>
       </div>
 
-      <!-- Smooth Collapse Inner Container -->
+      <!-- Collapse Container -->
       <div
         x-show="showDetails"
         x-collapse
@@ -192,8 +194,9 @@ import {
             <span>Periode Bulan Ini</span>
             <span
               class="rounded-full bg-white/20 px-2 py-0.5 text-[9px] text-white"
-              >Aktif</span
             >
+              Aktif
+            </span>
           </div>
           <div class="grid grid-cols-2 gap-2.5 pt-0.5">
             <div
@@ -205,13 +208,12 @@ import {
                 <ArrowDownLeft class="h-3.5 w-3.5 stroke-[2.5]" />
               </div>
               <div class="flex flex-col">
-                <span class="text-[10px] font-medium text-white/70"
-                  >Pemasukan</span
-                >
+                <span class="text-[10px] font-medium text-white/70">
+                  Pemasukan
+                </span>
                 <span
-                  x-text="hideBalance ? 'Rp ••••••' : 'Rp 8.500.000'"
-                  class="text-[11px] font-bold text-white">Rp 8.500.000</span
-                >
+                  x-text="hideBalance ? 'Rp ••••••' : formatRupiah(monthlyIncome)"
+                  class="text-[11px] font-bold text-white"></span>
               </div>
             </div>
             <div
@@ -223,13 +225,12 @@ import {
                 <ArrowUpRight class="h-3.5 w-3.5 stroke-[2.5]" />
               </div>
               <div class="flex flex-col">
-                <span class="text-[10px] font-medium text-white/70"
-                  >Pengeluaran</span
-                >
+                <span class="text-[10px] font-medium text-white/70">
+                  Pengeluaran
+                </span>
                 <span
-                  x-text="hideBalance ? 'Rp ••••••' : 'Rp 3.250.000'"
-                  class="text-[11px] font-bold text-white">Rp 3.250.000</span
-                >
+                  x-text="hideBalance ? 'Rp ••••••' : formatRupiah(monthlyExpense)"
+                  class="text-[11px] font-bold text-white"></span>
               </div>
             </div>
           </div>
@@ -237,17 +238,13 @@ import {
       </div>
     </div>
 
-    <!-- 3. DAFTAR MENU (Dengan Efek Fade Gradient Halus di Kiri & Kanan) -->
+    <!-- 3. DAFTAR MENU -->
     <div class="space-y-3">
-      <!-- Outer Relative Wrapper untuk menampung efek Fade Blur Gradient -->
       <div class="relative w-full">
-        <!-- Overlay Gradient Kiri (Fade in dari background) -->
         <div
           class="from-background pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-4 bg-linear-to-r to-transparent"
         >
         </div>
-
-        <!-- Scrollable Container -->
         <div
           class="no-scrollbar flex items-center gap-1 overflow-x-auto px-1 py-1"
         >
@@ -284,8 +281,6 @@ import {
             </a>
           </template>
         </div>
-
-        <!-- Overlay Gradient Kanan (Fade out ke background untuk menu ke-5) -->
         <div
           class="from-background pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-6 bg-linear-to-l to-transparent"
         >
@@ -293,7 +288,7 @@ import {
       </div>
     </div>
 
-    <!-- 4. CATAT CEPAT (Card Soft dengan Ornamen Biru Kontras & Ukuran Beda) -->
+    <!-- 4. CATAT CEPAT -->
     <div class="space-y-3">
       <div class="flex items-center justify-between px-1">
         <div class="flex items-center gap-2">
@@ -302,25 +297,29 @@ import {
           >
             <Zap class="h-3.5 w-3.5 fill-current stroke-2" />
           </div>
-          <span class="text-primary text-xs font-extrabold tracking-tight"
-            >Catat Cepat</span
-          >
+          <span class="text-primary text-xs font-extrabold tracking-tight">
+            Catat Cepat
+          </span>
           <span
             class="bg-blue-soft text-blue-main rounded-full px-2 py-0.5 text-[9px] font-extrabold"
-            >One Click Instant</span
           >
+            One Click Instant
+          </span>
         </div>
-        <button
-          type="button"
-          @click="openCustomQuickModal = true"
-          class="text-blue-main hover:text-primary flex items-center gap-1 text-[11px] font-bold transition-colors"
-        >
-          <Plus class="h-3.5 w-3.5 stroke-[2.5]" />
-          <span>Custom</span>
-        </button>
+
+        <!-- Tombol Aksi: Icon Slider Manajemen & Tombol Custom -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="openCustomQuickModal = true"
+            class="text-blue-main hover:text-primary flex items-center gap-1 text-[11px] font-bold transition-colors"
+          >
+            <Plus class="h-3.5 w-3.5 stroke-[2.5]" />
+            <span>Custom</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Card Soft dengan Ornamen Lingkaran Gelap Kontras -->
       <div
         class="border-border bg-card shadow-soft relative overflow-hidden rounded-[26px] border p-4"
       >
@@ -330,11 +329,12 @@ import {
           <template x-for="(item, index) in frequentTransactions" :key="index">
             <button
               type="button"
-              @click="triggerToast(`Tercatat: ${item.title}`)"
+              @click="quickAddTransaction(item.title, item.amount, item.type, item.category_id, item.account_id)"
               class="group border-border bg-card/90 hover:border-blue-main hover:bg-blue-soft flex shrink-0 cursor-pointer items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 shadow-xs transition-all active:scale-95"
             >
               <div
-                class="bg-blue-soft text-blue-main group-hover:bg-blue-main flex h-6.5 w-6.5 items-center justify-center rounded-xl transition-colors group-hover:text-white"
+                class="flex h-6.5 w-6.5 items-center justify-center rounded-xl transition-colors"
+                :class="item.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white' : 'bg-blue-soft text-blue-main group-hover:bg-blue-main group-hover:text-white'"
               >
                 <Zap class="h-3.5 w-3.5 stroke-[2.5]" />
               </div>
@@ -343,8 +343,9 @@ import {
                   class="text-foreground text-[11px] font-bold"
                   x-text="item.title"></span>
                 <span
-                  class="text-blue-main text-[10px] font-extrabold"
-                  x-text="`Rp ${item.amount.toLocaleString('id-ID')}`"></span>
+                  class="text-[10px] font-extrabold"
+                  :class="item.type === 'income' ? 'text-emerald-600' : 'text-blue-main'"
+                  x-text="formatRupiah(item.amount)"></span>
               </div>
             </button>
           </template>
@@ -386,46 +387,198 @@ import {
             <h3 class="text-primary text-base font-extrabold">
               Custom Catat Cepat
             </h3>
-            <button
-              type="button"
-              @click="openCustomQuickModal = false"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
-            >
-              <X class="h-4 w-4 stroke-[2.5]" />
-            </button>
-          </div>
 
-          <div class="space-y-4 pt-4">
-            <div class="space-y-1.5">
-              <label class="text-foreground text-[11px] font-bold"
-                >Nama Transaksi</label
-              >
-              <input
-                type="text"
-                placeholder="Misal: Kopi Kenangan"
-                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label class="text-foreground text-[11px] font-bold"
-                >Nominal (Rp)</label
-              >
-              <input
-                type="number"
-                placeholder="0"
-                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
-              />
-            </div>
-            <div class="pt-2">
+            <div class="flex items-center gap-2">
               <button
                 type="button"
-                @click="openCustomQuickModal = false; triggerToast('Custom catat cepat berhasil!')"
+                @click="openManageQuickModal = true"
+                class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+                title="Kelola Catat Cepat"
+              >
+                <SlidersHorizontal class="h-3.5 w-3.5 stroke-[2.5]" />
+              </button>
+
+              <button
+                type="button"
+                @click="openCustomQuickModal = false"
+                class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              >
+                <X class="h-4 w-4 stroke-[2.5]" />
+              </button>
+            </div>
+          </div>
+
+          <form @submit.prevent="saveCustomQuick" class="space-y-4 pt-4">
+            <div class="space-y-1.5">
+              <label class="text-foreground text-[11px] font-bold">
+                Nama Transaksi
+              </label>
+              <input
+                type="text"
+                x-model="quickName"
+                placeholder="Misal: Kopi Kenangan"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+                required
+              />
+            </div>
+
+            <!-- Pilih Tipe Transaksi (Pengeluaran / Pemasukan) -->
+            <div class="space-y-1.5">
+              <label class="text-foreground text-[11px] font-bold">
+                Tipe Transaksi
+              </label>
+              <select
+                x-model="quickType"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+              >
+                <option value="expense">Pengeluaran</option>
+                <option value="income">Pemasukan</option>
+              </select>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-foreground text-[11px] font-bold">
+                Nominal (Rp)
+              </label>
+              <input
+                type="number"
+                x-model="quickAmount"
+                placeholder="0"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-bold outline-none"
+                required
+              />
+            </div>
+
+            <!-- Field Kategori (Expense) -->
+            <div class="space-y-1.5">
+              <label class="text-foreground text-[11px] font-bold">
+                Kategori
+              </label>
+              <select
+                x-model="quickCategoryId"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+                required
+              >
+                <option value="" disabled>Pilih Kategori</option>
+                <template x-for="cat in activeCategories" :key="cat.id">
+                  <option :value="cat.id" x-text="cat.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Field Akun/Dompet -->
+            <div class="space-y-1.5">
+              <label class="text-foreground text-[11px] font-bold">
+                Akun / Dompet
+              </label>
+              <select
+                x-model="quickAccountId"
+                class="border-border bg-background text-foreground focus:border-blue-main w-full rounded-2xl border px-4 py-3 text-xs font-semibold outline-none"
+                required
+              >
+                <option value="" disabled>Pilih Akun</option>
+                <template x-for="acc in wallets" :key="acc.id">
+                  <option :value="acc.id" x-text="acc.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <div class="pt-2">
+              <button
+                type="submit"
                 class="bg-primary text-primary-foreground shadow-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
               >
                 <Check class="h-4 w-4 stroke-[2.5]" />
                 <span>Simpan Transaksi</span>
               </button>
             </div>
+          </form>
+        </div>
+      </div>
+    </template>
+
+    <!-- MODAL MANAJEMEN CATAT CEPAT (DENGAN SLIDER / LIST SEDERHANA) -->
+    <template x-teleport="body">
+      <div
+        x-show="openManageQuickModal"
+        x-cloak
+        class="bg-primary/20 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-xs transition-opacity sm:items-center"
+      >
+        <div
+          @click.away="openManageQuickModal = false"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
+        >
+          <div
+            class="border-border flex items-center justify-between border-b pb-3"
+          >
+            <div class="flex items-center gap-2">
+              <h3 class="text-primary text-base font-extrabold">
+                Kelola Catat Cepat
+              </h3>
+            </div>
+            <button
+              type="button"
+              @click="openManageQuickModal = false"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+            >
+              <X class="h-4 w-4 stroke-[2.5]" />
+            </button>
+          </div>
+
+          <div class="no-scrollbar max-h-[60vh] space-y-3 overflow-y-auto pt-4">
+            <p class="text-muted-foreground text-xs">
+              Daftar shortcut catat cepat yang tersimpan (maksimal 5 item).
+              Hapus item jika ingin mengosongkan slot.
+            </p>
+
+            <template
+              x-for="(item, index) in frequentTransactions"
+              :key="index"
+            >
+              <div
+                class="border-border bg-background flex items-center justify-between rounded-2xl border p-3.5"
+              >
+                <div class="flex flex-col">
+                  <span
+                    class="text-foreground text-xs font-bold"
+                    x-text="item.title"></span>
+                  <div class="flex items-center gap-2 pt-0.5">
+                    <span
+                      class="rounded-md px-2 py-0.5 text-[10px] font-semibold"
+                      :class="item.type === 'income' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-blue-soft text-blue-main'"
+                      x-text="item.type === 'income' ? 'Pemasukan' : 'Pengeluaran'"
+                    ></span>
+                    <span
+                      class="text-foreground/80 text-[10px] font-bold"
+                      x-text="formatRupiah(item.amount)"></span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  @click="deleteQuickItem(index)"
+                  class="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 transition-colors hover:bg-rose-500 hover:text-white"
+                >
+                  <X class="h-4 w-4 stroke-[2.5]" />
+                </button>
+              </div>
+            </template>
+
+            <template x-if="frequentTransactions.length === 0">
+              <div class="text-muted-foreground py-8 text-center text-xs">
+                Belum ada shortcut catat cepat.
+              </div>
+            </template>
+          </div>
+
+          <div class="border-border mt-4 border-t pt-4">
+            <button
+              type="button"
+              @click="openManageQuickModal = false; openCustomQuickModal = true"
+              class="bg-blue-soft text-blue-main shadow-soft hover:bg-blue-main flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-bold transition-colors hover:text-white"
+            >
+              <Plus class="h-4 w-4 stroke-[2.5]" />
+              <span>Tambah Shortcut Baru</span>
+            </button>
           </div>
         </div>
       </div>
@@ -457,13 +610,12 @@ import {
             <TrendingDown class="text-primary h-3 w-3 stroke-[2.5]" />
             <span
               class="text-primary text-[11px] font-bold"
-              x-text="hideBalance ? 'Rp ••••••' : 'Rp 1.450.000'"
-              >Rp 1.450.000</span
-            >
+              x-text="hideBalance ? 'Rp ••••••' : formatRupiah(monthlyExpense)"
+            ></span>
           </div>
         </div>
 
-        <!-- Monochromatic Blue Bar Chart -->
+        <!-- Bar Chart Visual -->
         <div class="flex h-32 w-full items-end justify-between gap-2 px-1 pt-4">
           <div class="flex w-full flex-col items-center gap-1.5">
             <div class="bg-blue-soft h-12 w-full rounded-full"></div>
@@ -500,9 +652,9 @@ import {
     <!-- 6. AKTIVITAS TERAKHIR -->
     <div class="space-y-3">
       <div class="flex items-center justify-between px-1">
-        <span class="text-primary text-sm font-bold tracking-tight"
-          >Aktivitas Terakhir</span
-        >
+        <span class="text-primary text-sm font-bold tracking-tight">
+          Aktivitas Terakhir
+        </span>
         <a
           href="/history"
           class="text-blue-main hover:text-primary flex items-center gap-0.5 text-xs font-semibold transition-colors"
@@ -526,11 +678,109 @@ import {
                 <template x-if="item.icon === 'utensils'">
                   <Utensils class="h-5 w-5 stroke-2" />
                 </template>
+
+                <template x-if="item.icon === 'car'">
+                  <Car class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'shopping-bag'">
+                  <ShoppingBag class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'gamepad-2'">
+                  <Gamepad2 class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'heart-pulse'">
+                  <HeartPulse class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'briefcase'">
+                  <Briefcase class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'gift'">
+                  <Gift class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'receipt'">
+                  <Receipt class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'circle-ellipsis'">
+                  <CircleEllipsis class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'trending-up'">
+                  <TrendingUp class="h-5 w-5 stroke-2" />
+                </template>
+
                 <template x-if="item.icon === 'wallet'">
                   <Wallet class="h-5 w-5 stroke-2" />
                 </template>
-                <template x-if="item.icon === 'car'">
-                  <Car class="h-5 w-5 stroke-2" />
+
+                <template x-if="item.icon === 'zap'">
+                  <Zap class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'droplets'">
+                  <Droplets class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'wifi'">
+                  <Wifi class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'home'">
+                  <Home class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'shirt'">
+                  <Shirt class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'coffee'">
+                  <Coffee class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'film'">
+                  <Film class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'dumbbell'">
+                  <Dumbbell class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'scissors'">
+                  <Scissors class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'graduation-cap'">
+                  <GraduationCap class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'baby'">
+                  <Baby class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'paw-print'">
+                  <PawPrint class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'plane'">
+                  <Plane class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'fuel'">
+                  <Fuel class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'wrench'">
+                  <Wrench class="h-5 w-5 stroke-2" />
+                </template>
+
+                <template x-if="item.icon === 'repeat'">
+                  <Repeat class="h-5 w-5 stroke-2" />
                 </template>
               </div>
 
@@ -538,27 +788,34 @@ import {
                 <span
                   class="text-foreground truncate text-xs font-bold"
                   x-text="item.title"></span>
-                <span class="text-muted-foreground text-[10px] font-medium">
-                  <span x-text="item.category"></span> •
-                  <span
-                    class="text-foreground/80 font-semibold"
-                    x-text="item.wallet"></span>
-                </span>
+                <span
+                  class="text-muted-foreground text-[10px] font-medium"
+                  x-text="item.subtitle"></span>
               </div>
             </div>
 
             <div class="flex shrink-0 items-center gap-1 pl-2">
               <span
-                x-text="hideBalance ? 'Rp ••••••' : item.amount"
-                :class=`{
-                  'text-blue-main': item.type === 'income',
-                  'text-foreground': item.type === 'expense'
-                }`
+                x-text="hideBalance ? 'Rp ••••••' : formatRupiah(item.amount)"
+                :class="item.type === 'income' ? 'text-emerald-600' : (item.type === 'transfer' ? 'text-blue-main' : 'text-foreground')"
                 class="text-xs font-extrabold"></span>
             </div>
+          </div>
+        </template>
+
+        <template x-if="recentTransactions.length === 0">
+          <div class="p-4 text-center text-xs font-medium text-slate-400">
+            Belum ada transaksi.
           </div>
         </template>
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+  import Alpine from 'alpinejs';
+  import { dashboardUI } from '../features/dashboard.ui.js';
+
+  Alpine.data('dashboardUI', dashboardUI);
+</script>

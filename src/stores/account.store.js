@@ -1,170 +1,154 @@
+// src/stores/account.store.js
 import {
-  getAllAccountsLocal,
-  saveAccountLocal,
-  deleteAccountLocal,
-} from '../db/accounts.db.js';
-import {
-  createAccountRemote,
-  updateAccountRemote,
-  deleteAccountRemote,
-} from '../services/account.service.js';
-import { createTransactionRemote } from '../services/transaction.service.js';
-import { saveTransactionLocal } from '../db/transactions.db.js';
-import {
-  calculateAccountBalance,
-  calculateTotalAssets,
-} from '../lib/calculations.js';
+  getAllRecords,
+  upsertRecord,
+  deleteRecord,
+  addSyncQueue,
+} from '../data/indexeddb.js';
+import { appStore } from './app.store.js';
 
-export default () => ({
+/**
+ * @typedef {Object} Account
+ * @property {string} id - UUID unik akun/dompet.
+ * @property {string} name - Nama dompet (misal: 'BCA Utama', 'Gopay').
+ * @property {number} initial_balance - Saldo awal saat dompet dibuat.
+ * @property {string} icon - Nama icon Lucide (default: 'wallet').
+ * @property {'active'|'archived'} status - Status keaktifan akun.
+ * @property {string} created_at - Timestamp ISO pembuat akun.
+ * @property {string} updated_at - Timestamp ISO pembaruan akun.
+ */
+
+/**
+ * @typedef {Object} CreateAccountPayload
+ * @property {string} name - Nama dompet.
+ * @property {number|string} [initial_balance] - Saldo awal (default: 0).
+ * @property {string} [icon] - Icon penanda (default: 'wallet').
+ * @property {'active'|'archived'} [status] - Status akun (default: 'active').
+ */
+
+/**
+ * Store Alpine.js untuk mengelola state dan operasi data Akun / Dompet (Local-First).
+ */
+export const accountStore = {
+  /** @type {Array<Account>} List akun yang dimuat dari IndexedDB */
   accounts: [],
+
+  /** @type {boolean} Status indikator pemuatan data */
   isLoading: false,
 
-  async init() {
+  /**
+   * Memuat seluruh daftar akun dari IndexedDB ke dalam state aplikasi.
+   * @returns {Promise<void>}
+   */
+  async loadAccounts() {
     this.isLoading = true;
-    this.accounts = await getAllAccountsLocal();
-    this.isLoading = false;
+    try {
+      this.accounts = await getAllRecords('accounts');
+    } catch (error) {
+      console.error('[Account Store] Gagal memuat akun:', error);
+    } finally {
+      this.isLoading = false;
+    }
   },
 
-  get activeAccounts() {
-    return this.accounts.filter((acc) => acc.status === 'active');
-  },
+  /**
+   * Menambahkan akun/dompet baru secara lokal, mencatat antrean sync, dan memperbarui state.
+   * @param {CreateAccountPayload} payload - Data akun baru yang akan ditambahkan.
+   * @returns {Promise<void>}
+   * @throws {Error} Mengembalikan error jika operasi simpan lokal gagal.
+   */
+  async addAccount(payload) {
+    const nowIso = new Date().toISOString();
 
-  // Mendapatkan Current Balance 1 account (membutuhkan list transaksi)
-  getBalance(account, transactions = []) {
-    return calculateAccountBalance(account, transactions);
-  },
-
-  // Mendapatkan Total Assets seluruh account (membutuhkan list transaksi)
-  getTotalAssets(transactions = []) {
-    return calculateTotalAssets(this.accounts, transactions);
-  },
-
-  async addAccount(accountData) {
     const newAccount = {
       id: crypto.randomUUID(),
-      name: accountData.name,
-      initial_balance: Number(accountData.initial_balance || 0),
-      icon: accountData.icon || 'wallet',
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      name: payload.name,
+      initial_balance: Number(payload.initial_balance || 0),
+      icon: payload.icon || 'wallet',
+      status: payload.status || 'active',
+      created_at: nowIso,
+      updated_at: nowIso,
     };
 
-    // 1. Optimistic Update
-    this.accounts.unshift(newAccount);
-    await saveAccountLocal(newAccount);
-
-    // 2. Update saved wallet order + UI order
-    const savedOrder = JSON.parse(localStorage.getItem('wallet_order') || '[]');
-
-    const newOrder = [
-      newAccount.id,
-      ...savedOrder.filter((id) => id !== newAccount.id),
-    ];
-
-    localStorage.setItem('wallet_order', JSON.stringify(newOrder));
-
-    // Pastikan UI langsung mengikuti order baru
-    const accountMap = new Map(
-      this.accounts.map((account) => [account.id, account])
-    );
-
-    this.accounts = newOrder.map((id) => accountMap.get(id)).filter(Boolean);
-
-    // 3. Sync Remote
     try {
-      await createAccountRemote(newAccount);
-    } catch (err) {
-      console.warn(
-        '⚠️ Sync Create Account gagal (tersimpan lokal):',
-        err.message
-      );
+      await upsertRecord('accounts', newAccount);
+
+      await addSyncQueue({
+        table: 'accounts',
+        record_id: newAccount.id,
+        operation: 'create',
+      });
+
+      this.accounts.push(newAccount);
+      await appStore.updatePendingCount();
+    } catch (error) {
+      console.error('[Account Store] Gagal menambah akun:', error);
+      throw error;
     }
   },
 
-  async updateAccount(id, updatedFields) {
-    const index = this.accounts.findIndex((acc) => acc.id === id);
-    if (index === -1) return;
-
+  /**
+   * Memperbarui data akun yang ada berdasarkan ID secara lokal dan mencatat antrean sync.
+   * @param {string} id - UUID akun yang akan di-update.
+   * @param {Partial<CreateAccountPayload>} payload - Perubahan data akun.
+   * @returns {Promise<void>}
+   * @throws {Error} Mengembalikan error jika pembaruan lokal gagal.
+   */
+  async updateAccount(id, payload) {
+    const existing = this.accounts.find((a) => a.id === id) || {};
     const updatedAccount = {
-      ...this.accounts[index],
-      ...updatedFields,
+      ...existing,
+      ...payload,
+      id, // Memastikan ID tidak berubah
+      initial_balance:
+        payload.initial_balance !== undefined
+          ? Number(payload.initial_balance)
+          : existing.initial_balance,
       updated_at: new Date().toISOString(),
     };
 
-    // 1. Optimistic Update
-    this.accounts[index] = updatedAccount;
-    await saveAccountLocal(updatedAccount);
-
-    // 2. Sync Remote
     try {
-      await updateAccountRemote(id, updatedAccount);
-    } catch (err) {
-      console.warn(
-        '⚠️ Sync Update Account gagal (tersimpan lokal):',
-        err.message
-      );
-    }
-  },
+      await upsertRecord('accounts', updatedAccount);
 
-  // Koreksi Saldo jika Account sudah memiliki transaksi
-  async correctBalance(
-    account,
-    actualBalance,
-    transactions = [],
-    transactionStore
-  ) {
-    const currentBalance = this.getBalance(account, transactions);
-    const diff = actualBalance - currentBalance;
+      await addSyncQueue({
+        table: 'accounts',
+        record_id: id,
+        operation: 'update',
+      });
 
-    if (diff === 0) return; // Tidak ada perubahan saldo
-
-    const type = diff > 0 ? 'income' : 'expense';
-    const amount = Math.abs(diff);
-
-    // Buat transaksi Correction Balance (category_id = NULL)
-    const correctionTx = {
-      id: crypto.randomUUID(),
-      type: type,
-      amount: amount,
-      account_id: account.id,
-      to_account_id: null,
-      category_id: null,
-      fee: null,
-      transaction_date: new Date().toISOString().split('T')[0],
-      description: 'Correction Balance',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Simpan transaksi koreksi via Transaction Store / Local DB
-    if (transactionStore) {
-      await transactionStore.addCorrectionTransaction(correctionTx);
-    } else {
-      await saveTransactionLocal(correctionTx);
-      try {
-        await createTransactionRemote(correctionTx);
-      } catch (err) {
-        console.warn('⚠️ Sync Correction Transaction gagal:', err.message);
+      const index = this.accounts.findIndex((a) => a.id === id);
+      if (index !== -1) {
+        this.accounts[index] = updatedAccount;
       }
+
+      await appStore.updatePendingCount();
+    } catch (error) {
+      console.error('[Account Store] Gagal memperbarui akun:', error);
+      throw error;
     }
   },
 
-  async deleteAccount(id, transactionStore) {
-    // 1. Optimistic Update (Hapus Account lokal)
-    this.accounts = this.accounts.filter((acc) => acc.id !== id);
-    await deleteAccountLocal(id);
-
-    // 2. Hapus transaksi terkait jika ada (Cascade hard delete lokal)
-    if (transactionStore) {
-      await transactionStore.removeTransactionsByAccountId(id);
-    }
-
-    // 3. Sync Remote
+  /**
+   * Menghapus akun dari IndexedDB dan mencatat operasi 'delete' ke antrean sync.
+   * @param {string} id - UUID akun yang akan dihapus.
+   * @returns {Promise<void>}
+   * @throws {Error} Mengembalikan error jika penghapusan lokal gagal.
+   */
+  async deleteAccount(id) {
     try {
-      await deleteAccountRemote(id);
-    } catch (err) {
-      console.warn('⚠️ Sync Delete Account gagal:', err.message);
+      await deleteRecord('accounts', id);
+
+      await addSyncQueue({
+        table: 'accounts',
+        record_id: id,
+        operation: 'delete',
+      });
+
+      this.accounts = this.accounts.filter((a) => a.id !== id);
+      await appStore.updatePendingCount();
+    } catch (error) {
+      console.error('[Account Store] Gagal menghapus akun:', error);
+      throw error;
     }
   },
-});
+};

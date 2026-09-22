@@ -74,548 +74,7 @@ const transactionTypes = [
 ---
 
 <Layout title="Transaksi - Studion App" hideBottomNav={true}>
-  <div
-    x-data="{
-      accStore: Alpine.store('accountStore'),
-      catStore: Alpine.store('categoryStore'),
-      txStore: Alpine.store('transactionStore'),
-
-      isEditMode: false,
-      editingTransactionId: null,
-      isSubmitting: false,
-
-      showWalletModal: false,
-      showCategoryModal: false,
-
-      walletSheetTarget: 'source',
-
-      autoCategoryDetected: false,
-
-      formattedAmount: '',
-      rawAmount: 0,
-
-      formattedFee: '',
-      rawFee: 0,
-
-      successMessage: '',
-      successTimeout: null,
-
-      errors: {
-        amount: '',
-        account_id: '',
-        category_id: '',
-        to_account_id: '',
-        transaction_date: '',
-      },
-
-      formData: {
-        type: 'expense',
-        transaction_date: new Date().toISOString().split('T')[0],
-        account_id: '',
-        to_account_id: '',
-        category_id: '',
-        fee: null,
-        description: ''
-      },
-
-      async init() {
-        this.errorMessage = '';
-
-        if (!this.accStore.accounts.length) {
-          await this.accStore.init();
-        }
-
-        if (!this.catStore.categories.length) {
-          await this.catStore.init();
-        }
-
-        if (!this.txStore.transactions.length) {
-          await this.txStore.init();
-        }
-
-        const params = new URLSearchParams(window.location.search);
-        const transactionId = params.get('id');
-
-        if (transactionId) {
-          const transaction = this.txStore.transactions.find(
-            (tx) => tx.id === transactionId
-          );
-
-          if (transaction) {
-            this.editingTransactionId = transaction.id;
-            this.isEditMode = true;
-
-            this.formData.type = transaction.type;
-            this.formData.transaction_date = transaction.transaction_date;
-            this.formData.account_id = transaction.account_id || '';
-            this.formData.to_account_id = transaction.to_account_id || '';
-            this.formData.category_id = transaction.category_id || '';
-            this.formData.description = transaction.description || '';
-
-            this.rawAmount = Number(transaction.amount || 0);
-            this.formattedAmount = this.rawAmount
-              ? this.rawAmount.toLocaleString('id-ID')
-              : '';
-
-            this.rawFee = Number(transaction.fee || 0);
-            this.formattedFee = this.rawFee
-              ? this.rawFee.toLocaleString('id-ID')
-              : '';
-          }
-        } else {
-          if (params.get('type') === 'transfer') {
-            this.formData.type = 'transfer';
-          }
-
-          if (!this.formData.account_id && this.accStore.activeAccounts.length) {
-            this.formData.account_id = this.accStore.activeAccounts[0].id;
-          }
-
-          this.syncDefaultCategory();
-        }
-
-        this.$nextTick(() => {
-          this.$refs.amountInput?.focus();
-        });
-      },
-
-      showSuccessMessage(message) {
-        this.successMessage = message;
-
-        clearTimeout(this.successTimeout);
-
-        this.successTimeout = setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
-      },
-
-      get frequentTransactions() {
-        const transactions = this.txStore?.transactions || [];
-
-        if (!transactions.length) {
-          return [
-            {
-              title: 'Parkir',
-              amount: 2000,
-              type: 'expense',
-              category_id: 'e82239ae-596c-43b5-8479-41da8302c2f7',
-              count: 0,
-            },
-          ];
-        }
-
-        const grouped = new Map();
-
-        transactions.forEach((tx) => {
-          // Transfer belum kita jadikan fast track
-          if (tx.type === 'transfer') return;
-
-          const description = (tx.description || '').trim();
-
-          if (!description) return;
-
-          const key = [
-            tx.type,
-            tx.category_id || '',
-            description.toLowerCase(),
-          ].join('|');
-
-          if (!grouped.has(key)) {
-            grouped.set(key, {
-              title: description,
-              amount: Number(tx.amount || 0),
-              type: tx.type,
-              category_id: tx.category_id || '',
-              count: 0,
-              latestDate: tx.transaction_date,
-            });
-          }
-
-          const item = grouped.get(key);
-
-          item.count += 1;
-
-          // Pakai nominal transaksi terbaru sebagai nominal Fast Track
-          if (
-            !item.latestDate ||
-            tx.transaction_date >= item.latestDate
-          ) {
-            item.amount = Number(tx.amount || 0);
-            item.latestDate = tx.transaction_date;
-          }
-        });
-
-        return [...grouped.values()]
-          .sort((a, b) => {
-            if (b.count !== a.count) {
-              return b.count - a.count;
-            }
-
-            return b.latestDate.localeCompare(a.latestDate);
-          })
-          .slice(0, 4);
-      },
-
-      get activeAccounts() {
-        return this.accStore?.activeAccounts || [];
-      },
-
-      get selectedAccount() {
-        return this.activeAccounts.find(
-          account => account.id === this.formData.account_id
-        );
-      },
-
-      get selectedToAccount() {
-        return this.activeAccounts.find(
-          account => account.id === this.formData.to_account_id
-        );
-      },
-
-      get expenseCategories() {
-        return this.catStore?.expenseCategories || [];
-      },
-
-      get incomeCategories() {
-        return this.catStore?.incomeCategories || [];
-      },
-
-      get filteredCategories() {
-        if (this.formData.type === 'expense') {
-          return this.expenseCategories;
-        }
-
-        if (this.formData.type === 'income') {
-          return this.incomeCategories;
-        }
-
-        return [];
-      },
-
-      get availableToAccounts() {
-        return this.activeAccounts.filter(
-          account => account.id !== this.formData.account_id
-        );
-      },
-
-      get selectedAccountName() {
-        return this.selectedAccount?.name || 'Pilih Akun';
-      },
-
-      get selectedToAccountName() {
-        return this.selectedToAccount?.name || 'Pilih Akun Tujuan';
-      },
-
-      get selectedCategoryName() {
-        const category = this.filteredCategories.find(
-          category => category.id === this.formData.category_id
-        );
-
-        return category ? category.name : 'Pilih Kategori';
-      },
-
-      get formattedAmountPreview() {
-        return this.rawAmount
-          ? this.rawAmount.toLocaleString('id-ID')
-          : '';
-      },
-
-      get formattedFeePreview() {
-        return this.rawFee
-          ? this.rawFee.toLocaleString('id-ID')
-          : '';
-      },
-
-      handleAmountInput(event) {
-        const value = event.target.value.replace(/[^0-9]/g, '');
-
-        this.rawAmount = value ? parseInt(value, 10) : 0;
-        this.formattedAmount = this.rawAmount
-          ? this.rawAmount.toLocaleString('id-ID')
-          : '';
-
-        this.errorMessage = '';
-      },
-
-      handleFeeInput(event) {
-        const value = event.target.value.replace(/[^0-9]/g, '');
-
-        this.rawFee = value ? parseInt(value, 10) : 0;
-        this.formattedFee = this.rawFee
-          ? this.rawFee.toLocaleString('id-ID')
-          : '';
-
-        this.errorMessage = '';
-      },
-
-      applyQuickData(item) {
-        this.formData.type = item.type;
-
-        this.rawAmount = parseInt(item.amount, 10);
-        this.formattedAmount = this.rawAmount.toLocaleString('id-ID');
-
-        this.formData.description = item.title;
-        this.formData.category_id = item.category_id || '';
-
-        this.autoCategoryDetected = false;
-        this.errorMessage = '';
-      },
-
-      handleDescriptionInput() {
-        if (this.formData.type === 'transfer') {
-          this.autoCategoryDetected = false;
-          return;
-        }
-
-        const description = this.formData.description.trim();
-
-        if (!description) {
-          this.autoCategoryDetected = false;
-          return;
-        }
-
-        const suggestedCategory = this.txStore.suggestCategory(
-          description,
-          this.formData.type
-        );
-
-        if (!suggestedCategory) {
-          this.autoCategoryDetected = false;
-          return;
-        }
-
-        const categoryExists = this.filteredCategories.some(
-          (category) => category.id === suggestedCategory
-        );
-
-        if (!categoryExists) {
-          this.autoCategoryDetected = false;
-          return;
-        }
-
-        this.formData.category_id = suggestedCategory;
-        this.autoCategoryDetected = true;
-      },
-
-      syncDefaultCategory() {
-        if (this.formData.type === 'transfer') {
-          this.formData.category_id = '';
-          this.autoCategoryDetected = false;
-          return;
-        }
-
-        const categories = this.filteredCategories;
-
-        const currentExists = categories.some(
-          category => category.id === this.formData.category_id
-        );
-
-        if (!currentExists) {
-          this.formData.category_id = categories.length
-            ? categories[0].id
-            : '';
-        }
-      },
-
-      changeTransactionType(type) {
-        this.formData.type = type;
-
-        this.formData.category_id = '';
-        this.formData.to_account_id = '';
-        this.rawFee = 0;
-        this.formattedFee = '';
-        this.autoCategoryDetected = false;
-
-        this.syncDefaultCategory();
-        this.errorMessage = '';
-      },
-
-      openWalletSheet(target) {
-        this.walletSheetTarget = target;
-        this.showWalletModal = true;
-      },
-
-      selectAccount(id) {
-        if (this.walletSheetTarget === 'source') {
-          this.formData.account_id = id;
-
-          if (this.formData.to_account_id === id) {
-            this.formData.to_account_id = '';
-          }
-        } else {
-          this.formData.to_account_id = id;
-        }
-
-        this.showWalletModal = false;
-      },
-
-      openCategoryModal() {
-        if (!this.filteredCategories.length) {
-          this.errorMessage =
-            'Belum ada kategori untuk tipe transaksi ini.';
-          return;
-        }
-
-        this.showCategoryModal = true;
-      },
-
-      selectCategory(id) {
-        this.formData.category_id = id;
-        this.autoCategoryDetected = false;
-        this.showCategoryModal = false;
-      },
-
-      clearErrors() {
-        this.errors = {
-          amount: '',
-          account_id: '',
-          category_id: '',
-          to_account_id: '',
-          transaction_date: '',
-        };
-      },
-
-      validateForm() {
-        this.clearErrors();
-
-        let valid = true;
-
-        if (!this.rawAmount || this.rawAmount <= 0) {
-          this.errors.amount = 'Nominal harus lebih dari 0.';
-          valid = false;
-        }
-
-        if (!this.formData.account_id) {
-          this.errors.account_id = 'Pilih wallet.';
-          valid = false;
-        }
-
-        if (this.formData.type === 'transfer') {
-          if (!this.formData.to_account_id) {
-            this.errors.to_account_id = 'Pilih wallet tujuan.';
-            valid = false;
-          } else if (
-            this.formData.to_account_id === this.formData.account_id
-          ) {
-            this.errors.to_account_id =
-              'Wallet tujuan tidak boleh sama dengan wallet sumber.';
-            valid = false;
-          }
-        } else {
-          if (!this.formData.category_id) {
-            this.errors.category_id = 'Pilih kategori.';
-            valid = false;
-          }
-        }
-
-        if (!this.formData.transaction_date) {
-          this.errors.transaction_date = 'Pilih tanggal transaksi.';
-          valid = false;
-        }
-
-        return valid;
-      },
-
-      async saveTransaction() {
-        if (!this.validateForm()) return;
-
-        this.isSubmitting = true;
-
-        try {
-          let result;
-
-          if (this.isEditMode) {
-            result = await this.txStore.updateTransaction(
-              this.editingTransactionId,
-              {
-                ...this.formData,
-                amount: this.rawAmount,
-                fee: this.rawFee || null,
-              },
-              this.catStore.categories
-            );
-          } else {
-            result = await this.txStore.addTransaction(
-              {
-                ...this.formData,
-                amount: this.rawAmount,
-                fee: this.rawFee || null,
-              },
-              this.catStore.categories
-            );
-          }
-
-          if (this.isEditMode) {
-            if (!result?.success) {
-              this.showSyncError();
-              return;
-            }
-
-            window.location.href = '/history';
-            return;
-          }
-
-          if (!result?.success) {
-            this.showSyncError();
-            return;
-          }
-
-          window.location.href = '/history';
-        } finally {
-          this.isSubmitting = false;
-        }
-      },
-
-      async saveAndAddTransaction() {
-        if (!this.validateForm()) return;
-
-        this.isSubmitting = true;
-
-        try {
-          const result = await this.txStore.addTransaction({
-            ...this.formData,
-            amount: this.rawAmount,
-            fee: this.rawFee || null,
-          });
-
-          if (!result?.success) {
-            this.showSyncError();
-            return;
-          }
-
-          this.formattedAmount = '';
-          this.rawAmount = 0;
-          this.formData.category_id = '';
-          this.formData.description = '';
-          this.autoCategoryDetected = false;
-
-          this.showSuccessMessage('Transaksi berhasil disimpan.');
-        } finally {
-          this.isSubmitting = false;
-        }
-      },
-
-      async deleteTransaction() {
-  if (!this.editingTransactionId) return;
-
-  const confirmed = window.confirm(
-    'Hapus transaksi ini? Data transaksi tidak dapat dipulihkan.'
-  );
-
-  if (!confirmed) return;
-
-  this.isSubmitting = true;
-
-  try {
-    await this.txStore.deleteTransaction(this.editingTransactionId);
-    window.location.href = '/history';
-  } finally {
-    this.isSubmitting = false;
-  }
-},
-    }"
-    class="space-y-6 pt-5 pb-12"
-  >
+  <div x-data="transactionUI" class="space-y-6 pt-5 pb-12">
     <template x-if="successMessage">
       <div
         x-transition:enter="transition ease-out duration-300"
@@ -626,9 +85,7 @@ const transactionTypes = [
         x-transition:leave-end="opacity-0 -translate-y-3 scale-95"
         class="bg-blue-main shadow-blue-main/25 fixed bottom-5 left-1/2 z-[60] flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl px-4 py-3.5 text-white shadow-xl"
       >
-        <div
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15"
-        >
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
           <Check size={20} stroke-width={2.5} />
         </div>
 
@@ -638,8 +95,7 @@ const transactionTypes = [
           <p
             class="mt-0.5 truncate text-xs text-white/80"
             x-text="successMessage"
-          >
-          </p>
+          ></p>
         </div>
 
         <button
@@ -654,24 +110,14 @@ const transactionTypes = [
     </template>
 
     <!-- 1. HEADER & NOMINAL -->
-    <div
-      class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
-    >
-      <div
-        class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
-      >
-      </div>
+    <div class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300">
+      <div class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"></div>
 
-      <div
-        class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"
-      >
-      </div>
+      <div class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"></div>
 
       <div class="relative z-10 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <div
-            class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md"
-          >
+          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md">
             <Sparkles class="h-4 w-4 stroke-[2.2] text-white" />
           </div>
 
@@ -695,9 +141,7 @@ const transactionTypes = [
       </div>
 
       <div class="relative z-10 mt-6 mb-2 space-y-1 text-center">
-        <span
-          class="text-[9px] font-extrabold tracking-widest text-white/70 uppercase"
-        >
+        <span class="text-[9px] font-extrabold tracking-widest text-white/70 uppercase">
           Nominal Transaksi
         </span>
 
@@ -718,8 +162,10 @@ const transactionTypes = [
       </div>
     </div>
     <template x-if="errors.amount">
-      <p class="-mt-5 text-center text-xs text-red-500" x-text="errors.amount">
-      </p>
+      <p
+        class="-mt-5 text-center text-xs text-red-500"
+        x-text="errors.amount"
+      ></p>
     </template>
 
     <!-- 2. QUICK ACCESS -->
@@ -736,9 +182,7 @@ const transactionTypes = [
         </div>
 
         <div class="relative w-full">
-          <div
-            class="no-scrollbar flex items-center gap-2 overflow-x-auto px-0.5"
-          >
+          <div class="no-scrollbar flex items-center gap-2 overflow-x-auto px-0.5">
             <template x-for="item in frequentTransactions" :key="item.title">
               <button
                 type="button"
@@ -749,7 +193,8 @@ const transactionTypes = [
 
                 <span
                   class="text-foreground text-[11px] font-semibold"
-                  x-text="item.title"></span>
+                  x-text="item.title"
+                ></span>
 
                 <span
                   class="text-blue-main text-[10px] font-bold"
@@ -763,28 +208,22 @@ const transactionTypes = [
     </template>
 
     <!-- 3. TIPE TRANSAKSI -->
-    <div
-      class="border-border bg-card grid grid-cols-3 gap-2 rounded-2xl border p-1 shadow-xs"
-    >
-      {
-        transactionTypes.map((item) => (
-          <button
-            type="button"
-            x-on:click={`changeTransactionType('${item.id}')`}
-            x-bind:class={`formData.type === '${item.id}' ? '${item.activeClass}' : 'text-muted-foreground hover:text-foreground'`}
-            class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all active:scale-95"
-          >
-            <item.icon class="h-3.5 w-3.5 stroke-[2.5]" />
-            <span>{item.label}</span>
-          </button>
-        ))
-      }
+    <div class="border-border bg-card grid grid-cols-3 gap-2 rounded-2xl border p-1 shadow-xs">
+      {transactionTypes.map((item) => (
+        <button
+          type="button"
+          x-on:click={`changeTransactionType('${item.id}')`}
+          x-bind:class={`formData.type === '${item.id}' ? '${item.activeClass}' : 'text-muted-foreground hover:text-foreground'`}
+          class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all active:scale-95"
+        >
+          <item.icon class="h-3.5 w-3.5 stroke-[2.5]" />
+          <span>{item.label}</span>
+        </button>
+      ))}
     </div>
 
     <!-- 4. FORM DETAIL -->
-    <div
-      class="border-border bg-card shadow-soft space-y-4 rounded-[28px] border p-5"
-    >
+    <div class="border-border bg-card shadow-soft space-y-4 rounded-[28px] border p-5">
       <!-- TANGGAL -->
       <div class="space-y-1.5">
         <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
@@ -799,8 +238,10 @@ const transactionTypes = [
         />
 
         <template x-if="errors.transaction_date">
-          <p class="mt-1 text-xs text-red-500" x-text="errors.transaction_date">
-          </p>
+          <p
+            class="mt-1 text-xs text-red-500"
+            x-text="errors.transaction_date"
+          ></p>
         </template>
       </div>
 
@@ -834,9 +275,7 @@ const transactionTypes = [
       <!-- TRANSFER DESTINATION -->
       <template x-if="formData.type === 'transfer'">
         <div class="space-y-1.5">
-          <label
-            class="text-primary flex items-center gap-1.5 text-xs font-bold"
-          >
+          <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
             <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
             <span>Akun Tujuan</span>
           </label>
@@ -854,8 +293,10 @@ const transactionTypes = [
           </button>
 
           <template x-if="errors.to_account_id">
-            <p class="mt-1 text-xs text-red-500" x-text="errors.to_account_id">
-            </p>
+            <p
+              class="mt-1 text-xs text-red-500"
+              x-text="errors.to_account_id"
+            ></p>
           </template>
         </div>
       </template>
@@ -863,9 +304,7 @@ const transactionTypes = [
       <!-- CATEGORY -->
       <template x-if="formData.type !== 'transfer'">
         <div class="space-y-1.5">
-          <label
-            class="text-primary flex items-center gap-1.5 text-xs font-bold"
-          >
+          <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
             <Grid class="text-blue-main h-3.5 w-3.5 stroke-2" />
             <span>Kategori</span>
           </label>
@@ -883,8 +322,10 @@ const transactionTypes = [
           </button>
 
           <template x-if="errors.category_id">
-            <p class="mt-1 text-xs text-red-500" x-text="errors.category_id">
-            </p>
+            <p
+              class="mt-1 text-xs text-red-500"
+              x-text="errors.category_id"
+            ></p>
           </template>
 
           <template x-if="autoCategoryDetected">
@@ -898,17 +339,13 @@ const transactionTypes = [
       <!-- TRANSFER FEE -->
       <template x-if="formData.type === 'transfer'">
         <div class="space-y-1.5">
-          <label
-            class="text-primary flex items-center gap-1.5 text-xs font-bold"
-          >
+          <label class="text-primary flex items-center gap-1.5 text-xs font-bold">
             <Wallet class="text-blue-main h-3.5 w-3.5 stroke-2" />
             <span>Biaya Transfer (Opsional)</span>
           </label>
 
           <div class="relative">
-            <span
-              class="text-muted-foreground absolute top-1/2 left-4 -translate-y-1/2 text-xs font-bold"
-            >
+            <span class="text-muted-foreground absolute top-1/2 left-4 -translate-y-1/2 text-xs font-bold">
               Rp
             </span>
 
@@ -1009,9 +446,7 @@ const transactionTypes = [
           @click.away="showWalletModal = false"
           class="border-border bg-card flex max-h-[80vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
-          <div
-            class="border-border flex items-center justify-between border-b pb-3"
-          >
+          <div class="border-border flex items-center justify-between border-b pb-3">
             <h3
               class="text-primary text-base font-extrabold"
               x-text="walletSheetTarget === 'source' ? 'Pilih Akun' : 'Pilih Akun Tujuan'"
@@ -1038,9 +473,7 @@ const transactionTypes = [
                 class="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors"
               >
                 <div class="flex items-center gap-3.5">
-                  <div
-                    class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                  >
+                  <div class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
                     <template x-if="account.icon === 'landmark'">
                       <Landmark class="h-5 w-5 stroke-2" />
                     </template>
@@ -1084,18 +517,14 @@ const transactionTypes = [
                   </div>
                 </div>
 
-                <template
-                  x-if="(walletSheetTarget === 'source' && formData.account_id === account.id) || (walletSheetTarget === 'target' && formData.to_account_id === account.id)"
-                >
+                <template x-if="(walletSheetTarget === 'source' && formData.account_id === account.id) || (walletSheetTarget === 'target' && formData.to_account_id === account.id)">
                   <Check class="text-blue-main h-4 w-4 stroke-3" />
                 </template>
               </div>
             </template>
 
             <template x-if="!activeAccounts.length">
-              <div
-                class="text-muted-foreground px-3 py-8 text-center text-xs font-medium"
-              >
+              <div class="text-muted-foreground px-3 py-8 text-center text-xs font-medium">
                 Belum ada akun aktif.
               </div>
             </template>
@@ -1115,9 +544,7 @@ const transactionTypes = [
           @click.away="showCategoryModal = false"
           class="border-border bg-card flex max-h-[80vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
-          <div
-            class="border-border flex items-center justify-between border-b pb-3"
-          >
+          <div class="border-border flex items-center justify-between border-b pb-3">
             <h3 class="text-primary text-base font-extrabold">
               Pilih Kategori
             </h3>
@@ -1138,9 +565,7 @@ const transactionTypes = [
                 class="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-2xl p-3.5 transition-colors"
               >
                 <div class="flex items-center gap-3.5">
-                  <div
-                    class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                  >
+                  <div class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
                     <template x-if="category.icon === 'utensils'">
                       <Utensils class="h-5 w-5 stroke-2" />
                     </template>
@@ -1261,9 +686,7 @@ const transactionTypes = [
             </template>
 
             <template x-if="!filteredCategories.length">
-              <div
-                class="text-muted-foreground px-3 py-8 text-center text-xs font-medium"
-              >
+              <div class="text-muted-foreground px-3 py-8 text-center text-xs font-medium">
                 Belum ada kategori untuk tipe transaksi ini.
               </div>
             </template>
@@ -1273,3 +696,10 @@ const transactionTypes = [
     </template>
   </div>
 </Layout>
+
+<script>
+  import Alpine from 'alpinejs';
+  import { transactionUI } from '../features/transaction.ui.js';
+
+  Alpine.data('transactionUI', transactionUI);
+</script>
