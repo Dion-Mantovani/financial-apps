@@ -61,6 +61,14 @@ export async function getAllRecords(storeName) {
 }
 
 /**
+ * Helper untuk membersihkan objek dari Alpine Proxy / Non-serializable properties
+ */
+function toRawObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
  * Menyimpan data baru atau memperbarui data lama (Upsert) berdasarkan Primary Key (id).
  *
  * @param {string} storeName - Nama object store
@@ -69,7 +77,11 @@ export async function getAllRecords(storeName) {
  */
 export async function upsertRecord(storeName, data) {
   const db = await initDB();
-  return db.put(storeName, data);
+
+  // Unwrap & clone objek agar tidak ada Proxy Alpine yang tersisa
+  const cleanData = toRawObject(data);
+
+  return db.put(storeName, cleanData);
 }
 
 /**
@@ -145,4 +157,29 @@ export async function addSyncQueue({ table, record_id, operation }) {
 export async function removeSyncQueue(queueId) {
   const db = await initDB();
   return db.delete('sync_queue', queueId);
+}
+
+/**
+ * Menghapus kartu antrean dari sync_queue berdasarkan nama tabel dan record_id.
+ * Ddigunakan untuk membersihkan antrean transaksi saat account terkait dihapus (cascade cleanup).
+ *
+ * @param {string} table - Nama tabel ('transactions, accounts, dll)
+ * @param {string} record_id -UUID record yang antreannya ingin dibersihkan
+ * @returns {Promise<void>}
+ */
+export async function removeSyncQueueByRecordId(table, record_id) {
+  const db = await initDB();
+  const tx = await db.transaction('sync_queue', 'readwrite');
+  const store = tx.objectStore('sync_queue');
+
+  const allQueue = await store.getAll();
+  const matchingItems = allQueue.filter(
+    (item) => item.table == table && item.record_id == record_id
+  );
+
+  for (const item of matchingItems) {
+    await store.delete(item.id);
+  }
+
+  await tx.done;
 }

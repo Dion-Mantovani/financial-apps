@@ -34,30 +34,34 @@ export async function processSyncQueue(queueItem) {
 
   try {
     if (operation === 'delete') {
-      // 1. Operasi Hapus ke Supabase
       const { error } = await supabase.from(table).delete().eq('id', record_id);
-
       if (error) throw error;
     } else {
-      // 2. Operasi Create atau Update: Ambil data paling baru dari IndexedDB lokal
       const freshData = await getRecord(table, record_id);
+      if (!freshData) return { status: 'success' };
 
-      // Jika data ternyata sudah terhapus di lokal, anggap sukses dan lewati
-      if (!freshData) return true;
-
-      // Upsert data terbaru ke Supabase
       const { error } = await supabase.from(table).upsert(freshData);
 
-      if (error) throw error;
+      if (error) {
+        // Jika error dikarenakan Foreign Key tidak ditemukan (misal Akun/Kategori sudah dihapus di device lain)
+        if (error.code === '23503') {
+          // 23503 = Postgres foreign_key_violation
+          console.warn(
+            `[Sync Engine] Foreign key hilang untuk queue ID ${queueItem.id}. Skipping...`
+          );
+          return { status: 'invalid_data', error };
+        }
+        throw error;
+      }
     }
 
-    return true;
+    return { status: 'success' };
   } catch (error) {
     console.error(
       `[Sync Engine] Gagal memproses queue ID ${queueItem.id} (Table: ${table}, Op: ${operation}):`,
       error
     );
-    return false;
+    return { status: 'network_error', error };
   }
 }
 
@@ -70,7 +74,6 @@ export async function processSyncQueue(queueItem) {
  */
 export async function pushSync() {
   try {
-    // 1. Ambil seluruh daftar antrean dari IndexedDB
     const queueList = await getAllRecords('sync_queue');
 
     if (!queueList || queueList.length === 0) {
@@ -79,17 +82,15 @@ export async function pushSync() {
 
     let processedCount = 0;
 
-    // 2. Iterasi dan proses kartu antrean satu per satu secara sekuensial
     for (const item of queueList) {
-      const isSuccess = await processSyncQueue(item);
+      const result = await processSyncQueue(item);
 
-      if (isSuccess) {
-        // Hapus kartu antrean hanya jika proses push sukses
+      if (result.status === 'success' || result.status === 'invalid_data') {
+        // Hapus antrean jika sukses ATAU jika datanya memang invalid (FK error) agar antrean tidak macet
         await removeSyncQueue(item.id);
         processedCount++;
-      } else {
-        // Hentikan eksekusi jika terjadi kesalahan/koneksi putus
-        // Antrean tersisa tetap tersimpan aman di IndexedDB untuk dicoba lagi nanti
+      } else if (result.status === 'network_error') {
+        // Hanya hentikan antrean jika murni error koneksi/network
         break;
       }
     }

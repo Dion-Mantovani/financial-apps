@@ -1,11 +1,14 @@
 // src/stores/account.store.js
+import { readonly } from 'astro:schema';
 import {
   getAllRecords,
   upsertRecord,
   deleteRecord,
   addSyncQueue,
+  removeSyncQueueByRecordId,
 } from '../data/indexeddb.js';
 import { appStore } from './app.store.js';
+import { transactionStore } from './transaction.store.js';
 
 /**
  * @typedef {Object} Account
@@ -129,25 +132,52 @@ export const accountStore = {
   },
 
   /**
-   * Menghapus akun dari IndexedDB dan mencatat operasi 'delete' ke antrean sync.
+   * Menghapus akun beserta seluruh transaksi terkait (sumber atau tujuan transaksi).
+   * serta membersihkan antrean transaksi & mencatat antrean penghapusan akun.
+   *
    * @param {string} id - UUID akun yang akan dihapus.
-   * @returns {Promise<void>}
-   * @throws {Error} Mengembalikan error jika penghapusan lokal gagal.
    */
   async deleteAccount(id) {
     try {
+      // 1. Cari semua transaksi terkait
+      const relatedTransactions = transactionStore.transactions.filter(
+        (t) => t.account_id === id || t.to_account_id === id
+      );
+
+      // 2. Proses cascade penghapusan transaksi lokal
+      for (const tx of relatedTransactions) {
+        // Hapus dari indexedDB lokal
+        await deleteRecord('transactions', tx.id);
+
+        // Hapus antrean sync transaksi ini (agar tidak di push sia-sia ke supabase)
+        await removeSyncQueueByRecordId('transactions', tx.id);
+      }
+
+      // Update state transaksi Alpine agar UI langsung bersih
+      transactionStore.transactions = transactionStore.transactions.filter(
+        (t) => t.account_id !== id && t.to_account_id !== id
+      );
+
+      // 3. PROSES PENGHAPUSAN AKUN LOKAL
       await deleteRecord('accounts', id);
 
+      // Tambahkan/deduplikasi ke antrean sync untuk Akun
       await addSyncQueue({
         table: 'accounts',
         record_id: id,
         operation: 'delete',
       });
 
+      // Update state akun Alpine
       this.accounts = this.accounts.filter((a) => a.id !== id);
+
+      // Hitung ulang total antrean pending
       await appStore.updatePendingCount();
     } catch (error) {
-      console.error('[Account Store] Gagal menghapus akun:', error);
+      console.error(
+        '[Account Store] Gagal menghapus akun secara cascade:',
+        error
+      );
       throw error;
     }
   },

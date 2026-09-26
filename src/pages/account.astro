@@ -45,7 +45,9 @@ import {
       Navigasi atas fixed/sticky dengan efek backdrop blur.
       Berisi tombol kembali ke Dashboard dan Judul Halaman.
     -->
-    <div class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md">
+    <div
+      class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
+    >
       <div class="flex items-center justify-between">
         <!-- Tombol Kembali ke Dashboard Utama -->
         <a
@@ -77,15 +79,25 @@ import {
       - Total transaksi terkait
       - Toggle Mode Reorder Urutan Dompet
     -->
-    <div class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300">
+    <div
+      class="bg-card-blue-dark shadow-soft relative overflow-hidden rounded-[28px] p-6 text-white transition-all duration-300"
+    >
       <!-- Element Dekoratif Background Circle -->
-      <div class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"></div>
-      <div class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"></div>
+      <div
+        class="pointer-events-none absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
+      >
+      </div>
+      <div
+        class="pointer-events-none absolute right-16 -bottom-16 h-32 w-32 rounded-full bg-white/5"
+      >
+      </div>
 
       <!-- Header Card & Button Toggle Reorder Mode -->
       <div class="relative z-10 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md"
+          >
             <Wallet class="h-4 w-4 stroke-[2.2] text-white" />
           </div>
           <span class="text-xs font-semibold tracking-wide text-white/80">
@@ -116,10 +128,14 @@ import {
       </div>
 
       <!-- Footer Micro Info (3 Kolom Ringkasan) -->
-      <div class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3">
+      <div
+        class="relative z-10 grid grid-cols-3 gap-1.5 border-t border-white/15 pt-3"
+      >
         <!-- Metric 1: Jumlah Dompet -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
+          <div
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
+          >
             <Wallet class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
@@ -137,7 +153,9 @@ import {
 
         <!-- Metric 2: Dompet Teratas (Saldo Terbesar) -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
+          <div
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
+          >
             <Star class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
@@ -155,7 +173,9 @@ import {
 
         <!-- Metric 3: Total Record Transaksi -->
         <div class="flex min-w-0 items-center gap-1.5">
-          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">
+          <div
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
+          >
             <Activity class="h-3 w-3 stroke-[2.2]" />
           </div>
           <div class="flex min-w-0 flex-col">
@@ -185,7 +205,9 @@ import {
         <span class="text-primary text-sm font-bold"> Daftar Dompet </span>
         <!-- Badge Indikator Mode Reorder -->
         <template x-if="isReordering">
-          <span class="bg-blue-soft text-blue-main rounded-full px-2.5 py-0.5 text-[9px] font-extrabold">
+          <span
+            class="bg-blue-soft text-blue-main rounded-full px-2.5 py-0.5 text-[9px] font-extrabold"
+          >
             Reorder Mode
           </span>
         </template>
@@ -222,7 +244,9 @@ import {
       Daftar iterasi seluruh dompet pengguna dari `accountStore`[cite: 19].
       Dilengkapi kontrol geser/naik-turun saat Reorder Mode aktif.
     -->
-    <div class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border">
+    <div
+      class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
+    >
       <!-- Loading State -->
       <template x-if="$store.account.isLoading">
         <div class="text-muted-foreground p-4 text-center text-xs">
@@ -246,7 +270,9 @@ import {
         >
           <!-- Info Kiri: Icon & Nama Dompet -->
           <div class="flex min-w-0 items-center gap-3.5">
-            <div class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
+            <div
+              class="bg-blue-soft text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+            >
               <!-- Render Icon Dinamis -->
               <template x-if="wallet.icon === 'landmark'">
                 <Landmark class="h-5 w-5 stroke-2" />
@@ -277,10 +303,13 @@ import {
             <div class="flex min-w-0 flex-col">
               <span
                 x-text="wallet.name"
-                class="text-foreground truncate text-xs font-bold"
-              ></span>
-              <div class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium">
-                <span x-text="`${getWalletTransactionCount(wallet.id)} transaksi`"></span>
+                class="text-foreground truncate text-xs font-bold"></span>
+              <div
+                class="text-muted-foreground flex items-center gap-1 text-[10px] font-medium"
+              >
+                <span
+                  x-text="`${getWalletTransactionCount(wallet.id)} transaksi`"
+                ></span>
               </div>
             </div>
           </div>
@@ -289,8 +318,7 @@ import {
           <div class="flex shrink-0 items-center gap-2">
             <span
               x-text="formatCurrency(getAccountRealBalance(wallet.id))"
-              class="text-foreground text-xs font-extrabold"
-            ></span>
+              class="text-foreground text-xs font-extrabold"></span>
 
             <!-- Control Reorder (Panah Naik / Turun) -->
             <template x-if="isReordering">
@@ -357,10 +385,15 @@ import {
       >
         <!-- Modal Card Header -->
         <div class="bg-card-blue-dark relative p-6 text-white">
-          <div class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"></div>
+          <div
+            class="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-white/10"
+          >
+          </div>
 
           <div class="relative z-10 flex items-center justify-between">
-            <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase">
+            <span
+              class="rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-widest text-white uppercase"
+            >
               Detail Dompet
             </span>
             <button
@@ -373,7 +406,9 @@ import {
           </div>
 
           <div class="relative z-10 mt-5 flex items-center gap-3.5">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white">
+            <div
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white"
+            >
               <template x-if="selectedWallet.icon === 'landmark'">
                 <Landmark class="h-6 w-6 stroke-2" />
               </template>
@@ -404,25 +439,30 @@ import {
               <h2
                 x-text="selectedWallet.name"
                 class="truncate text-lg font-black tracking-tight text-white"
-              ></h2>
+              >
+              </h2>
               <span
                 x-text="`${getWalletTransactionCount(selectedWallet.id)} Total Transaksi`"
-                class="text-[10px] text-white/70"
-              ></span>
+                class="text-[10px] text-white/70"></span>
             </div>
           </div>
         </div>
 
         <!-- Modal Body & Action Buttons -->
         <div class="space-y-4 p-6">
-          <div class="border-border bg-background rounded-2xl border p-4 text-center">
-            <span class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+          <div
+            class="border-border bg-background rounded-2xl border p-4 text-center"
+          >
+            <span
+              class="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+            >
               Saldo Real-Time
             </span>
             <p
               x-text="formatCurrency(getAccountRealBalance(selectedWallet.id))"
               class="text-primary mt-0.5 text-2xl font-black tracking-tight"
-            ></p>
+            >
+            </p>
           </div>
 
           <div class="flex items-center gap-2 pt-1">
@@ -466,7 +506,9 @@ import {
         class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
       >
         <div class="flex items-start gap-3">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
+          >
             <AlertTriangle class="h-5 w-5 stroke-2" />
           </div>
 
@@ -476,15 +518,14 @@ import {
             </h3>
             <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
               Dompet{' '}
-              <strong
-                class="text-foreground"
-                x-text="selectedWallet.name"
+              <strong class="text-foreground" x-text="selectedWallet.name"
               ></strong>{' '}
               memiliki
               <strong
                 class="text-foreground"
-                x-text="getWalletTransactionCount(selectedWallet.id)"
-              ></strong>{' '}
+                x-text="getWalletTransactionCount(selectedWallet.id)"></strong>{
+                ' '
+              }
               transaksi.
             </p>
             <p class="text-muted-foreground mt-2 text-xs leading-relaxed">
@@ -534,7 +575,9 @@ import {
         class="border-border bg-card w-full max-w-md rounded-t-4xl border p-6 pb-24 shadow-2xl sm:rounded-4xl"
       >
         <div class="flex items-start gap-3">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600"
+          >
             <Trash2 class="h-5 w-5 stroke-2" />
           </div>
           <div>
@@ -556,7 +599,8 @@ import {
           <p
             class="text-foreground bg-muted mt-2 rounded-xl px-3 py-2 text-center text-sm font-black"
             x-text="selectedWallet.name"
-          ></p>
+          >
+          </p>
           <input
             type="text"
             x-ref="deleteConfirmInput"
@@ -607,7 +651,9 @@ import {
         class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col space-y-4 rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
       >
         <div class="flex items-center gap-3 text-amber-600">
-          <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100"
+          >
             <AlertTriangle class="h-5 w-5 stroke-2" />
           </div>
           <div>
@@ -627,8 +673,7 @@ import {
           otomatis agar total saldo dompet menjadi
           <strong
             class="text-foreground"
-            x-text="formatCurrency(newCorrectionBalance)"
-          ></strong>
+            x-text="formatCurrency(newCorrectionBalance)"></strong>
           .
         </p>
 
@@ -669,15 +714,20 @@ import {
         class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 pb-24 shadow-2xl transition-transform sm:rounded-4xl"
       >
         <!-- Form Header -->
-        <div class="border-border flex items-center justify-between border-b pb-3">
+        <div
+          class="border-border flex items-center justify-between border-b pb-3"
+        >
           <div class="flex items-center gap-2">
-            <div class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl">
+            <div
+              class="bg-blue-soft text-blue-main flex h-8 w-8 items-center justify-center rounded-xl"
+            >
               <Sparkles class="h-4 w-4 stroke-2" />
             </div>
             <h3
               x-text="isEdit ? 'Edit Dompet' : 'Tambah Dompet Baru'"
               class="text-primary text-base font-extrabold"
-            ></h3>
+            >
+            </h3>
           </div>
           <button
             type="button"
@@ -691,7 +741,9 @@ import {
         <form @submit.prevent="saveWallet()" class="mt-4 space-y-4">
           <!-- Input Field: Nama Dompet -->
           <div class="space-y-1.5">
-            <label class="text-muted-foreground block text-[10px] font-bold uppercase">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+            >
               Nama Dompet
             </label>
             <input
@@ -706,8 +758,13 @@ import {
 
           <!-- Selector Grid: Pilihan Ikon Dompet -->
           <div class="space-y-2">
-            <label class="text-foreground text-xs font-bold">Icon Dompet</label>
-            <div class="border-border bg-muted/20 mt-3 overflow-y-auto rounded-2xl border p-3">
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              >Icon Dompet</label
+            >
+            <div
+              class="border-border bg-muted/20 mt-3 overflow-y-auto rounded-2xl border p-3"
+            >
               <div class="grid grid-cols-6 gap-2">
                 <template x-for="icon in availableIcons" :key="icon.id">
                   <button
@@ -749,8 +806,10 @@ import {
 
           <!-- Input Field: Saldo Awal -->
           <div class="space-y-1.5">
-            <label class="text-muted-foreground block text-[10px] font-bold uppercase">
-              Saldo Awal (Rp)
+            <label
+              class="text-muted-foreground block text-[10px] font-bold uppercase"
+              x-text="isEdit? 'Saldo Saat Ini (RP)' : 'Saldo Awal (RP)'"
+            >
             </label>
             <input
               type="text"

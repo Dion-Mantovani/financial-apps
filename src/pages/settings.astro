@@ -19,14 +19,14 @@ import {
   UserX,
   MessageSquarePlus,
   Send,
+  RefreshCw,
+  CloudCheck,
+  CloudSync,
 } from '@lucide/astro';
 ---
 
 <Layout title="Pengaturan - Studion App">
-  <div
-    x-data="{ activeModal: null, darkMode: false, notif: true, feedbackText: '' }"
-    class="space-y-6 pt-2 pb-12"
-  >
+  <div x-data="settingUI()" class="space-y-6 pt-2 pb-12">
     <!-- 1. STICKY HEADER -->
     <div
       class="border-border bg-background/95 sticky top-0 z-40 -mx-5 -mt-2 space-y-3 border-b px-5 pt-6 pb-3 backdrop-blur-md"
@@ -58,7 +58,7 @@ import {
         >
           <!-- Edit Profil -->
           <button
-            @click="activeModal = 'profile'"
+            @click="openModal('profile')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -80,7 +80,7 @@ import {
 
           <!-- Ubah Password -->
           <button
-            @click="activeModal = 'password'"
+            @click="openModal('password')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -185,7 +185,7 @@ import {
         >
           <!-- Export Data -->
           <button
-            @click="activeModal = 'export'"
+            @click="openModal('export')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -207,9 +207,9 @@ import {
             <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
-          <!-- Import Data -->
+          <!-- Tombol Import Data -->
           <button
-            @click="activeModal = 'import'"
+            @click="openModal('import')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -298,7 +298,7 @@ import {
           class="border-border bg-card shadow-soft overflow-hidden rounded-[28px] border"
         >
           <button
-            @click="activeModal = 'feedback'"
+            @click="openModal('feedback')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -310,6 +310,7 @@ import {
               </div>
               <div class="flex flex-col">
                 <p class="text-foreground text-xs font-bold">Kirim Masukan</p>
+
                 <p class="text-muted-foreground text-[10px] font-medium">
                   Saran atau masukan untuk pengembangan app
                 </p>
@@ -327,7 +328,6 @@ import {
         <div
           class="divide-border border-border bg-card shadow-soft divide-y overflow-hidden rounded-[28px] border"
         >
-          <!-- Info Masuk Sebagai -->
           <div class="bg-muted/30 p-4">
             <p class="text-muted-foreground text-[10px] font-bold uppercase">
               Masuk Sebagai
@@ -337,9 +337,8 @@ import {
             </p>
           </div>
 
-          <!-- Keluar Sesi -->
           <button
-            @click="activeModal = 'logout'"
+            @click="openModal('logout')"
             type="button"
             class="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between p-4 text-left transition active:scale-[0.99]"
           >
@@ -359,9 +358,8 @@ import {
             <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
-          <!-- Reset Semua Data -->
           <button
-            @click="activeModal = 'reset'"
+            @click="openModal('reset')"
             type="button"
             class="flex w-full cursor-pointer items-center justify-between p-4 text-left transition hover:bg-rose-50/40 active:scale-[0.99]"
           >
@@ -381,9 +379,8 @@ import {
             <ChevronRight class="text-muted-foreground h-4 w-4" />
           </button>
 
-          <!-- Hapus Akun -->
           <button
-            @click="activeModal = 'deleteAccount'"
+            @click="openModal('deleteAccount')"
             type="button"
             class="flex w-full cursor-pointer items-center justify-between p-4 text-left transition hover:bg-rose-50/40 active:scale-[0.99]"
           >
@@ -408,7 +405,7 @@ import {
       </div>
     </div>
 
-    <!-- 3. FOOTER MINIMALIS -->
+    <!-- FOOTER -->
     <div class="space-y-1 pt-6 pb-2 text-center">
       <p class="text-primary text-xs font-extrabold tracking-tight">
         Studion App
@@ -418,7 +415,7 @@ import {
       </p>
     </div>
 
-    <!-- MODAL CONTAINERS (ALPINE TELEPORT STYLE) -->
+    <!-- MODAL TELEPORT CONTAINER -->
     <template x-teleport="body">
       <div
         x-show="activeModal"
@@ -428,7 +425,7 @@ import {
         <!-- 1. MODAL EDIT PROFIL -->
         <div
           x-show="activeModal === 'profile'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -436,14 +433,14 @@ import {
           >
             <h3 class="text-primary text-base font-extrabold">Edit Profil</h3>
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 cursor-pointer items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
-          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+          <form class="mt-4 space-y-4" @submit.prevent="submitProfile()">
             <div class="space-y-1.5">
               <label
                 class="text-muted-foreground block text-[10px] font-bold uppercase"
@@ -468,7 +465,7 @@ import {
             </div>
             <div class="flex items-center gap-2 pt-2">
               <button
-                @click="activeModal = null"
+                @click="closeModal()"
                 type="button"
                 class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
@@ -485,7 +482,7 @@ import {
         <!-- 2. MODAL UBAH PASSWORD -->
         <div
           x-show="activeModal === 'password'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -493,14 +490,14 @@ import {
           >
             <h3 class="text-primary text-base font-extrabold">Ubah Password</h3>
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 cursor-pointer items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
-          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+          <form class="mt-4 space-y-4" @submit.prevent="submitPassword()">
             <div class="space-y-1.5">
               <label
                 class="text-muted-foreground block text-[10px] font-bold uppercase"
@@ -525,7 +522,7 @@ import {
             </div>
             <div class="flex items-center gap-2 pt-2">
               <button
-                @click="activeModal = null"
+                @click="closeModal()"
                 type="button"
                 class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
@@ -542,7 +539,7 @@ import {
         <!-- 3. MODAL EXPORT DATA -->
         <div
           x-show="activeModal === 'export'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -560,13 +557,13 @@ import {
           </div>
           <div class="flex gap-2.5 pt-4">
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
               class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
               class="bg-primary text-primary-foreground shadow-soft w-1/2 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
               >Download CSV</button
@@ -577,47 +574,179 @@ import {
         <!-- 4. MODAL IMPORT DATA -->
         <div
           x-show="activeModal === 'import'"
-          @click.away="activeModal = null"
-          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
+          @click.away="closeModal()"
+          class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
-            class="border-border flex items-center justify-between border-b pb-3"
+            class="bg-blue-soft text-primary mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
           >
+            <Upload class="h-6 w-6 stroke-2" />
+          </div>
+
+          <div class="mt-3">
             <h3 class="text-primary text-base font-extrabold">
-              Import File Data
+              Import Data Transaksi
             </h3>
+            <p class="text-muted-foreground mt-1 text-xs">
+              Pilih file berkas cadangan (JSON/CSV) untuk dipulihkan ke database
+              lokal.
+            </p>
+          </div>
+
+          <div class="mt-4">
+            <!-- KONDISI 1: Belum ada file yang dipilih (Upload Dropzone UI Lu) -->
+            <template x-if="!selectedFile">
+              <label
+                class="border-border bg-background hover:bg-muted/50 flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-colors"
+              >
+                <div
+                  class="flex flex-col items-center justify-center pt-5 pb-6"
+                >
+                  <!-- Lucide Icon / SVG Upload -->
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="text-muted-foreground mb-2 h-6 w-6"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" x2="12" y1="3" y2="15"></line>
+                  </svg>
+
+                  <p class="text-foreground text-xs font-semibold">
+                    <span>Klik untuk pilih file JSON</span>
+                  </p>
+                  <p class="text-muted-foreground mt-1 text-[10px] font-medium">
+                    Format JSON (Maks. 5MB)
+                  </p>
+                </div>
+
+                <input
+                  type="file"
+                  accept=".json"
+                  @change="handleFileUpload($event)"
+                  class="hidden"
+                />
+              </label>
+            </template>
+
+            <!-- KONDISI 2: File sudah dipilih (Preview & Action Card) -->
+            <template x-if="selectedFile && fileSummary">
+              <div
+                class="border-border bg-card text-card-foreground space-y-4 rounded-2xl border p-4"
+              >
+                <!-- File Info Header -->
+                <div
+                  class="border-border flex items-center justify-between border-b pb-3"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="bg-primary/10 text-primary rounded-xl p-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                        ></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                    </div>
+                    <div class="text-left">
+                      <p
+                        class="text-foreground max-w-[180px] truncate text-xs font-semibold"
+                        x-text="fileSummary.fileName"
+                      >
+                      </p>
+                      <p
+                        class="text-muted-foreground text-[10px]"
+                        x-text="fileSummary.fileSize"
+                      >
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    @click="resetFile()"
+                    class="text-destructive text-xs font-medium hover:underline"
+                    :disabled="isLoading"
+                  >
+                    <X class="h-4 w-4 stroke-[2.5]" />
+                  </button>
+                </div>
+
+                <!-- Detail Ringkasan Data -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="bg-muted/40 rounded-xl p-2">
+                    <span
+                      class="text-foreground block text-sm font-bold"
+                      x-text="fileSummary.accountsCount"></span>
+                    <span class="text-muted-foreground text-[10px]">Akun</span>
+                  </div>
+                  <div class="bg-muted/40 rounded-xl p-2">
+                    <span
+                      class="text-foreground block text-sm font-bold"
+                      x-text="fileSummary.categoriesCount"></span>
+                    <span class="text-muted-foreground text-[10px]"
+                      >Kategori</span
+                    >
+                  </div>
+                  <div class="bg-muted/40 rounded-xl p-2">
+                    <span
+                      class="text-foreground block text-sm font-bold"
+                      x-text="fileSummary.transactionsCount"></span>
+                    <span class="text-muted-foreground text-[10px]"
+                      >Transaksi</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <div class="flex gap-2.5 pt-4">
+            <!-- Tombol Batal -->
             <button
-              @click="activeModal = null"
               type="button"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              @click="closeModal()"
+              class="border-border text-muted-foreground hover:bg-muted/50 flex w-1/2 cursor-pointer items-center justify-center rounded-2xl border py-3 text-xs font-bold transition-colors disabled:opacity-50"
             >
-              <X class="h-4 w-4 stroke-[2.5]" />
+              Batal
+            </button>
+
+            <!-- Tombol Mulai Import -->
+            <button
+              type="button"
+              @click="executeImport()"
+              :disabled="!selectedFile || isLoading"
+              class="bg-primary text-primary-foreground hover:bg-primary/90 flex w-1/2 cursor-pointer items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-xs font-bold transition-all disabled:opacity-50"
+            >
+              <span x-show="!isLoading">Mulai Import</span>
+              <span x-show="isLoading" class="flex items-center gap-1.5">
+                <span class="animate-spin text-xs">🌀</span> Memproses...
+              </span>
             </button>
           </div>
-          <div
-            class="border-border mt-4 space-y-2 rounded-2xl border-2 border-dashed p-6 text-center"
-          >
-            <Upload class="text-muted-foreground mx-auto h-8 w-8" />
-            <p class="text-foreground text-xs font-bold">
-              Pilih Berkas CSV / JSON
-            </p>
-            <p class="text-muted-foreground text-[10px] font-medium">
-              Batas maksimal ukuran file 5MB
-            </p>
-          </div>
-          <button
-            @click="activeModal = null"
-            type="button"
-            class="bg-primary text-primary-foreground shadow-soft mt-4 w-full cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
-          >
-            Unggah Berkas
-          </button>
         </div>
 
         <!-- 5. MODAL KIRIM MASUKAN -->
         <div
           x-show="activeModal === 'feedback'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -625,14 +754,14 @@ import {
           >
             <h3 class="text-primary text-base font-extrabold">Kirim Masukan</h3>
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
-              class="text-muted-foreground hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full"
+              class="text-muted-foreground hover:bg-muted flex h-8 w-8 cursor-pointer items-center justify-center rounded-full"
             >
               <X class="h-4 w-4 stroke-[2.5]" />
             </button>
           </div>
-          <form class="mt-4 space-y-4" @submit.prevent="activeModal = null">
+          <form class="mt-4 space-y-4" @submit.prevent="submitFeedback()">
             <div class="space-y-1.5">
               <label
                 class="text-muted-foreground block text-[10px] font-bold uppercase"
@@ -647,7 +776,7 @@ import {
             </div>
             <div class="flex items-center gap-2 pt-1">
               <button
-                @click="activeModal = null"
+                @click="closeModal()"
                 type="button"
                 class="border-border text-muted-foreground hover:bg-muted w-1/3 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
                 >Batal</button
@@ -666,7 +795,7 @@ import {
         <!-- 6. MODAL KELUAR SESI -->
         <div
           x-show="activeModal === 'logout'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -682,13 +811,13 @@ import {
           </div>
           <div class="flex gap-2.5 pt-4">
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
               class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
-              @click="activeModal = null"
+              @click="handleLogout()"
               type="button"
               class="bg-primary text-primary-foreground shadow-soft w-1/2 cursor-pointer rounded-2xl py-3.5 text-xs font-bold hover:opacity-90 active:scale-95"
               >Ya, Keluar</button
@@ -699,7 +828,7 @@ import {
         <!-- 7. MODAL RESET SEMUA DATA -->
         <div
           x-show="activeModal === 'reset'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -718,13 +847,13 @@ import {
           </div>
           <div class="flex gap-2.5 pt-4">
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
               class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
-              @click="activeModal = null"
+              @click="handleResetData()"
               type="button"
               class="shadow-soft w-1/2 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white transition-colors hover:bg-rose-700 active:scale-95"
               >Ya, Reset Data</button
@@ -735,7 +864,7 @@ import {
         <!-- 8. MODAL HAPUS AKUN PERMANEN -->
         <div
           x-show="activeModal === 'deleteAccount'"
-          @click.away="activeModal = null"
+          @click.away="closeModal()"
           class="border-border bg-card flex max-h-[90vh] w-full max-w-md flex-col rounded-t-4xl border p-6 text-center shadow-2xl transition-transform sm:rounded-4xl"
         >
           <div
@@ -754,13 +883,13 @@ import {
           </div>
           <div class="flex gap-2.5 pt-4">
             <button
-              @click="activeModal = null"
+              @click="closeModal()"
               type="button"
               class="border-border text-muted-foreground hover:bg-muted w-1/2 cursor-pointer rounded-2xl border py-3.5 text-xs font-bold"
               >Batal</button
             >
             <button
-              @click="activeModal = null"
+              @click="handleDeleteAccount()"
               type="button"
               class="shadow-soft w-1/2 cursor-pointer rounded-2xl bg-rose-600 py-3.5 text-xs font-bold text-white transition-colors hover:bg-rose-700 active:scale-95"
               >Hapus Akun</button
@@ -771,3 +900,10 @@ import {
     </template>
   </div>
 </Layout>
+
+<script>
+  import Alpine from 'alpinejs';
+  import { settingUI } from '../features/setting.ui.js';
+
+  Alpine.data('settingUI', settingUI);
+</script>

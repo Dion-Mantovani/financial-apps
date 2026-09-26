@@ -31,29 +31,6 @@ export const appStore = {
     try {
       await initDB();
       await this.updatePendingCount();
-
-      // Cek jika database lokal kosong (pertama kali buka di HP/device baru), tarik data awal dari Supabase
-      const accounts = await getAllRecords('accounts');
-      if (accounts.length === 0) {
-        console.log(
-          '[App Store] Local DB kosong, melakukan initial pull dari Supabase...'
-        );
-        await this.triggerSync();
-      } else {
-        await this.checkAutoSyncThreshold();
-      }
-
-      // Memicu auto sync saat device kembali terhubung ke internet
-      window.addEventListener('online', () => {
-        this.checkAutoSyncThreshold();
-      });
-
-      // Memicu auto sync saat user kembali fokus membuka tab browser
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          this.checkAutoSyncThreshold();
-        }
-      });
     } catch (error) {
       console.error('[App Store] Error pada initApp:', error);
     }
@@ -73,30 +50,27 @@ export const appStore = {
   },
 
   /**
-   * Pemicu eksekusi sinkronisasi data (Push perubahan lokal lalu Pull data terbaru dari Supabase).
-   * @returns {Promise<boolean>} Mengembalikan true jika sync berhasil, atau false jika sedang berjalan.
-   * @throws {Error} Mengembalikan error jika proses push/pull gagal.
+   * Pemicu eksekusi sinkronisasi data (PUSH perubahan lokal dulu, baru PULL dari cloud).
+   * @returns {Promise<boolean>}
    */
   async triggerSync() {
     if (this.isSyncing) return false;
-
     this.isSyncing = true;
 
     try {
       const tables = ['accounts', 'categories', 'transactions'];
 
-      // 1. PUSH: Kirim semua perubahan lokal ke Supabase dulu
+      // 1. PUSH DULU: Kirim niat hapus / ubah dari lokal kita ke Supabase
       const queueRecords = await getAllRecords('sync_queue');
-      if (queueRecords.length > 0) {
+      if (queueRecords && queueRecords.length > 0) {
         await pushSync();
       }
 
-      // 2. PULL: Tarik data terbaru dari Supabase untuk menyelaraskan local DB
+      // 2. PULL KEMUDIAN: Baru ambil status paling mutakhir dari Supabase
       for (const table of tables) {
         await pullSync(table);
       }
 
-      // Catat tanggal sync sukses
       const today = new Date().toISOString().split('T')[0];
       this.lastSyncedDate = today;
       localStorage.setItem(LAST_SYNCED_KEY, today);
@@ -108,33 +82,6 @@ export const appStore = {
     } finally {
       await this.updatePendingCount();
       this.isSyncing = false;
-    }
-  },
-
-  /**
-   * Memeriksa kondisi kriteria auto-sync otomatis:
-   * 1. Terdapat perubahan lokal (pendingCount > 0).
-   * 2. Jam lokal sudah mencapai / melewati jam 21:00.
-   * 3. Belum pernah melakukan sync pada hari ini.
-   * @returns {Promise<void>}
-   */
-  async checkAutoSyncThreshold() {
-    await this.updatePendingCount();
-
-    if (this.pendingCount === 0) return;
-
-    const now = new Date();
-    const currentHour = now.getHours();
-    const today = now.toISOString().split('T')[0];
-
-    const isPastThreshold = currentHour >= SYNC_THRESHOLD_HOUR;
-    const hasNotSyncedToday = this.lastSyncedDate !== today;
-
-    if (isPastThreshold && hasNotSyncedToday) {
-      console.log(
-        '[App Store] Threshold jam 21:00 terpenuhi, menjalankan Auto-Sync...'
-      );
-      await this.triggerSync();
     }
   },
 };
